@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 
 from pathlib import Path
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -26,7 +27,8 @@ SECRET_KEY = 'django-insecure-#96g7n=k%!if-)0d4fwd(#uk5oa7hj#vpo&a#%!9+h28_pc+#i
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1']
+#ALLOWED_HOSTS = ['127.0.0.1']
+ALLOWED_HOSTS = ['.onrender.com', 'localhost', '127.0.0.1', 'tu-dominio.com']
 
 MESSAGE_STORAGE= "django.contrib.messages.storage.cookie.CookieStorage"
 
@@ -84,6 +86,7 @@ CRISPY_TEMPLATE_PACK = "bootstrap4"
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
+#Acceso Local
 DATABASES = {
     'default':  {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
@@ -96,6 +99,11 @@ DATABASES = {
         'PORT': 5432,
     }
 }
+
+#Acceso a render.com
+DATABASES["default"] = dj_database_url.parse("postgresql://dbcomunica_scrum_user:JQQc7Af7o0Gm9IozynPGim8ZUGiiUNKD@dpg-cs8uqt8gph6c73btkeg0-a.oregon-postgres.render.com/dbcomunica_scrum")
+
+
 
 
 # Password validation
@@ -133,7 +141,16 @@ MESSAGE_STORAGE = "django.contrib.messages.storage.cookie.CookieStorage"
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
 import os 
+
 STATIC_URL = '/static/'
+
+# Agrega esta configuración para la ruta donde Django colocará los archivos estáticos
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# Agrega también este bloque si usas archivos media (cargados por el usuario):
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
