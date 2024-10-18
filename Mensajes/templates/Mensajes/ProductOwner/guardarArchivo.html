@@ -1,0 +1,24 @@
+{% extends "Mensajes/ProductOwner/base2.html" %}
+
+{% load static %}
+{% load crispy_forms_tags %}
+<title>Archivos</title>
+
+{% block content %}
+<h1>Guardar archivos</h1>
+
+<form class="form" method="post" action="" style="color: black;" form enctype="multipart/form-data" >
+    {% csrf_token %} 
+
+    <div class=" margin: auto;">
+
+    
+    {{ form | crispy }}
+
+
+    <button type="submit" id="submit" class="btn btn-success"> Guardar </button>
+    
+</div>
+</form>
+
+{% endblock %}

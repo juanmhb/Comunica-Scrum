@@ -1,0 +1,61 @@
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aviso</title>
+  <!-- Enlace a CSS de Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Modal de Bootstrap con opción scrollable -->
+  <div class="modal fade" id="mensajeModal" tabindex="-1" aria-labelledby="mensajeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable"> <!-- Clase para permitir scroll -->
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="mensajeModalLabel">Mensaje</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <!-- Aquí va el mensaje que se envía desde el backend -->
+          {% for message in messages %}
+              <p>{{ message }}</p>
+          {% endfor %}
+        </div>
+        <div class="modal-footer">
+          <!-- <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button> -->
+          <button type="button" class="btn btn-secondary" id="cerrarModalBtn">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript de Bootstrap -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Mostrar el modal si hay mensajes -->
+  {% if messages %}
+  <script>
+      var myModal = new bootstrap.Modal(document.getElementById('mensajeModal'), {
+          keyboard: false,   // Para desactivar cierre con tecla 'Esc'
+          backdrop: 'static' // Evita que el modal se cierre al hacer clic fuera
+      });
+      myModal.show();
+  </script>
+  <script>
+    // Escuchar el clic en el botón "Cerrar"
+    document.getElementById('cerrarModalBtn').addEventListener('click', function() {
+        // Cerrar el modal primero
+        var modalElement = document.getElementById('mensajeModal');
+        var modal = bootstrap.Modal.getInstance(modalElement);
+        modal.hide();
+
+        // Redirigir a otra página después de cerrar
+        setTimeout(function() {
+            window.location.href =  "{{ Ruta }}" //'/listaRefinamiento'
+        }, 500); // Agregar un pequeño retraso si es necesario
+    });
+</script>
+  {% endif %}
+
+</body>
+</html>

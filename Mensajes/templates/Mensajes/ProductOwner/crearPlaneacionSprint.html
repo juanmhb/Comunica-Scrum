@@ -1,0 +1,25 @@
+{% extends "Mensajes/ProductOwner/base2.html" %}
+
+{% load static %}
+{% load crispy_forms_tags %}
+<title>Crear Ceremonia</title>
+
+{% block content %}
+<h1>Agendar datos para Reunión de Planeación del Sprint</h1>
+
+<h4>Emisor {{ user.username }}</h4>
+<form class="form" method="post" action="" style="color: black;">
+    {% csrf_token %} 
+
+    <div class=" margin: auto;">
+
+    
+    {{ form | crispy }}
+
+    
+    <button type="submit" id="submit" class="btn btn-success"> Guardar datos </button>
+    
+</div>
+</form>
+
+{% endblock %}

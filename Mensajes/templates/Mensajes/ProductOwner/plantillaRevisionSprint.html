@@ -1,0 +1,237 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      #bg{
+                  background-color:yellow;
+              }
+              #azul{
+                  background-color:rgb(194, 238, 255);
+              }
+              #gris{
+                  background-color:rgb(150, 150, 150);
+              }
+      </style>
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+  </head>
+  <body>
+
+<div>
+  <table border="1">
+    {% for p in form %}
+   <tr>
+    <td id="azul" align="center">Proyecto</td>
+    <td colspan="7" align="center" id="azul">{{ p.Proyecto }}</td>
+   </tr>
+   <tr>
+    <td align="center">Fecha y hora</td>
+    <td align="center">{{ p.FechaHora }}</td>
+    <td><!-- Vacio --></td>
+    <td><!-- Vacio --></td>
+    <td><!-- Vacio --></td>
+    <td><!-- Vacio --></td>
+    <td><!-- Vacio --></td>
+    <td><!-- Vacio --></td>
+   </tr>
+   <tr>
+    <td colspan="8" align="center" style="color: rgb(0, 113, 157);">Revisión del {{ p.Sprint }}</td>
+   </tr>
+   {% endfor %}
+   {% for p in idiomaPais %}
+   <tr>
+    <td id="azul" align="center">Idioma</td>
+    <td id="azul" align="center">{{ p.Idioma}}</td>
+    <td id="azul"><!-- Vacio --></td>
+    <td id="azul"><!-- Vacio --></td>
+    <td id="azul"><!-- Vacio --></td>
+    <td id="azul"><!-- Vacio --></td>
+    <td id="azul"><!-- Vacio --></td>
+    <td id="azul"><!-- Vacio --></td>
+   </tr>
+   <tr>
+    <td align="center">País</td>
+    <td align="center">{{ p.Pais }}</td>
+    <td><!-- Vacio --></td>
+    <td><!-- Vacio --></td>
+    <td><!-- Vacio --></td>
+    <td><!-- Vacio --></td>
+    <td><!-- Vacio --></td>
+    <td><!-- Vacio --></td>
+   </tr>
+   {% endfor %}
+   <tr>
+    <td id="azul" align="center">Asistentes:</td>
+    <td id="azul" align="center">Nombre</td>
+    <td id="azul" align="center">Rol</td>
+    <td id="azul" align="center">Status</td>
+    <td id="azul" align="center">Tipo de Asistencia</td>
+    <td id="azul"><!-- Vacio --></td>
+    <td id="azul"><!-- Vacio --></td>
+    <td id="azul"><!-- Vacio --></td>
+   </tr>
+    {% for p in form3 %}
+   <tbody>
+    <tr>
+      <th scope="row"> &nbsp; </th>
+      <td>{{ p.Usuario.Usuario }}</td>
+      <td>{{ p.Rol }}</td>
+      <td>
+        {% if p.Status == '1' %}
+        Obligatorio
+        {% elif p.Status == '2' %}
+        Opcional
+        {% else %}
+        Dato invalido
+        {% endif %}
+      </td>
+      <td>
+        {% if p.TipoAsistencia == 'S' %}
+        Sincrona
+        {% elif p.TipoAsistencia == 'A' %}
+        Asincrona
+        {% else %}
+        Dato invalido
+        {% endif %}
+      </td>
+      <td> &nbsp; </td>
+      <td> &nbsp; </td>
+      <td> &nbsp; </td>
+      
+    </tr>
+  </tbody>
+  {% endfor %}
+  <tr>
+    <td id="azul" align="center">Sprint Backlog</td>
+    <td id="azul" align="center">HU</td>
+    <td id="azul" align="center">Nombre</td>
+    <td id="azul" align="center">Status</td>
+    <td id="azul" align="center">Criterio Aceptación</td>
+    <td id="azul">Avance</td>
+    <td id="azul">Estimado</td>
+    <td id="azul">Real</td>
+   </tr>
+   {% for p in form2 %}
+   <tbody>
+    <tr>
+      <th scope="row"></th>
+      <td>HU00{{ forloop.counter }}</td>
+      <td> {{ p.nombre | capfirst }} </td>
+      <td>{{ p.Estatus }}</td>
+      <td align="center">
+          {% if p.CriteriosAceptacion == '1' %}
+          SI
+          {% elif p.CriteriosAceptacion == '2' %}
+          NO
+          {% else%}
+          Sin respuesta
+          {% endif %}
+      </td>
+      <td align="right">
+        <!--Generalmente, las historias de estatus del 1 al 3 NO se muestran-->
+          {% if p.Estatus.id == 1 %}
+          10%
+          {% elif p.Estatus.id == 2 %}
+          0%
+          {% elif p.Estatus.id == 3 %}
+          20%
+          {% elif p.Estatus.id == 4 %} <!--En Sprint-->
+          40%
+          {% elif p.Estatus.id == 5 %} <!--Dividida en tareas-->
+          50%
+          {% elif p.Estatus.id == 6 %} <!--En progreso-->
+          {{ progreso|floatformat:2 }}%
+          {% elif p.Estatus.id == 7 %} <!--Completada-->
+          100%
+          {% else%}
+          0%
+          {% endif %}
+      </td>
+      <td align="right">{{ p.HorasEstimadas }}</td>
+      <!--<td align="right">{{ num }}</td>-->
+      {% for avance in p.HistoriaTareasAvance.all %}
+      <td align="right">{{ avance.horasDedicadas }}</td>
+      {% endfor %}
+    </tr>
+  </tbody>
+  {% endfor %}
+  <tr>
+    <td>  &nbsp; </td>
+    <td><!-- Vacio --></td>
+    <td><!-- Vacio --></td>
+    <td><!-- Vacio --></td>
+    <td><!-- Vacio --></td>
+    <td>Horas: </td>
+    <td align="right">{{ horas }}</td>
+    <td align="right">{{ suma }}</td>
+   </tr>
+   <tr>
+    <td>  &nbsp; </td>
+    <td id="azul"><!-- Vacio --></td>
+    <td id="azul"><!-- Vacio --></td>
+    <td id="azul"><!-- Vacio --></td>
+    <td id="azul"><!-- Vacio --></td>
+    <td id="azul">Dias: </td>
+    <td id="azul" align="right">{{ dias|floatformat:2 }}</td>
+    <td id="azul" align="right">{{ reales|floatformat:2 }}</td>
+   </tr>
+  <!--
+   <tr>
+    <td id="azul" align="center">Porcentaje de Avance del proyecto</td>
+    <td id="azul" align="center">25%</td>
+    <td id="azul" align="center"></td>
+    <td id="azul" align="center"></td>
+    <td id="azul" align="center"></td>
+    <td id="azul"></td>
+    <td id="azul"></td>
+    <td id="azul"></td>
+   </tr>
+  -->
+   <tr>
+    <td style="color: rgb(255, 255, 255);"> &nbsp; </td>
+    <td><!-- Vacio --></td>
+    <td><!-- Vacio --></td>
+    <td><!-- Vacio --></td>
+    <td><!-- Vacio --></td>
+    <td><!-- Vacio --></td>
+    <td><!-- Vacio --></td>
+    <td><!-- Vacio --></td>
+   </tr>
+   {% for p in form%}
+   <tr>
+    <td id="azul" align="center">Objetivo del Sprint</td>
+    <td id="azul" colspan="7" align="center">{{ p.Descripcion }}</td>
+   </tr>
+   {% endfor %}
+   
+   <tbody>
+    <tr>
+      <td align="center"> &nbsp; </td>
+      <td colspan="7" align="center"> &nbsp; </td>
+     </tr>
+   </tbody>
+   
+
+
+    {% for p in comentarios %}
+   <tr>
+    <td id="azul" align="center">Comentario de {{ p.Emisor.Usuario }}: </td>
+    <td id="azul" align="center" colspan="7">{{ p.Comentarios }}</td>
+   </tr>
+   {% endfor %}
+
+  </table>
+
+  <!--
+  <h1>Registros</h1>
+    <ul>
+        {% for registro in registros %}
+            <li>{{ registro.horasDedicadas }}</li>
+        {% endfor %}
+    </ul>
+    <p>Suma total: {{ suma }}</p>
+  -->
+  </div> 
+
+  </body>
+</html>

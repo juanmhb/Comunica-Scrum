@@ -1,0 +1,188 @@
+{% extends "Scrum/base.html" %}
+{% load static %}
+
+
+{% block Historias %}
+<!-- <h1>Bienvenido, {{ request.user.username }}!</h1>
+<h1>Bienvenido Rol, {{ user.usuarioempleado.Roles.NombreRol }}!</h1> -->
+
+<li class="nav-item active">
+  <a class="nav-link" href="#" data-toggle="collapse" data-target="#collapsePages-2" aria-expanded="true"
+    aria-controls="collapsePages">
+    <i class="fas fa-fw fa-table"></i>
+    <span>Historias de Usuario</span>
+  </a>
+  <div id="collapsePages-2" class="collapse show" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+    <div class="bg-white py-2 collapse-inner rounded">
+      <h6 class="collapse-header">Inicio Historias de Usuario</h6>
+      <a class="collapse-item" href="{% url 'Scrum:productbacklog' pk %}">Historias de Usuario</a>
+      <!-- <a class="collapse-item" href="{% url 'Scrum:crear_historiausuario' pk %}" > Crear historia de Usuario</a> -->
+      <div class="collapse-divider"></div>
+    </div>
+  </div>
+</li>
+{% endblock %}
+
+{% block Sprints %}
+<li class="nav-item active">
+  <a class="nav-link" href="#" data-toggle="collapse" data-target="#collapsePages-3" aria-expanded="true"
+    aria-controls="collapsePages-2">
+    <i class="fas fa-fw fa-table"></i>
+    <span>Sprints</span>
+  </a>
+  <div id="collapsePages-3" class="collapse show" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+    <div class="bg-white py-2 collapse-inner rounded">
+      <h6 class="collapse-header">Inicio Sprints</h6>
+      <a class="collapse-item" href="{% url 'Scrum:listar_sprint' pk %}">Sprints</a>
+      <div class="collapse-divider"></div>
+    </div>
+  </div>
+</li>
+{% endblock %}
+
+{% block content %}
+<div>
+  <div>
+    <div class="flex">
+      <!-- End Navbar -->
+      <div class="content flex-column">
+        <div class="">
+          <div class="md-8">
+            <div class="card">
+              <div class="card-header">
+
+                {% if Sprint%}
+                <h1>Historias de Usuarios Sprint {{ Sprint.nombresprint }}</h1>
+                {% else %}
+                <h1>ProductBacklog del {{ proyecto.nombreproyecto }}</h1>
+                {% endif %}
+
+                <title>Proyectos</title>
+
+                {% if HistoriasProductBacklog %}
+                <div class="table-stats order-table ov-h">
+                  <table class="table table-striped table-bordered">
+                    <thead class="thead-info">
+                      <th>#</th>
+                      <th>Nombre</th>
+                      <th>Fecha de creación</th>
+                      <th>Fecha de actualización</th>
+                      <th>Descripción</th>
+                      <th>Estado</th>
+                      {% if Sprint %}
+                      <th>Asignar</th>
+                      {% endif %}
+                      <th>Opciones</th>
+                    </thead>
+                    <tbody>
+                      {% for Historia in HistoriasProductBacklog %}
+                      <tr>
+                        <td>{{Historia.NumeroHU}}</td>
+                        <td>{{ Historia.nombre }}</td>
+                        <td>{{ Historia.fechacreacion }}</td>
+                        <td>{{ Historia.ultimaactualizacion }}</td>
+                        <td>{{ Historia.descripcion }}</td>
+                        <td>{{ Historia.Estatus }}</td>
+                        {% if Sprint %}
+                        <td>
+                          {% if Historia.tereasasignadas == True %}
+                            <button type="button" class="btn btn-success btn-sm" disabled>Completado</button>
+                          {% else %}
+                            <button type="button" class="btn btn-warning btn-sm" disabled>Incompleto</button> 
+                          {% endif %}
+                        </td>
+                        {% endif %}
+
+                        <td>
+                          
+                          
+                          {% if Sprint %}
+                            <!-- <button data-bs-toggle="tooltip" data-bs-placement="top" title="Agregar Tareas Sprint " onclick="abrir_modal_edicion('{% url 'Scrum:crear_tarea_Sprint' Historia.id %}')" class="btn btn-outline-secondary">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-plus-square-fill" viewBox="0 0 16 16">
+                                <path d="M2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2zm6.5 4.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3a.5.5 0 0 1 1 0z"/>
+                              </svg>
+                            </button> -->
+                            <button data-bs-toggle="tooltip" data-bs-placement="top" title="Editar HU" onclick="abrir_modal_edicion('{% url 'Scrum:editar_historiausuario_sprint' Historia.id %}')" class="btn btn-outline-success">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16">
+                                <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
+                                <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/>
+                              </svg>
+                            </button>
+                            <a data-bs-toggle="tooltip" data-bs-placement="top" title="Tareas de la HU" href="{% url  'Scrum:listar_tareas_sprint' Historia.id %}" class="btn btn-outline-info">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-list-check" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd" d="M5 11.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zM3.854 2.146a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708 0l-.5-.5a.5.5 0 1 1 .708-.708L2 3.293l1.146-1.147a.5.5 0 0 1 .708 0zm0 4a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708 0l-.5-.5a.5.5 0 1 1 .708-.708L2 7.293l1.146-1.147a.5.5 0 0 1 .708 0zm0 4a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708 0l-.5-.5a.5.5 0 0 1 .708-.708l.146.147 1.146-1.147a.5.5 0 0 1 .708 0z"/>
+                              </svg>
+                            </a>
+                            <a data-bs-toggle="tooltip" data-bs-placement="top" title="Tablero Kanban" href="{% url 'Scrum:tablero_kanban' Historia.id %}" class="btn btn-outline-info">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-grid" viewBox="0 0 16 16">
+                                <path d="M0 0h16v16H0V0zM1 1v14h14V1H1zm4 1v4H2V2h3zm5 0v4H7V2h4zm5 0v4h-3V2h3zm-5 5v4H7V7h4zm5 0v4h-3V7h3zM7 12v4H2v-4h5zm5 0v4H7v-4h5z"/>
+                              </svg>
+                            </a>
+                            <a data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar HU" href="{% url 'Scrum:eliminar_historiausuario_sprint' Historia.id %}" class="btn btn-outline-danger">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
+                                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5Zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5Zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6Z"/>
+                                <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1ZM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118ZM2.5 3h11V2h-11v1Z"/>
+                              </svg>
+                            </a>
+
+                          {% else %}
+                            <button data-bs-toggle="tooltip" data-bs-placement="top" title="Editar" onclick="abrir_modal_edicion('{% url 'Scrum:editar_historiausuario' Historia.id %}')" class="btn btn-outline-success">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16">
+                                <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
+                                <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/>
+                              </svg>
+                            </button>
+                            <!-- <button data-bs-toggle="tooltip" data-bs-placement="top" title="Agregar Tareas" onclick="abrir_modal_edicion('{% url 'Scrum:crear_tarea' Historia.id %}')" class="btn btn-outline-secondary">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-plus-square-fill" viewBox="0 0 16 16">
+                                <path d="M2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2zm6.5 4.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3a.5.5 0 0 1 1 0z"/>
+                              </svg>
+                            </button> -->
+                            <a  data-bs-toggle="tooltip" data-bs-placement="top" title="Tareas"  href="{% url  'Scrum:listar_tareas' Historia.id %}" class="btn btn-outline-info">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-list-check" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd" d="M5 11.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zM3.854 2.146a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708 0l-.5-.5a.5.5 0 1 1 .708-.708L2 3.293l1.146-1.147a.5.5 0 0 1 .708 0zm0 4a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708 0l-.5-.5a.5.5 0 1 1 .708-.708L2 7.293l1.146-1.147a.5.5 0 0 1 .708 0zm0 4a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708 0l-.5-.5a.5.5 0 0 1 .708-.708l.146.147 1.146-1.147a.5.5 0 0 1 .708 0z"/>
+                              </svg>
+                            </a>
+                            <a data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar" href="{% url 'Scrum:eliminar_historiausuario' Historia.id %}" class="btn btn-outline-danger">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
+                                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5Zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5Zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6Z"/>
+                                <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1ZM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118ZM2.5 3h11V2h-11v1Z"/>
+                              </svg>
+                            </a>
+                          {% endif%}
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                {% else %}
+                    <h1>No Existe Historias Registradas</h1>
+                </div>
+
+                {% endif %}
+
+              </div>
+            </div>
+          </div>
+
+          <div class="modal fade" id="edicion" role="dialog">
+
+          </div>
+          <a  class="btn btn-outline-primary" href="{% url 'Scrum:crear_historiausuario' pk %}" > Crear historia de Usuario</a>
+          
+          {% endblock %}
+
+          {% block extrajs %}
+          <script type="text/javascript">
+            var $ = jQuery.noConflict();
+            function abrir_modal_edicion(url) {
+              $('#edicion').load(url, function () {
+                $(this).modal('show');
+              });
+            }
+            function abrir_modal_creacion(url) {
+              $('#creacion').load(url, function () {
+                $(this).modal('show');
+              });
+            } 
+          </script>
+          {% endblock extrajs %}

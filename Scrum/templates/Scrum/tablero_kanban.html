@@ -1,0 +1,140 @@
+{% extends "Scrum/base.html" %}
+
+{% load static %}
+
+{% block Historias %}
+<li class="nav-item active">
+  <a class="nav-link" href="#" data-toggle="collapse" data-target="#collapsePages-2" aria-expanded="true" aria-controls="collapsePages">
+    <i class="fas fa-fw fa-table"></i>
+    <span>Historias de Usuario</span>
+  </a>
+  <div id="collapsePages-2" class="collapse show" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+    <div class="bg-white py-2 collapse-inner rounded">
+      <h6 class="collapse-header">Inicio Historias de Usuario</h6>
+      {% if pk %}
+        <a class="collapse-item" href="{% url 'Scrum:productbacklog' pk %}">Historias de Usuario</a>
+      {% else %}
+        <span class="collapse-item">ID de proyecto no disponible</span>
+      {% endif %}
+      <div class="collapse-divider"></div>
+    </div>
+  </div>
+</li>
+{% endblock %}
+
+
+{% block Sprints %}
+<li class="nav-item active">
+  <a class="nav-link" href="#" data-toggle="collapse" data-target="#collapsePages-3" aria-expanded="true" aria-controls="collapsePages-2">
+    <i class="fas fa-fw fa-table"></i>
+    <span>Sprints</span>
+  </a>
+  <div id="collapsePages-3" class="collapse show" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+    <div class="bg-white py-2 collapse-inner rounded">
+      <h6 class="collapse-header">Inicio Sprints</h6>
+      {% if pksprint %}
+      <a class="collapse-item" href="{% url 'Scrum:listar_sprint' pksprint %}">Sprints</a>
+      {% else %}
+      <a class="collapse-item" href="#">Sprints</a>
+      {% endif %}
+      <div class="collapse-divider"></div>
+    </div>
+  </div>
+</li>
+{% endblock %}
+
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'Scrum/css/kanban.css' %}">
+<h3 class="title">BIENVENIDO A LA SECCIÓN DE TABLERO KANBAN de {{ historia_usuario.nombre }}</h3>
+
+{% if Sprint %}
+<a href="{% url 'Scrum:listar_sprint_Historias' pksprint %}" class="btn btn-outline-primary">
+  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"
+    class="bi bi-arrow-return-left" viewBox="0 0 16 16">
+    <path fill-rule="evenodd"
+      d="M14.5 1.5a.5.5 0 0 1 .5.5v4.8a2.5 2.5 0 0 1-2.5 2.5H2.707l3.347 3.346a.5.5 0 0 1-.708.708l-4.2-4.2a.5.5 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 8.3H12.5A1.5 1.5 0 0 0 14 6.8V2a.5.5 0 0 1 .5-.5z" />
+  </svg>
+  Regresar
+</a>
+{% else %}
+<div style="margin-bottom: 20px;">
+  <a href="{% url  'Scrum:productbacklog' pk %}" class="btn btn-outline-primary">
+    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"
+      class="bi bi-arrow-return-left" viewBox="0 0 16 16">
+      <path fill-rule="evenodd"
+        d="M14.5 1.5a.5.5 0 0 1 .5.5v4.8a2.5 2.5 0 0 1-2.5 2.5H2.707l3.347 3.346a.5.5 0 0 1-.708.708l-4.2-4.2a.5.5 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 8.3H12.5A1.5 1.5 0 0 0 14 6.8V2a.5.5 0 0 1 .5-.5z" />
+    </svg>
+    Regresar
+  </a>
+</div>
+{% endif %}
+
+
+<a href="{% url 'Scrum:tareas_avance' sprint_id=historia_usuario.Sprint.pk historia_usuario_id=historia_usuario.pk %}" class="btn btn-outline-primary ml-auto mb-2 mb-md-0" style="float: right;">Tareas Avance</a>
+
+
+<!-- Formulario oculto para el token CSRF -->
+<form id="csrf-form" method="post" style="display: none;">
+    {% csrf_token %}
+</form>
+
+<div class="kanban-container">
+    <div class="kanban-block" id="pendiente" ondrop="drop(event, 'Pendiente')" ondragover="allowDrop(event)">
+        <strong class="kanban-block-title">PENDIENTES</strong>
+        {% for tarea in tareas %}
+          {% if tarea.estado == 'Pendiente' %}
+            <div class="kanban-card" id="task-{{ tarea.id }}" draggable="true" ondragstart="drag(event)">
+                <div class="kanban-card-header">
+                    <strong>{{ tarea.tarea.nombre }}</strong>
+                </div>
+                <div class="kanban-card-body">
+                  <p>Horas dedicadas: {{ tarea.horasDedicadas }}</p>
+                  <p>Horas restantes: {{ tarea.horasRestantes }}</p>
+                </div>
+            </div>
+          {% endif %}
+        {% endfor %}
+    </div>
+
+    
+    <div class="kanban-block" id="en_proceso" ondrop="drop(event, 'En Proceso')" ondragover="allowDrop(event)">
+        <strong class="kanban-block-title">EN PROCESO</strong>
+        {% for tarea in tareas %}
+          {% if tarea.estado == 'En Proceso' %}
+            <div class="kanban-card" id="task-{{ tarea.id }}" draggable="true" ondragstart="drag(event)">
+                <div class="kanban-card-header">
+                    <strong>{{ tarea.tarea.nombre }}</strong>
+                </div>
+                <div class="kanban-card-body">
+                  <p>Horas dedicadas: {{ tarea.horasDedicadas }}</p>
+                  <p>Horas restantes: {{ tarea.horasRestantes }}</p>
+                </div>
+            </div>
+          {% endif %}
+        {% endfor %}
+    </div>
+
+    <div class="kanban-block" id="completada" ondrop="drop(event, 'Completada')" ondragover="allowDrop(event)">
+        <strong class="kanban-block-title">COMPLETADOS</strong>
+        {% for tarea in tareas %}
+          {% if tarea.estado == 'Completada' %}
+            <div class="kanban-card" id="task-{{ tarea.id }}" draggable="true" ondragstart="drag(event)">
+                <div class="kanban-card-header">
+                    <strong>{{ tarea.tarea.nombre }}</strong>
+                </div>
+                <div class="kanban-card-body">
+                  <p>Horas dedicadas: {{ tarea.horasDedicadas }}</p>
+                  <p>Horas restantes: {{ tarea.horasRestantes }}</p>
+                </div>
+            </div>
+          {% endif %}
+        {% endfor %}
+    </div>
+</div>
+
+
+
+
+<script src="{% static 'Scrum/js/js/kanban.js' %}"></script>
+{% endblock %}

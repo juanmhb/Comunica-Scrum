@@ -1,0 +1,117 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        #bg {
+            background-color: yellow;
+        }
+
+        #azul {
+            background-color: rgb(194, 238, 255);
+        }
+
+        #gris {
+            background-color: rgb(196, 196, 196);
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"
+        integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+</head>
+
+<body>
+
+    <div>
+        <table class="table" border="1">
+            {% for p in form %}
+            <tr>
+                <td id="gris">Proyecto</td>
+                <td colspan="4" align="center" id="gris">{{ p.Proyecto }}</td>
+            </tr>
+            <tr>
+                <td colspan="5" align="center" style="color: rgb(0, 113, 157);"> Reunión de Restrospectiva del {{ p.Sprint }}</td>
+            </tr>
+            <tr>
+                <td id="azul">Fecha y hora reunión</td>
+                <td id="azul">{{ p.FechaHora }}</td>
+                <td id="azul"> &nbsp; </td>
+                <td id="azul"> &nbsp; </td>
+                <td id="azul"> &nbsp;</td>
+            </tr>
+            {% endfor %}
+            {% for p in idiomaPais %}
+            <tr>
+                <td>Pais</td>
+                <td>{{ p.Pais }}</td>
+                <td> &nbsp; </td>
+                <td> &nbsp; </td>
+                <td> &nbsp; </td>
+            </tr>
+            <tr>
+                <td id="azul">Idioma</td>
+                <td id="azul">{{ p.Idioma }}</td>
+                <td id="azul"> &nbsp; </td>
+                <td id="azul"> &nbsp; </td>
+                <td id="azul"> &nbsp;</td>
+            </tr>
+            {% endfor %}
+            <tr>
+                <td> &nbsp; </td>
+                <td> &nbsp; </td>
+                <td> &nbsp; </td>
+                <td> &nbsp; </td>
+                <td> &nbsp; </td>
+            </tr>
+            <tr>
+                <td id="gris" align="center">Asistentes:</td>
+                <td id="gris" align="center">Nombre</td>
+                <td id="gris" align="center"> Rol </td>
+                <td id="gris" align="center"> Status </td>
+                <td id="gris" align="center"> Tipo Asistencia </td>
+            </tr>
+            {% for p in form3 %}
+            <tr>
+                <th> &nbsp; </th>
+                <td>{{ p.Usuario.Usuario }}</td>
+                <td>{{ p.Rol }}</td>
+                <td>
+                  {% if p.Status == '1' %}
+                  Obligatorio
+                  {% elif p.Status == '2' %}
+                  Opcional
+                  {% else %}
+                  Dato invalido
+                  {% endif %}
+                </td>
+                <td>
+                  {% if p.TipoAsistencia == 'S' %}
+                  Sincrona
+                  {% elif p.TipoAsistencia == 'A' %}
+                  Asincrona
+                  {% else %}
+                  Dato invalido
+                  {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            <tr>
+                <td colspan="5" align="center"> &nbsp; </td>
+            </tr>
+            {% for p in comentarios %}
+            <tr>
+                <td >Reflexiones/Comentarios ({{ p.Emisor.Usuario }}):</td>
+                <td colspan="4">{{ p.Comentarios }}</td>
+            </tr>
+            <tr>
+                <td id="gris">Oportunidades de mejora ({{ p.Emisor.Usuario }}):</td>
+                <td colspan="4" id="gris">{{ p.OportunidadesMejora }}</td>
+            </tr>
+            {% endfor %}
+
+        </table>
+    </div>
+
+</body>
+
+</html>

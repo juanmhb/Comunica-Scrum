@@ -1,0 +1,45 @@
+<div class="modal-dialog modal-xl" role="document">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Progreso Diario</h2>
+            <button class="close" type="button" data-bs-dismiss="modal" aria-label="Close">
+                <button class="close" type="button" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+        </div>
+        <!-- {% csrf_token %} -->
+        <div class="modal-body">
+
+            {% if list_progreso %}
+            <div class="table-stats order-table ov-h">
+                <table class="table table-striped table-bordered">
+                    <thead class="thead-info">
+                        <th>#</th>
+                        <th>Tarea</th>
+                        <th>Empleado</th>
+                        <th>Horas Invertidas</th>
+                    </thead>
+                    <tbody>
+                        {% for progreso in list_progreso %}
+                        <tr>
+                            <td>{{forloop.counter }}</td>
+                            <td>{{ progreso.SprintBacklog.Tarea}}</td>
+                            <td>{{ progreso.SprintBacklog.Empleado }}</td>
+                            <td>{{ progreso.horasinvertivas }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <h1>No Existe Reuniones Registradas</h1>
+            </div>
+
+            {% endif %}
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline-danger" type="button" data-bs-dismiss="modal">Cerrar</button>
+            <!-- <button class="btn btn-outline-primary" type="submit">Confirmar</button> -->
+        </div>
+
+    </div>
+</div>

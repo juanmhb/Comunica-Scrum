@@ -1,0 +1,86 @@
+{% extends "Mensajes/ProductOwner/base2.html" %}
+
+{% load static %}
+{% load crispy_forms_tags %}
+<title>Enviar mensaje</title>
+
+{% block content %}
+<h1>Enviar Mensaje</h1>
+<label><b>Nota:</b> Asegurese de que la informacion sea correcta antes de enviar el mensaje.</label>
+
+<h3>Informacion del Mensaje</h3>
+{% for p in form2 %}
+
+<strong>Proyecto:</strong> {{ p.Proyecto }}
+<br>
+<strong>Emisor:</strong> {{ p.Emisor.Usuario }}
+<br>
+<strong>Descripción:</strong> {{ p.Descripcion }}
+<br>
+<strong>Fecha:</strong> {{ p.FechaHora }}
+<br>
+
+    {% empty %}
+        <li>Sin registros.</li>
+
+{% endfor %}
+
+{% for archivo in archivos %}
+
+{% if archivo.Archivo %}
+<strong>Archivo ({{ forloop.counter }}):</strong> <a href="{% url 'Mensajes:descargar_archivo' archivo.id %}"> {{ archivo.Descripcion }}</a>
+<br>
+{% else %}
+<b>No hay archivos guardados</b>
+{% for p in form2 %}
+<p> Puede guardar su documento en este apartado <a href="{% url 'Mensajes:guardarArchivoID' p.id %}" class="btn btn-danger btn-sm">+</a></p>
+{% endfor %}
+
+{% endif %}
+
+{% empty %}
+<br>
+<b>No hay archivos en este mensaje</b>
+<br>
+{% for p in form2 %}
+<p> Puede guardar su documento en este apartado <a href="{% url 'Mensajes:guardarArchivoID' p.id %}" class="btn btn-danger btn-sm">+</a></p>
+{% endfor %}
+
+<!-- Cierre del ciclo de archivo -->
+{% endfor %}
+<br>
+<br>
+
+<h3>Destinatarios</h3>
+{% for p in form3 %}
+<strong>Asistente:</strong> {{ p.Usuario.Usuario }}
+<br>
+    {% empty %}
+        <b>Sin asistentes.</b>
+{% endfor %}
+
+<form class="form" method="post" action="" style="color: black;">
+    {% csrf_token %} 
+
+    <div class=" margin: auto;">
+
+    
+    {{ form | crispy }}
+
+    <button type="submit" id="btn-success" class="btn btn-success"> Enviar </button>
+    
+</div>
+</form>
+
+<script>
+    // Obtén una referencia al botón
+    var boton = document.getElementById('submit');
+    
+    // Agrega un event listener para el evento 'click'
+    boton.addEventListener('click', function() {
+        // Muestra un mensaje
+        alert('Mensaje enviado con exito!!');
+    });
+    </script>
+
+{% endblock %}

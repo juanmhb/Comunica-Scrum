@@ -1,0 +1,145 @@
+{% extends "Scrum/base.html" %}
+{% load static %}
+
+{% block Historias %}
+<li class="nav-item active">
+  <a class="nav-link" href="#" data-toggle="collapse" data-target="#collapsePages-2" aria-expanded="true"
+    aria-controls="collapsePages-2">
+    <i class="fas fa-fw fa-table"></i>
+    <span>Historias de Usuario</span>
+  </a>
+  <div id="collapsePages-2" class="collapse show" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+    <div class="bg-white py-2 collapse-inner rounded">
+      <h6 class="collapse-header">Inicio Historias de Usuario</h6>
+      <a class="collapse-item" href="{% url 'Scrum:productbacklog' pk %}">Histortias de Usuario</a>
+      <!-- <a class="collapse-item" href="{% url 'Scrum:crear_historiausuario' pk %}"> Crear historia de Usuario</a>
+      <a class="collapse-item" href="forgot-password.html">Historias Inactivos </a> -->
+      <div class="collapse-divider"></div>
+    </div>
+  </div>
+</li>
+{% endblock %}
+
+
+{% block Sprints %}
+<li class="nav-item active">
+  <a class="nav-link" href="#" data-toggle="collapse" data-target="#collapsePages-3" aria-expanded="true"
+    aria-controls="collapsePages-3">
+    <i class="fas fa-fw fa-table"></i>
+    <span>Sprints</span>
+  </a>
+  <div id="collapsePages-3" class="collapse show" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+    <div class="bg-white py-2 collapse-inner rounded">
+      <h6 class="collapse-header">Inicio Sprints</h6>
+      <a class="collapse-item" href="{% url 'Scrum:listar_sprint' pk %}">Sprints</a>
+      <!-- <a class="collapse-item" href="{% url 'Scrum:crear_sprint' pk %}">Crear Sprints</a>
+      <a class="collapse-item" href="forgot-password.html">Sprints Inactivos</a> -->
+      <div class="collapse-divider"></div>
+    </div>
+  </div>
+</li>
+{% endblock %}
+
+{% block content %}
+<div>
+  <div>
+    <div class="flex">
+      <!-- End Navbar -->
+      <div class="content flex-column">
+        <div class="">
+          <div class="md-8">
+            <div class="card">
+              <div class="card-header">
+
+                <h3 class="title">BIENVENIDO A LA SECCIÓN DE REUNIONES</h3>
+
+
+                <!-- <h1>Tareas</h1> -->
+
+                <title>Reuniones Diarias</title>
+                
+                <div style="margin-bottom: 20px;">
+                  <button 
+                    onclick="abrir_modal_edicion('{% url 'Scrum:crear_reunion' pkSprint  %}')" class="btn btn-outline-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-database-fill-add"
+                      viewBox="0 0 16 16">
+                      <path
+                        d="M12.5 16a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm.5-5v1h1a.5.5 0 0 1 0 1h-1v1a.5.5 0 0 1-1 0v-1h-1a.5.5 0 0 1 0-1h1v-1a.5.5 0 0 1 1 0ZM8 1c-1.573 0-3.022.289-4.096.777C2.875 2.245 2 2.993 2 4s.875 1.755 1.904 2.223C4.978 6.711 6.427 7 8 7s3.022-.289 4.096-.777C13.125 5.755 14 5.007 14 4s-.875-1.755-1.904-2.223C11.022 1.289 9.573 1 8 1Z" />
+                      <path
+                        d="M2 7v-.839c.457.432 1.004.751 1.49.972C4.722 7.693 6.318 8 8 8s3.278-.307 4.51-.867c.486-.22 1.033-.54 1.49-.972V7c0 .424-.155.802-.411 1.133a4.51 4.51 0 0 0-4.815 1.843A12.31 12.31 0 0 1 8 10c-1.573 0-3.022-.289-4.096-.777C2.875 8.755 2 8.007 2 7Zm6.257 3.998L8 11c-1.682 0-3.278-.307-4.51-.867-.486-.22-1.033-.54-1.49-.972V10c0 1.007.875 1.755 1.904 2.223C4.978 12.711 6.427 13 8 13h.027a4.552 4.552 0 0 1 .23-2.002Zm-.002 3L8 14c-1.682 0-3.278-.307-4.51-.867-.486-.22-1.033-.54-1.49-.972V13c0 1.007.875 1.755 1.904 2.223C4.978 15.711 6.427 16 8 16c.536 0 1.058-.034 1.555-.097a4.507 4.507 0 0 1-1.3-1.905Z" />
+                    </svg>
+                    Generar Reunion
+                  </button>
+                </div>
+
+                {% if ReunionesDiarias %}
+                <div class="table-stats order-table ov-h">
+                  <table class="table table-striped table-bordered">
+                    <thead class="thead-info">
+                      <th>#</th>
+                      <th>Fecha</th>
+                      <th>Observaciones</th>
+                      <th>Opciones</th>
+                    </thead>
+                    <tbody>
+                      {% for Reunion in ReunionesDiarias %}
+                      <tr>
+                        <td>{{forloop.counter }}</td>
+                        <td>{{ Reunion.fecha }}</td>
+                        <td>{{ Reunion.observaciones }}</td>
+                        <td>
+                          <a data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar" href="{% url 'Scrum:eliminar_reunion' Reunion.id %}"
+                            class="btn btn-outline-danger">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
+                              <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5Zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5Zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6Z"/>
+                              <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1ZM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118ZM2.5 3h11V2h-11v1Z"/>
+                            </svg>
+                          </a>
+                          <button data-bs-toggle="tooltip" data-bs-placement="top" title="Editar" onclick="abrir_modal_edicion('{% url 'Scrum:editar_reunion' Reunion.id  %}')"
+                            class="btn btn-outline-success">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16">
+                              <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
+                              <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/>
+                            </svg>
+                          </button>
+                          <button data-bs-toggle="tooltip" data-bs-placement="top" title="Editar" onclick="abrir_modal_edicion('{% url 'Scrum:listar_progreso' Reunion.id  %}')"
+                            class="btn btn-outline-success">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-graph-up-arrow" viewBox="0 0 16 16">
+                              <path fill-rule="evenodd" d="M0 0h1v15h15v1H0V0Zm10 3.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-1 0V4.9l-3.613 4.417a.5.5 0 0 1-.74.037L7.06 6.767l-3.656 5.027a.5.5 0 0 1-.808-.588l4-5.5a.5.5 0 0 1 .758-.06l2.609 2.61L13.445 4H10.5a.5.5 0 0 1-.5-.5Z"/>
+                            </svg>
+                          </button>
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                  {% else %}
+                  <h1>No Existe Reuniones Registradas</h1>
+                </div>
+
+                {% endif %}
+
+              </div>
+            </div>
+          </div>
+
+          <div class="modal fade" id="edicion" role="dialog">
+
+          </div>
+          {% endblock %}
+
+          {% block extrajs %}
+          <script type="text/javascript">
+            var $ = jQuery.noConflict();
+            function abrir_modal_edicion(url) {
+              $('#edicion').load(url, function () {
+                $(this).modal('show');
+              });
+            }
+            function abrir_modal_creacion(url) {
+              $('#creacion').load(url, function () {
+                $(this).modal('show');
+              });
+            } 
+          </script>
+          {% endblock extrajs %}
