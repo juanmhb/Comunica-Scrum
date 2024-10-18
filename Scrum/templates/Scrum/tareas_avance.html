@@ -1,0 +1,141 @@
+{% extends "Scrum/base.html" %}
+{% load static %}
+
+{% block Historias %}
+<li class="nav-item active">
+  <a class="nav-link" href="#" data-toggle="collapse" data-target="#collapsePages-2" aria-expanded="true" aria-controls="collapsePages">
+    <i class="fas fa-fw fa-table"></i>
+    <span>Historias de Usuario</span>
+  </a>
+  <div id="collapsePages-2" class="collapse show" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+    <div class="bg-white py-2 collapse-inner rounded">
+      <h6 class="collapse-header">Inicio Historias de Usuario</h6>
+      {% if pk %}
+        <a class="collapse-item" href="{% url 'Scrum:productbacklog' pk %}">Historias de Usuario</a>
+      {% else %}
+        <span class="collapse-item">ID de proyecto no disponible</span>
+      {% endif %}
+      <div class="collapse-divider"></div>
+    </div>
+  </div>
+</li>
+{% endblock %}
+
+
+{% block Sprints %}
+<li class="nav-item active">
+  <a class="nav-link" href="#" data-toggle="collapse" data-target="#collapsePages-3" aria-expanded="true" aria-controls="collapsePages-2">
+    <i class="fas fa-fw fa-table"></i>
+    <span>Sprints</span>
+  </a>
+  <div id="collapsePages-3" class="collapse show" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+    <div class="bg-white py-2 collapse-inner rounded">
+      <h6 class="collapse-header">Inicio Sprints</h6>
+      {% if pksprint %}
+      <a class="collapse-item" href="{% url 'Scrum:listar_sprint' pksprint %}">Sprints</a>
+      {% else %}
+      <a class="collapse-item" href="#">Sprints</a>
+      {% endif %}
+      <div class="collapse-divider"></div>
+    </div>
+  </div>
+</li>
+{% endblock %}
+
+{% block content %}
+  <h1>Tareas Avance de {{ historia_usuario }}</h1>
+
+  {% if historia_usuario.pk %}
+  <a href="{% url 'Scrum:tablero_kanban' historia_usuario.pk %}" class="btn btn-outline-primary">
+    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"
+      class="bi bi-arrow-return-left" viewBox="0 0 16 16">
+      <path fill-rule="evenodd"
+        d="M14.5 1.5a.5.5 0 0 1 .5.5v4.8a2.5 2.5 0 0 1-2.5 2.5H2.707l3.347 3.346a.5.5 0 0 1-.708.708l-4.2-4.2a.5.5 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 8.3H12.5A1.5 1.5 0 0 0 14 6.8V2a.5.5 0 0 1 .5-.5z" />
+    </svg>
+    Regresar
+  </a>
+{% else %}
+  <span>ID de historia de usuario no disponible</span>
+{% endif %}
+
+
+
+  {% if Tareas %}
+  <div class="table-responsive">
+    <table class="table table-striped">
+      <thead> 
+        <tr>
+          <th>#</th>
+          <th scope="col">Nombre</th>
+          <th scope="col">Horas estimadas</th>
+          <th scope="col">Horas reales</th>
+          {% for dia in dias_habiles %}
+            <th scope="col">Día<br>{{ dia|date:"d/m/Y" }}</th>
+          {% endfor %}
+          <th>Opciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for tarea in Tareas %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ tarea.nombre }}</td>
+            <td>{{ tarea.horas_estimadas }}</td>
+            <td>{{ tarea.horas_reales }}</td>
+            {% for avance in tarea.avances %}
+              <td>{{ avance }}</td>
+            {% endfor %}
+            <td>
+              {% if tarea.tarea_avance_pk %}
+                <button data-bs-toggle="tooltip" data-bs-placement="top" title="Editar"
+                        onclick="abrir_modal_edicion('{% url 'Scrum:actualizar_tarea_avance' tarea.tarea_avance_pk %}')"
+                        class="btn btn-outline-success">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"
+                       class="bi bi-pencil-square" viewBox="0 0 16 16">
+                    <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z" />
+                    <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z" />
+                  </svg>
+                </button>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <p>No hay tareas avance disponibles.</p>
+  {% endif %}
+
+  <!-- Modal -->
+  <div class="modal fade" id="edicion" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exampleModalLabel">Actualizar Tarea Avance</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <!-- El contenido se cargará aquí -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+{% endblock %}
+
+{% block extrajs %}
+<script type="text/javascript">
+  var $ = jQuery.noConflict();
+  function abrir_modal_edicion(url) {
+    $('#edicion .modal-body').load(url, function () {
+      $('#edicion').modal('show');
+    });
+  }
+  function abrir_modal_creacion(url) {
+    $('#creacion .modal-body').load(url, function () {
+      $('#creacion').modal('show');
+    });
+  } 
+</script>
+{% endblock %}

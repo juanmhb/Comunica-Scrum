@@ -1,0 +1,32 @@
+<table>
+    <br>
+{% for x in tarea %}
+<tr>
+  <td align="center">HU00{{ forloop.counter }}</td>
+  <td>{{ x.HistoriaUsuario.nombre }}</td>
+  <td>{{ x.HistoriaUsuario.HorasEstimadas }}</td>
+  <td> &nbsp; </td>
+ </tr>
+
+<td> &nbsp; </td>
+    <td align="center">{{ x.nombre }}</td>
+    <td align="center"> {{ x.horasestimadas }}</td>
+    <td>{{ x.developer }}</td>
+   </tr>
+
+{% endfor %}
+  </table>
+
+<table>
+  <h1>Lista de Historias de Usuario con Tareas</h1>
+    <ul>
+        {% for historia in form %}
+            <li>{{ historia.nombre }}</li>
+            <ul>
+                {% for tarea in historia.HistoriaTareas.all %}
+                    <li>{{ tarea.nombre }}</li>
+                {% endfor %}
+            </ul>
+        {% endfor %}
+    </ul>
+</table>

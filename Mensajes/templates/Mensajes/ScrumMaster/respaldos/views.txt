@@ -1,0 +1,122 @@
+# Mensaje de retroalimentacion Empleado en caso de seleccionar "Comprendido", incorrecto, borrar este metodo
+def mensaje_RetroComprendidoEmpleado(request, id):
+    em = request.user.id
+    mensajes = MensajeReceptor.objects.filter(pk=id)
+    # Creamos una instancia de Producto y la guardamos en la base de datos
+    # nuevo_producto = MensajeRetroA(nombre='Nuevo Producto', precio=10.0)
+    # nuevo_producto.save()
+    
+    for mensaje in mensajes:
+        # Crear un MensajeRetroA con los datos del mensaje
+        dato = MensajeRetroA(
+            Proyecto=mensaje.Proyecto,
+            EventoScrum=mensaje.EventoScrum, 
+            Mensaje=mensaje.Mensaje, # hereda por defecto el id del mensaje
+            Receptor=mensaje.Emisor, # hereda el emisar del mensaje, NO el del request.user
+            Emisor=mensaje.Receptor
+            
+        )
+
+    emisorid = dato.Emisor
+
+    proyecto = dato.Proyecto
+    eventoScrum = dato.EventoScrum
+    mensajeid = dato.Mensaje
+    receptorid = dato.Receptor
+    # descripcion = form.cleaned_data['Descripcion']
+    descripcion = "Comprendido"
+
+    # usar este metodo en caso de que sea proveniente del modelo "Mensaje"
+    mensaje = MensajeRetroA(Proyecto=proyecto, EventoScrum=eventoScrum, Mensaje=mensajeid, Receptor=receptorid,
+                                   Descripcion=descripcion, Status=3, Emisor=emisorid)
+    
+    mensaje.save()
+
+    # return render(request, 'Mensajes/ScrumMaster/retroAlimentacion.html')
+    return redirect('Mensajes:recibirMensajeEmpleado', em)
+
+    # Mensaje de retroalimentacion Scrum Master en caso de seleccionar "Comprendido", Invalido: borrar este metodo
+def mensaje_RetroComprendidoScrumMaster(request, id):
+    em = request.user.id
+    mensajes = MensajeReceptor.objects.filter(pk=id)
+    # Creamos una instancia de Producto y la guardamos en la base de datos
+    # nuevo_producto = MensajeRetroA(nombre='Nuevo Producto', precio=10.0)
+    # nuevo_producto.save()
+
+    for mensaje in mensajes:
+        # Crear un MensajeRetroA con los datos del mensaje
+        dato = MensajeRetroA(
+            Proyecto=mensaje.Proyecto,
+            EventoScrum=mensaje.EventoScrum, 
+            Mensaje=mensaje.Mensaje, # hereda por defecto el id del mensaje
+            Receptor=mensaje.Emisor, # hereda el emisar del mensaje, NO el del request.user
+            Emisor=mensaje.Receptor
+            
+        )
+
+    emisorid = dato.Emisor
+
+    proyecto = dato.Proyecto
+    eventoScrum = dato.EventoScrum
+    mensajeid = dato.Mensaje
+    receptorid = dato.Receptor
+    # descripcion = form.cleaned_data['Descripcion']
+    descripcion = "Comprendido"
+
+    # usar este metodo en caso de que sea proveniente del modelo "Mensaje"
+    mensaje = MensajeRetroA(Proyecto=proyecto, EventoScrum=eventoScrum, Mensaje=mensajeid, Receptor=receptorid,
+                                   Descripcion=descripcion, Status=3, Emisor=emisorid)
+    
+    mensaje.save()
+
+    # return render(request, 'Mensajes/ScrumMaster/retroAlimentacion.html')
+    return redirect('Mensajes:recibirMensajeScrumMaster', em)
+
+# Lista Mensajes-Refinamiento BETA, (No usar)
+def listaRefinamientoProductBeta(request,id):
+    mensajes = Mensaje.objects.filter(Emisor=id)
+    # mensajes = Mensaje.objects.filter(Status="Generado")
+    mensajes2 = m_RefinamientoProductBL.objects.filter(Emisor=request.user)
+    # mensajes3 = Mensaje.objects.all()
+    asistentes = AsistentesEventosScrum.objects.all()
+    data = {
+        'form':mensajes2,
+        'form2':mensajes,
+        'form3':asistentes
+    }
+
+    # return render(request, 'Mensajes/ProductOwner/listaRefinamientoBL.html', {'form': mensajes2})
+    return render(request, 'Mensajes/ProductOwner/listaRefinamientoBL.html', data)
+
+# Cambiar este metodo por otro
+def crear_RefinamientoF(request, id):
+    usuario = request.user.id
+    # emisor = User.objects.get(id=id)
+    # emisor = Empleado.objects.get(pk=usuario)
+    # emisor = Empleado.objects.filter(Usuario=usuario)
+    emisor = Empleado.objects.get(Usuario=usuario)
+
+    mensajes = Mensaje.objects.filter(Emisor=id)
+    if request.method == 'POST':
+        form = MensajeForms(request.POST)
+        if form.is_valid():
+            contenido = form.cleaned_data['Descripcion']
+            proyecto = form.cleaned_data['Proyecto']
+            fechaHora = form.cleaned_data['FechaHora']
+            # archivo = request.FILES['archivo']
+
+            for mensaje in mensajes:
+                # Crear un AsistentesEventosScrum con los datos del mensaje
+                asistente = m_RefinamientoProductBL(
+                    # FechaHora=fechaHora, Emisor=emisor, Mensaje=Mensaje(Descripcion=contenido), Proyecto=proyecto
+                    Mensaje=mensaje
+                )
+
+            mensaje = Mensaje(FechaHora=fechaHora, Emisor=emisor, Descripcion=contenido, Proyecto=proyecto)
+            #refinamiento = m_RefinamientoProductBL(FechaHora=fechaHora, Emisor=emisor, Mensaje=contenido, Proyecto=proyecto)
+            #refinamiento.save()
+            mensaje.save()
+            return redirect('Mensajes:listaRefinamiento')  # Redirigir a la página de mensajes enviados
+    else:
+        form = MensajeForms()
+    return render(request, 'Mensajes/ProductOwner/crearRefinamientoBL.html', {'form': form, 'receptor': emisor})

@@ -1,0 +1,76 @@
+{% extends "Mensajes/ProductOwner/base2.html" %}
+
+{% load static %}
+{% load crispy_forms_tags %}
+<title>Crear Ceremonia</title>
+
+{% block content %}
+<h1>Actualizar datos para reunion de planeacion del sprint</h1>
+
+<form class="form" method="post" action="" style="color: black;">
+    {% csrf_token %} 
+
+    {% for p in form %}
+    <br>
+    <label class="requiredField" for="FechaHora">Fecha y hora <!--(AAAA-MM-DD HH:MM)--> ({{ p.FechaHora }})</label>
+    <input class="form-control textinput" type="datetime-local" name="FechaHora" id="FechaHora" value="{{ p.FechaHora }}" required>
+    <br>
+    <label class="requiredField" for="Descripcion">Descripción:</label>
+    <textarea name="Descripcion" cols="40" rows="3" class="form-control textarea" placeholder="Ingrese la descripcion de este mensaje" maxlength="400" id="id_Descripcion" value="{{ p.Descripcion }}">{{ p.Descripcion}}</textarea>
+    <br>
+    <label class="requiredField" for="Proyecto">Proyecto</label>
+    <select name="Proyecto" class="select form-control" id="categoria" onchange="cargarSubcategorias()">
+        <option value="{{ p.Proyecto }}">---------</option>
+        {% for categoria in proyectos %}
+            <option value="{{ categoria.id }}" selected>{{ categoria.nombreproyecto }}</option>
+        {% endfor %}
+    </select>
+    <br>
+    <label class="requiredField" for="Sprint">Sprint</label>
+    <select name="Sprint" class="select form-control" id="categoria" onchange="cargarSubcategorias()">
+        <option value="{{ p.Sprint }}">---------</option>
+        {% for categoria in sprint %}
+            <option value="{{ categoria.id }}" selected>{{ categoria.nombresprint}}</option>
+        {% endfor %}
+    </select>
+    <br>
+    <!--
+    <label class="requiredField" for="archvio">Archivo (opcional)</label>
+    <select name="archivo" class="select form-control" id="categoria" onchange="cargarSubcategorias()" required>
+        <option value="{{ p.archivo }}">---------</option>
+         for categoria in archivos 
+            <option value="{{ categoria.id }}" selected>{{ categoria.Descripcion }}</option>
+         endfor 
+    </select>
+    <br>
+-->
+    {% endfor %}
+
+
+    <div class=" margin: auto;">
+
+    
+    <!--{ form | crispy }-->
+
+    <button type="submit" id="submit" class="btn btn-success"> Actualizar datos </button>
+    
+    
+</form>
+
+<script>
+    function cargarSubcategorias() {
+        var categoriaSeleccionada = document.getElementById("proyectos").value;
+        var subcategorias = document.getElementById("sprint").options;
+        var archivos = document.getElementById("archivo").options;
+
+        for (var i = 0; i < subcategorias.length; i++) {
+            if (subcategorias[i].getAttribute('data-categoria') === categoriaSeleccionada || subcategorias[i].getAttribute('data-categoria') === null) {
+                subcategorias[i].style.display = "";
+            } else {
+                subcategorias[i].style.display = "none";
+            }
+        }
+    }
+</script>
+
+{% endblock %}

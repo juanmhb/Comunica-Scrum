@@ -1,0 +1,21 @@
+<h1>Test</h1>
+{% for p in form %}
+<p>{{ p.Emisor }}</p>
+<p>{{ p.Emisor.id }}</p>
+<p>{{ p.Emisor.Pais }}</p>
+<p>{{ p.Emisor.Roles }}</p>
+
+<p>{{ p.ObstaculosPresentados }}</p>
+
+{% endfor %}
+
+{% for p in form2 %}
+<p>{{ p.Usuario }}</p>
+<p>{{ p.Usuario.id }}</p>
+<p>{{ p.Usuario.Pais }}</p>
+<p>{{ p.Usuario.Idioma }}</p>
+<p>{{ p.Usuario.Roles }}</p>
+
+<p>{{ p.Rol }}</p>
+
+{% endfor %}

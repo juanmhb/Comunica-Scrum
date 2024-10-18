@@ -1,0 +1,84 @@
+def listaRefinamientoProductBL(request):
+    usuario = request.user.id
+    empleado = Empleado.objects.get(Usuario=usuario)
+
+    mensajes = Mensaje.objects.filter(Q(Emisor=empleado) & Q(EventoScrum="2"))
+    mensajes2 = m_RefinamientoProductBL.objects.filter(Emisor=empleado)
+    asistentes = AsistentesEventosScrum.objects.all()
+
+    data = {
+        'form':mensajes2,
+        'form2':mensajes,
+        'form3':asistentes
+    }
+
+    return render(request, 'Mensajes/ProductOwner/listaRefinamientoBL.html', data)
+
+# Lista planeacion sprint, sin parametros
+def listaPlaneacionSprint(request):
+    usuario = request.user
+    empleado = Empleado.objects.get(Usuario=usuario)
+    mensajes = Mensaje.objects.filter(Q(Emisor=empleado) & Q(EventoScrum="3")) 
+    asistentes = AsistentesEventosScrum.objects.all()
+
+    planeaciacionSprint = m_PlanificacionSprint.objects.all()
+
+    data = {
+        'form': planeaciacionSprint,
+        'form2':mensajes,
+        'form3':asistentes
+    }
+
+    return render(request, 'Mensajes/ProductOwner/listaPlaneacionSprint.html', data)
+
+# Listar registros de revison sprint
+def listaRevisionSprint(request):
+    usuario = request.user
+    empleado = Empleado.objects.get(Usuario=usuario)
+    mensajes = Mensaje.objects.filter(Q(Emisor=empleado) & Q(EventoScrum="5")) 
+    asistentes = AsistentesEventosScrum.objects.all()
+
+    data = {
+        'form2':mensajes,
+        'form3':asistentes
+    }
+
+    return render(request, 'Mensajes/ProductOwner/listaRevisionSprint.html', data)
+
+# Listar registros de retrospectiva del sprint
+def listaRetrospectivaSprint(request):
+    usuario = request.user
+    empleado = Empleado.objects.get(Usuario=usuario)
+    mensajes = Mensaje.objects.filter(Q(Emisor=empleado) & Q(EventoScrum="6")) # Evento - Retrospectiva Sprint 
+    asistentes = AsistentesEventosScrum.objects.all()
+
+    data = {
+        'form2':mensajes,
+        'form3':asistentes
+    }
+
+    return render(request, 'Mensajes/ProductOwner/listaRetrospectivaSprint.html', data)
+
+def mensajes_RetroAlimentacion(request):
+    usuario = request.user
+    empleado = Empleado.objects.get(Usuario=usuario)
+    retroalimentacion = MensajeRetroA.objects.filter(Q(Receptor=empleado) & Q(EventoScrum="2")) 
+    return render(request, 'Mensajes/ProductOwner/retroAlimentacion.html', {'mensajes':retroalimentacion})
+
+def mensajes_RetroAlimentacionPlaneacion(request):
+    usuario = request.user
+    empleado = Empleado.objects.get(Usuario=usuario)
+    retroalimentacion = MensajeRetroA.objects.filter(Q(Receptor=empleado) & Q(EventoScrum="3")) 
+    return render(request, 'Mensajes/ProductOwner/retroAlimentacionPlaneacion.html', {'mensajes':retroalimentacion})
+
+def mensajes_RetroAlimentacionRevision(request):
+    usuario = request.user
+    empleado = Empleado.objects.get(Usuario=usuario)
+    retroalimentacion = MensajeRetroA.objects.filter(Q(Receptor=empleado) & Q(EventoScrum="5")) 
+    return render(request, 'Mensajes/ProductOwner/retroalimentacionRevision.html', {'mensajes':retroalimentacion})
+
+def mensajes_RetroAlimentacionRetrospectiva(request):
+    usuario = request.user
+    empleado = Empleado.objects.get(Usuario=usuario)
+    retroalimentacion = MensajeRetroA.objects.filter(Q(Receptor=empleado) & Q(EventoScrum="6")) 
+    return render(request, 'Mensajes/ProductOwner/retroalimentacionRetrospectiva.html', {'mensajes':retroalimentacion})

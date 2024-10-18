@@ -1,0 +1,12 @@
+<h2>Empleados asignados al proyecto: {{ proyecto.nombreproyecto }}</h2>
+<ul>
+    {% for empleado in empleados_asignados %}
+        <li>{{ empleado.Empleado.nombre }}</li>
+    {% endfor %}
+</ul>
+
+<div class="modal-footer">
+    <button class="btn btn-outline-danger" type="button" data-bs-dismiss="modal">Cancelar</button>
+    <button class="btn btn-outline-success" type="button" onclick="abrir_modal_asignacion('{% url 'Scrum:empleados_asignados' proyecto.id %}')">Asignar</button>
+
+</div>

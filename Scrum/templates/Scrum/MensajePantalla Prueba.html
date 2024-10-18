@@ -1,0 +1,83 @@
+<!-- my_template.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- <title>{{ title }}</title> -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <style>
+        /* Estilos básicos para el modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000; /* Asegurar que el modal esté en el frente */
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5); /* Fondo semi-transparente */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            width: 50%;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .close {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 20px;
+            cursor: pointer;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <!-- <h1>Contenido de la Página Principal</h1>
+    <p>Este es el contenido de fondo de la página, que no se verá afectado por el modal hasta que se muestre.</p> -->
+
+    <!-- Modal Template -->
+    <div id="myModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>{{ title }}</h2>
+            <p>{{ content }}</p>
+        </div>
+    </div>
+
+    <script>
+        // JavaScript para manejar el modal
+        document.addEventListener('DOMContentLoaded', function () {
+            const modal = document.getElementById('myModal');
+            const closeModalSpan = document.querySelector('.close');
+
+            // Mostrar modal automáticamente si el contexto de Django lo indica
+            
+            modal.style.display = 'flex';
+           
+
+            // Cerrar modal al hacer clic en la 'X'
+            closeModalSpan.addEventListener('click', function () {
+                modal.style.display = 'none';
+            });
+
+            // Opcional: Cerrar modal al hacer clic fuera del contenido del modal
+            window.addEventListener('click', function (event) {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,177 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      #bg{
+                  background-color:yellow;
+              }
+              #azul{
+                  background-color:rgb(194, 238, 255);
+              }
+      </style>
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+  </head>
+  <body>
+
+<div>
+  <table border="1">
+    {% for p in form|slice:":1" %}
+   <tr>
+    <td id="azul" align="center">Proyecto</td>
+    <td colspan="7" align="center" id="azul">{{ p.Proyecto }}</td>
+   </tr>
+   {% endfor %}
+   {% for p in form|slice:":1" %}
+   <tr>
+    <td align="center">Fecha</td>
+    <td align="center">{{ p.FHCreacion }} </td>
+    <td> &nbsp;&nbsp;&nbsp;&nbsp; </td>
+    <td> &nbsp;&nbsp;&nbsp;&nbsp; </td>
+    <td> &nbsp;&nbsp;&nbsp;&nbsp; </td>
+    <td> &nbsp;&nbsp;&nbsp;&nbsp; </td>
+    <td> &nbsp;&nbsp;&nbsp;&nbsp; </td>
+    <td> &nbsp;&nbsp;&nbsp;&nbsp; </td>
+   </tr>
+   {% endfor %}
+   {% for p in form|slice:":1" %}
+   <tr>
+    <td colspan="8" align="center" style="color: rgb(0, 113, 157);">Retroalimentación de la Revisión del {{ p.Mensaje.Sprint }}</td>
+   </tr>
+   {% endfor %}
+   {% for p in form|slice:":1" %}
+   <tr>
+    <td id="azul" align="center">Idioma</td>
+    <td id="azul" align="center">{{ p.Emisor.Idioma }}</td>
+    <td id="azul"><!-- Vacio --></td>
+    <td id="azul"><!-- Vacio --></td>
+    <td id="azul"><!-- Vacio --></td>
+    <td id="azul"><!-- Vacio --></td>
+    <td id="azul"><!-- Vacio --></td>
+    <td id="azul"><!-- Vacio --></td>
+   </tr>
+   {% endfor %}
+   {% for p in form|slice:":1" %}
+   <tr>
+    <td align="center">País</td>
+    <td align="center">{{ p.Emisor.Pais }}</td>
+    <td><!-- Vacio --></td>
+    <td><!-- Vacio --></td>
+    <td><!-- Vacio --></td>
+    <td><!-- Vacio --></td>
+    <td><!-- Vacio --></td>
+    <td><!-- Vacio --></td>
+   </tr>
+   {% endfor %}
+
+   {% for p in form|slice:":1" %}
+   <tbody>
+   <tr>
+    <td id="azul" align="center">Emisor</td>
+    <td id="azul" align="center">{{ p.Emisor.Usuario }} </td>
+    <!--Determina que rol tiene el emisor-->
+    {% if  p.Emisor.Roles.NombreRol == 'Product Owner' %}
+    <td id="azul" align="center">Product Owner</td>
+    {% elif  p.Emisor.Roles.NombreRol == 'Scrum Master' %}
+    <td id="azul" align="center">Scrum Master</td>
+    {% elif  p.Emisor.Roles.NombreRol == 'Developers' %}
+    <td id="azul" align="center">Empleado</td>
+    {% else %}
+    <td id="azul" align="center">Jefe de proyecto</td>
+    {% endif %}
+    <!--
+    {% if p.Emisor.usuarioempleado.Roles.NombreRol == 'Product Owner' %}
+    <td id="azul" align="center">Product Owner</td>
+    {% elif p.Emisor.usuarioempleado.Roles.NombreRol == 'Scrum Master' %}
+    <td id="azul" align="center">Scrum Master</td>
+    {% elif p.Emisor.usuarioempleado.Roles.NombreRol == 'Developers' %}
+    <td id="azul" align="center">Empleado</td>
+    {% else %}
+    <td id="azul" align="center">Jefe de proyecto</td>
+    {% endif %}
+   -->
+    <td id="azul" align="center"></td>
+    <td id="azul" align="center"></td>
+    <td id="azul"><!-- Vacio --></td>
+    <td id="azul"><!-- Vacio --></td>
+    <td id="azul"><!-- Vacio --></td>
+   </tr>
+   </tbody>
+   {% endfor %}
+  
+    <tr>
+      <!--<th scope="row">Destinatarios</th>-->
+      <td>Destinatario</td>
+      <td>Nombre</td>
+      <td>Rol</td>
+      <td></td>
+      <td></td>
+      <td><!-- Vacio --></td>
+      <td><!-- Vacio --></td>
+      <td> &nbsp; </td>
+    </tr>
+
+  {% for p in form %}
+  <tbody>
+  <tr>
+    <td align="center"></td>
+    <td id="azul" align="center">{{ p.Receptor.Usuario }}</td>
+    <!--Determina que rol tiene el destinatario-->
+    <!--user.usuarioempleado.Roles.NombreRol-->
+    {% if p.Receptor.Roles.NombreRol == 'Product Owner' %}
+    <td id="azul" align="center">Product Owner</td>
+    {% elif p.Receptor.Roles.NombreRol == 'Scrum Master' %}
+    <td id="azul" align="center">Scrum Master</td>
+    {% elif p.Receptor.Roles.NombreRol == 'Developers' %}
+    <td id="azul" align="center">Empleado</td>
+    {% else %}
+    <td id="azul" align="center">Jefe de proyecto</td>
+    {% endif %}
+    <td id="azul" align="center"></td>
+    <td id="azul" align="center"></td>
+    <td id="azul"></td>
+    <td id="azul"></td>
+    <td id="azul"> &nbsp; </td>
+   </tr>
+  </tbody>
+  {% endfor %}
+   
+   <tbody>
+    <tr>
+      <th scope="row"></th>
+      <td></td>
+      <td> &nbsp;&nbsp;&nbsp;&nbsp; </td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>
+  </tbody>
+  
+  {% for p in form|slice:":1"  %}
+   <tr>
+   <td align="center" id="azul">Retroalimentación</td>
+    <td colspan="7" align="center" id="azul">{{ p.Contestacion }}</td>
+   </tr>
+   {% endfor %}
+  </table>
+  </div> 
+  <!--
+  {% for p in form  %}
+  {{ p.usuario }}
+  {{ p.roles }}
+  {% endfor %} -->
+
+  <!-- Si funciona -->
+  <!--
+  {% for dato in form|slice:":1" %}
+  <p>{{ dato }}</p>
+  <p>{{ dato.roles }}</p>
+  {% empty %}
+        <p>No hay datos disponibles.</p>
+  {% endfor %} -->
+  {% load crispy_forms_tags %}
+
+  </body>
+</html>

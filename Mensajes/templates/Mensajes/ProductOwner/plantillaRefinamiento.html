@@ -1,0 +1,206 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      #bg{
+                  background-color:yellow;
+              }
+              #azul{
+                  background-color:rgb(194, 238, 255);
+              }
+              #gris{
+                  background-color:rgb(194, 194, 194);
+              }
+      </style>
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+  </head>
+  <body>
+
+<div>
+  <table border="1">
+    <!-- for p in form3|slice:":1" -->
+    {% for p in form3 %}
+   <tr>
+    <td id="azul" align="center">Proyecto</td>
+    <td colspan="4" align="center" id="azul">{{ p.Proyecto }}</td>
+   </tr>
+   
+   <tr>
+    <td align="center">Fecha y hora</td>
+    <td align="center"> {{ p.FechaHora }}</td>
+    <td> &nbsp; </td>
+    <td> &nbsp; </td>
+    <td> &nbsp; </td>
+   </tr>
+ 
+   <tr>
+    <td colspan="5" align="center" style="color: rgb(0, 113, 157);">Reunión de refinamiento del Product Backlog</td>
+   </tr>
+   {% endfor %}
+   <tr>
+    <td id="azul" align="center">Idioma</td>
+    <td id="azul" align="center">Español</td>
+    <td id="azul"> &nbsp; </td>
+    <td id="azul"> &nbsp; </td>
+    <td id="azul"> &nbsp; </td>
+   </tr>
+   <tr>
+    <td align="center">País</td>
+    <td align="center">Mexico</td>
+    <td> &nbsp; </td>
+    <td> &nbsp; </td>
+    <td> &nbsp; </td>
+   </tr>
+   <tr>
+    <td align="center" id="azul"> &nbsp; </td>
+    <td align="center" id="azul"> &nbsp; </td>
+    <td id="azul"> &nbsp; </td>
+    <td id="azul"> &nbsp; </td>
+    <td id="azul"> &nbsp; </td>
+   </tr>
+   <tr>
+    <td id="gris" align="center">Asistentes:</td>
+    <td id="gris" align="center">Nombre</td>
+    <td id="gris" align="center">Rol</td>
+    <td id="gris" align="center">Status</td>
+    <td id="gris" align="center">Tipo de Asistencia</td>
+   </tr>
+   {% for p in form %}
+   <tbody>
+    <tr>
+      <th scope="row"></th>
+      <td>{{ p.Usuario.Usuario }}</td>
+      <td>{{ p.Rol }}</td>
+      <td>
+        {% if p.Status == '1' %}
+        Obligatorio
+        {% elif p.Status == '2' %}
+        Opcional
+        {% else %}
+        Dato invalido
+        {% endif %}
+      </td>
+      <td>
+        {% if p.TipoAsistencia == 'S' %}
+        Sincrona
+        {% elif p.TipoAsistencia == 'A' %}
+        Asincrona
+        {% else %}
+        Dato invalido
+        {% endif %}
+      </td>
+    </tr>
+  </tbody>
+  {% endfor %}
+  <!--Espacios en blanco-->
+  <tr>
+    <td align="center"> &nbsp; </td>
+    <td align="center"> &nbsp; </td>
+    <td align="center"> &nbsp; </td>
+    <td align="center"> &nbsp; </td>
+    <td align="center"> &nbsp; </td>
+   </tr>
+  <tr>
+    <td id="gris" align="center">HU</td>
+    <td id="gris" align="center">Nombre</td>
+    <td id="gris" align="center"> &nbsp; </td>
+    <td id="gris" align="center"> &nbsp; </td>
+    <td id="gris" align="center"> &nbsp; </td>
+   </tr>
+
+   {% for p in form2 %}
+   <tr>
+    <!--<td id="azul" align="center"> HU001 </td>
+    <td id="azul" align="center"> Pantalla de acceso </td>-->
+    <!-- <td id="azul"> HU00{{ p.id }}</td> -->
+    <td id="azul"> {{ p.NumeroHU}}</td> 
+    <td id="azul"> {{ p.nombre | capfirst }} </td>
+    <td id="azul" align="center"> &nbsp; </td>
+    <td id="azul" align="center"> &nbsp; </td>
+    <td id="azul" align="center"> &nbsp; </td>
+   </tr>
+
+    <!-- <td id="azul"> &nbsp; </td>
+    <td id="azul"> &nbsp; </td>
+    <td id="azul" align="center"> &nbsp; </td>
+    <td id="azul" align="center"> &nbsp; </td>
+    <td id="azul" align="center"> &nbsp; </td> -->
+
+   <tr>
+    <td align="center"> &nbsp; </td>
+    <td align="center"> Tiempo estimado: </td>
+    <td align="center"> {{ p.HorasEstimadas}} </td>
+    <td align="center"> &nbsp; </td>
+    <td align="center"> &nbsp; </td>
+   </tr>
+  
+   <tr>
+    <td id="azul" align="center"> &nbsp; </td>
+    <td id="azul" align="center"> Prioridad: </td>
+    {% if p.Prioridad == "1" %}
+    <td id="azul" align="center"> Alta </td>
+    {% elif p.Prioridad == "2" %}
+    <td id="azul" align="center"> Media </td>
+    {% elif p.Prioridad == "3" %}
+    <td id="azul" align="center"> Baja </td>
+    {% else %}
+    <td id="azul" align="center"> Dato invalido </td>
+    {% endif %}
+    <td id="azul" align="center"> &nbsp; </td>
+    <td id="azul" align="center"> &nbsp; </td>
+   </tr>
+ 
+   <tr>
+    <td align="center"> &nbsp; </td>
+    <td align="center"> Descripción: </td>
+    <td align="center"> {{ p.descripcion }} </td>
+    <td align="center"> &nbsp; </td>
+    <td align="center"> &nbsp; </td>
+   </tr>
+   
+   <tr>
+    <td id="azul" align="center"></td>
+    <td id="azul" align="center">Criterio de aceptación:</td>
+    <!-- {% if p.CriteriosAceptacion == "1" %}
+    <td id="azul" align="center" colspan="3">Si</td>
+    {% elif p.CriteriosAceptacion == "2" %}
+    <td id="azul" align="center" colspan="3">No</td>
+    {% else %}-->
+    <td id="azul" align="center" colspan="3"> {{p.CriteriosAceptacion}}</td>
+    <!-- {% endif %} -->
+   </tr>
+   <tr>
+      <td align="center" colspan="3">&nbsp; </td>
+   </tr>
+   <!--
+   <tr>
+    <td align="center"> HU0002 </td>
+    <td align="center">Historia de usuario 2</td>
+    <td align="center" colspan="3"> &nbsp; </td>
+   </tr>
+  -->
+
+  {% endfor %}
+   <tr>
+    <td align="center">&nbsp; </td>
+    <td align="center">&nbsp; </td>
+    <td align="center" colspan="3">&nbsp; </td>
+   </tr>
+   {% for p in form3 %}
+   <tr>
+    <td align="center" id="azul"> Objetivo </td>
+    <td align="center" id="azul" colspan="4"> {{ p.Descripcion }} </td>
+   </tr>
+   {% endfor %}
+   <!--Opcional
+   <tr>
+    <td id="azul" align="center"> Retroalimentación </td>
+    <td id="azul" align="center" colspan="4">&nbsp; </td>
+   </tr>
+  -->
+  </table>
+  </div> 
+
+  </body>
+</html>

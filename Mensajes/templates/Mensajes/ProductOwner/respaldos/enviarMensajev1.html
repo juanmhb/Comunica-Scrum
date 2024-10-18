@@ -1,0 +1,109 @@
+{% extends "Mensajes/ProductOwner/base2.html" %}
+
+{% load static %}
+{% load crispy_forms_tags %}
+<title>Enviar mensaje</title>
+
+{% block content %}
+<h1>Enviar Mensaje</h1>
+<label><b>Nota:</b> Asegurese de que la informacion sea correcta antes de enviar el mensaje.</label>
+
+<h3>Informacion del Mensaje</h3>
+{% for p in form2 %}
+
+<strong>Proyecto:</strong> {{ p.Proyecto }}
+<br>
+<strong>Emisor:</strong> {{ p.Emisor.Usuario }}
+<br>
+<strong>Descripción:</strong> {{ p.Descripcion }}
+<br>
+<strong>Fecha:</strong> {{ p.FechaHora }}
+{% if p.archivo %}
+<br>
+<strong>Archivo:</strong> <a href="{% url 'Mensajes:descargar_archivo' p.archivo.id %}">{{ p.archivo }}</a> 
+{% else %}
+<br>
+<b>No hay archivos en este mensaje</b>
+<br>
+<!--<b>Pasos para guardar archivos:</b>-->
+<!--<p>1) Guarde el achivo en esta seccion <a href="{% url 'Mensajes:guardarArchivoID' p.id %}" class="btn btn-danger btn-sm">+</a></p>-->
+<!--2) Seleccione el archivo guardado anteriormente y actualicelo en este apartado-->
+<p>a) Puede guardar su documento en el siguiente apartado 
+    <a href="{% url 'Mensajes:editarMensaje' p.id %}" class="btn btn-info btn-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+        class="bi bi-pencil-square" viewBox="0 0 16 16">
+        <path
+          d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z" />
+        <path fill-rule="evenodd"
+          d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z" />
+      </svg>
+    </a> </p>
+
+{% endif %}
+
+    {% empty %}
+        <li>Sin registros.</li>
+
+{% endfor %}
+<br>
+<br>
+
+{% for archivo in archivos %}
+
+{% if archivo.Archivo %}
+<strong>Archivo ({{ forloop.counter }}):</strong> <a href="{% url 'Mensajes:descargar_archivo' archivo.id %}"> {{ archivo.Descripcion }}</a>
+<br>
+{% else %}
+<b>No hay archivos guardados</b>
+{% for p in form2 %}
+<p> Puede guardar su documento en este apartado <a href="{% url 'Mensajes:guardarArchivoID' p.id %}" class="btn btn-danger btn-sm">+</a></p>
+{% endfor %}
+
+{% endif %}
+
+{% empty %}
+<br>
+<b>No hay archivos en este mensaje</b>
+<br>
+{% for p in form2 %}
+<p> Puede guardar su documento en este apartado <a href="{% url 'Mensajes:guardarArchivoID' p.id %}" class="btn btn-danger btn-sm">+</a></p>
+{% endfor %}
+
+<!-- Cierre del ciclo de archivo -->
+{% endfor %}
+<br>
+<br>
+
+<h3>Destinatarios</h3>
+{% for p in form3 %}
+<strong>Asistente:</strong> {{ p.Usuario.Usuario }}
+<br>
+    {% empty %}
+        <b>Sin asistentes.</b>
+{% endfor %}
+
+<form class="form" method="post" action="" style="color: black;">
+    {% csrf_token %} 
+
+    <div class=" margin: auto;">
+
+    
+    {{ form | crispy }}
+
+    <button type="submit" id="submit" class="btn btn-success"> Enviar </button>
+    
+</div>
+</form>
+
+<script>
+    // Obtén una referencia al botón
+    var boton = document.getElementById('submit');
+    
+    // Agrega un event listener para el evento 'click'
+    boton.addEventListener('click', function() {
+        // Muestra un mensaje
+        alert('Mensaje enviado con exito!!');
+    });
+    </script>
+
+{% endblock %}

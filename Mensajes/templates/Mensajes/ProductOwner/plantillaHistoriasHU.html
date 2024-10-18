@@ -1,0 +1,59 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      #bg{
+                  background-color:yellow;
+              }
+              #azul{
+                  background-color:rgb(194, 238, 255);
+              }
+              #gris{
+                  background-color:rgb(194, 194, 194);
+              }
+      </style>
+
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+  </head>
+  <body>
+
+<div>
+  <table border="1">
+   <tr>
+    <td colspan="4" align="center" id="gris">Historias de usuario dividida en tareas</td>
+   </tr>
+   <tr>
+    <td id="azul" align="center">HU</td>
+    <td id="azul" align="center">Nombre</td>
+    <td id="azul">Estimación (hrs)</td>
+    <td id="azul">Developer</td>
+   </tr>
+{% for historia in form %}
+   <tr>
+    <!-- <td align="center" id="azul">HU00{{ forloop.counter }}</td> -->
+    <td align="center" id="azul">{{ historia.NumeroHU }}</td>
+    <td align="center" id="azul">{{ historia.nombre }}</td>
+    <td align="center" id="azul">{{ historia.HorasEstimadas }}</td>
+    <td id="azul"> &nbsp; </td>
+   </tr>
+
+   {% for tarea in historia.HistoriaTareas.all %}
+
+   <tr>
+    <!--{{ p.tereasasignadas }}-->
+    <td> &nbsp; </td>
+    <td align="center">{{ tarea.nombre }}</td>
+    <td align="center"> {{ tarea.horasestimadas }}</td>
+    <td>{{ tarea.Empleado.Usuario }}</td>
+   </tr>
+
+  {% endfor %}
+
+{% endfor %}
+  </table>
+
+  </div> 
+
+  </body>
+</html>

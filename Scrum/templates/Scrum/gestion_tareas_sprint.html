@@ -1,0 +1,181 @@
+{% extends "Scrum/base.html" %}
+{% load static %}
+
+{% block Historias %}
+<li class="nav-item active">
+  <a class="nav-link" href="#" data-toggle="collapse" data-target="#collapsePages-2" aria-expanded="true"
+    aria-controls="collapsePages">
+    <i class="fas fa-fw fa-table"></i>
+    <span>Historias de Usuario</span>
+  </a>
+  <div id="collapsePages-2" class="collapse show" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+    <div class="bg-white py-2 collapse-inner rounded">
+      <h6 class="collapse-header">Inicio Historias de Usuario</h6>
+      {% if pk %}
+      <a class="collapse-item" href="{% url 'Scrum:productbacklog' pk %}">Historias de Usuario</a>
+      {% else %}
+      <a class="collapse-item" href="#">Historias de Usuario</a>
+      {% endif %}
+      <div class="collapse-divider"></div>
+    </div>
+  </div>
+</li>
+{% endblock %}
+
+{% block Sprints %}
+<li class="nav-item active">
+  <a class="nav-link" href="#" data-toggle="collapse" data-target="#collapsePages-3" aria-expanded="true"
+    aria-controls="collapsePages-2">
+    <i class="fas fa-fw fa-table"></i>
+    <span>Sprints</span>
+  </a>
+  <div id="collapsePages-3" class="collapse show" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+    <div class="bg-white py-2 collapse-inner rounded">
+      <h6 class="collapse-header">Inicio Sprints</h6>
+      {% if pk %}
+      <a class="collapse-item" href="{% url 'Scrum:listar_sprint' pk %}">Sprints</a>
+      {% else %}
+      <a class="collapse-item" href="#">Sprints</a>
+      {% endif %}
+      <div class="collapse-divider"></div>
+    </div>
+  </div>
+</li>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h3>BIENVENIDO A LA SECCIÓN DE TAREAS de {{ historia_usuario.nombre }}</h3>
+
+  <!-- Botón para ver el avance de tareas -->
+ 
+  <a href="{% url 'Scrum:tareas_avance' sprint_id=historia_usuario.Sprint.pk historia_usuario_id=historia_usuario.pk %}" class="btn btn-outline-primary ml-auto mb-2 mb-md-0" style="float: right;">Tareas Avance</a>
+
+
+
+  {% if Sprint %}
+  <!-- Botón de regreso según el contexto del sprint -->
+    {% if pksprint %}
+      <a href="{% url 'Scrum:listar_sprint_Historias' pksprint %}" class="btn btn-outline-primary">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-arrow-return-left"
+          viewBox="0 0 16 16">
+          <path fill-rule="evenodd"
+            d="M10.854 5.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 7.793l2.646-2.647a.5.5 0 0 1 .708 0z" />
+          <path
+            d="M2 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2V2a2 2 0 0 1-2 2H2zm6.5 4.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3a.5.5 0 0 1 1 0z" />
+        </svg>
+        Regresar
+      </a>
+    {% else %}
+      <a href="#" class="btn btn-outline-primary">Regresar</a>
+    {% endif %}
+  {% else %}
+    <!-- Botón de regreso al product backlog si no es un sprint -->
+    <div style="margin-bottom: 20px;">
+      {% if pk %}
+      <a href="{% url 'Scrum:productbacklog' pk %}" class="btn btn-outline-primary">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-arrow-return-left"
+          viewBox="0 0 16 16">
+          <path fill-rule="evenodd"
+            d="M14.5 1.5a.5.5 0 0 1 .5.5v4.8a2.5 2.5 0 0 1-2.5 2.5H2.707l3.347 3.346a.5.5 0 0 1-.708.708l-4.2-4.2a.5.5 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 8.3H12.5A1.5 1.5 0 0 0 14 6.8V2a.5.5 0 0 1 .5-.5z" />
+        </svg>
+        Regresar
+      </a>
+      {% else %}
+        <a href="#" class="btn btn-outline-primary">Regresar</a>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <a href="{% url 'Scrum:crear_tarea_Sprint' historia_usuario.pk %}" class="btn btn-outline-primary mb-3">Crear nueva tarea de la HU</a>
+
+  {% if Tareas %}
+  <div class="table-responsive">
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Nombre</th>
+          <th>Fecha de Inicio Planeado</th>
+          <th>Fecha de Inicio Real</th>
+          <th>Fecha Final Planeado</th>
+          <th>Fecha Final Real</th>
+          <th>Horas Estimadas</th>
+          <!-- <th>Empleado Asignado</th> -->
+          <th>Opciones</th> 
+        </tr>
+      </thead>
+      <tbody>
+        {% for tarea in Tareas %}
+        <tr>
+          <td>{{forloop.counter }}</td>
+          <td>{{ tarea.nombre }}</td>
+          <td>{{ tarea.fechainicioplaneado }}</td>
+          <td>{{ tarea.fechainicioreal }}</td>
+          <td>{{ tarea.fechafinalplaneado }}</td>
+          <td>{{ tarea.fechafinalreal }}</td>
+          <td>{{ tarea.horasestimadas }}</td>
+          <!-- <td>{{ tarea.Empleado }}</td> -->
+          <td>
+            <!-- Botón de eliminar -->
+            <a data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar"
+              href="{% url 'Scrum:eliminar_tarea_Sprint' tarea.id %}" class="btn btn-outline-danger">
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-trash"
+                viewBox="0 0 16 16">
+                <path
+                  d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5Zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5Zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6Z" />
+                <path
+                  d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1ZM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118ZM2.5 3h11V2h-11v1Z" />
+              </svg>
+            </a>
+
+            <!-- Botón de actualizar -->
+            <button data-bs-toggle="tooltip" data-bs-placement="top" title="Editar"
+              onclick="abrir_modal_edicion('{% url 'Scrum:editar_tarea_Sprint' tarea.id %}')"
+              class="btn btn-outline-success">
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-pencil"
+                viewBox="0 0 16 16">
+                <path
+                  d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z" />
+                <path fill-rule="evenodd"
+                  d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z" />
+              </svg>
+            </button>
+
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p>No hay tareas en este sprint.</p>
+  {% endif %}
+</div>
+
+<div class="modal fade" id="modal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content" id="modal-content">
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+<script>
+ function abrir_modal_edicion(url) {
+    $.ajax({
+        url: url,
+        success: function (response) {
+            console.log(response);  // Verifica el contenido de response en la consola del navegador
+            $('#modal-content').html(response);  // Inserta el contenido en el modal
+            $('#modal').modal('show');  // Muestra el modal después de cargar el contenido
+        },
+        error: function (xhr, status, error) {
+            console.error('Error al cargar el contenido del modal:', error);
+        }
+    });
+}
+
+</script>
+{% endblock extrajs %}

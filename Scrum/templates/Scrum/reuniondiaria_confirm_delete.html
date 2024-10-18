@@ -1,0 +1,14 @@
+{% extends 'Scrum/base.html' %}
+
+{% block titulo %}
+Confirmación de Eliminación.
+{% endblock titulo %}
+
+{% block content %}
+<form method="post">
+    {% csrf_token %}
+    <p><strong>¿Desea Eliminar el Registro {{object}}?</strong></p>
+    <button type="submit" class="btn btn-danger">Confirmar</button>
+
+</form>
+{% endblock content %}

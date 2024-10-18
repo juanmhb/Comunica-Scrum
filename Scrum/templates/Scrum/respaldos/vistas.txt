@@ -1,0 +1,39 @@
+def index(request):
+    if request.user.is_authenticated:
+
+        try:
+            jefeproyecto = JefeProyecto.objects.get(Usuario=request.user)
+        except JefeProyecto.DoesNotExist:
+            try:
+                empleado = Empleado.objects.get(Usuario=request.user)
+            except Empleado.DoesNotExist:
+                return HttpResponseRedirect(reverse('Scrum:Logout'))
+            return render(request,'Scrum/Empleado/base.html')
+        
+        return render(request,'Scrum/base.html')
+        
+    return HttpResponseRedirect(reverse('Scrum:Login'))
+
+
+def Login(request):
+    
+    if request.user.is_authenticated:
+        return HttpResponseRedirect(reverse('Scrum:index'))
+        
+    if request.method=='POST':
+        form=AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            nombre_usuario=form.cleaned_data.get("username")
+            contra=form.cleaned_data.get("password")
+            usuario=authenticate(username=nombre_usuario, password=contra)
+            if usuario is not None:
+                login(request, usuario)
+                return redirect('Scrum:index')
+            else:
+                return render(request, 'Scrum/Login.html',{"form":form})
+        else:
+            return render(request, 'Scrum/Login.html',{"form":form})
+
+    else:
+        form=AuthenticationForm()
+        return render(request, 'Scrum/Login.html',{"form":form})

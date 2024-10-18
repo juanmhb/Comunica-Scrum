@@ -1,0 +1,135 @@
+{% extends base_template %}
+
+{% load static %}
+<title>Proyectos</title>
+{% block content %}
+<div><div>
+<div class="flex">      
+<!-- End Navbar -->
+      <div class="content flex-column">
+        <div class="">
+          <div class="md-8">
+            <div class="card">
+              <div class="card-header">
+                
+                <h5 class="title">BIENVENIDO A LA SECCIÓN DE PROYECTO</h5>
+
+
+                
+                {% if proyectos %}
+                <div class="table-stats order-table ov-h">
+                  <table class="table table-striped table-bordered">
+                    <thead class="thead-info">
+                      <th>#</th>
+                      <th>Nombre</th>
+                      <th>Fecha de inicio</th>
+                      <th>Fecha de conclusión</th>
+                      <!-- <th>Objetivo</th> -->
+                      <!-- <th>impacto</th>
+                      <th>Homologacion de visión</th> -->
+                      <th>Opciones</th>
+                    </thead>
+                    <tbody>
+                      {% for proyecto in proyectos %}
+                      <tr>
+                        <td>{{forloop.counter }}</td>
+                        <td>{{ proyecto.nombreproyecto }}</td>
+                        <td>{{ proyecto.fechainicio }}</td>
+                        <td>{{ proyecto.fechafinal }}</td>
+                        <!-- <td>{{ proyecto.objetivo }}</td>
+                        <td>{{ proyecto.impacto }}</td> -->
+                        <!-- <td>{{ proyecto.homologacionvision }}</td> -->
+                        <!-- <td> <button onclick="abrir_modal_edicion('{% url 'Scrum:editar_proyecto' proyecto.id %}')" class="btn btn-outline-secondary">Editar</button></td> -->
+                        <td>
+                          <!-- <button onclick="abrir_modal_edicion('{% url 'Scrum:editar_proyecto' proyecto.id %}')" class="btn btn-outline-success" data-bs-toggle="tooltip" data-bs-placement="top" title="Editar">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16">
+                              <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
+                              <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/>
+                            </svg>
+                          </button>
+                          <a href="{% url 'Scrum:eliminar_proyecto' proyecto.id %}" class="btn btn-outline-danger" data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
+                              <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5Zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5Zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6Z"/>
+                              <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1ZM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118ZM2.5 3h11V2h-11v1Z"/>
+                            </svg>
+                          </a> -->
+                          <!-- <a href="{% url 'Scrum:listar_sprint_Empleado' proyecto.id %}" class="btn btn-outline-info" data-bs-toggle="tooltip" data-bs-placement="top" title="Mostrar">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-eye-fill" viewBox="0 0 16 16">
+                              <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/>
+                              <path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
+                            </svg>
+                          </a> -->
+                          
+                            <button onclick="abrir_modal_edicion('{% url 'Scrum:editar_proyecto' proyecto.id %}')"
+                              class="btn btn-outline-success" data-bs-toggle="tooltip" data-bs-placement="top"
+                              title="Editar">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"
+                                class="bi bi-pencil-square" viewBox="0 0 16 16">
+                                <path
+                                  d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z" />
+                                <path fill-rule="evenodd"
+                                  d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z" />
+                              </svg>
+                            </button>
+                            <!-- <a href="{% url 'Scrum:eliminar_proyecto' proyecto.id %}" class="btn btn-outline-danger"
+                              data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"
+                                class="bi bi-trash" viewBox="0 0 16 16">
+                                <path
+                                  d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5Zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5Zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6Z" />
+                                <path
+                                  d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1ZM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118ZM2.5 3h11V2h-11v1Z" />
+                              </svg>
+                            </a> -->
+                            <a href="{% url 'Scrum:productbacklog' proyecto.id %}" class="btn btn-outline-info"
+                              data-bs-toggle="tooltip" data-bs-placement="top" title="Historias de Usuario">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"
+                                class="bi bi-eye-fill" viewBox="0 0 16 16">
+                                <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z" />
+                                <path
+                                  d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z" />
+                              </svg>
+                            </a>
+  
+                            <button onclick="abrir_modal_edicion('{% url 'Scrum:asignar_empleados' proyecto.id %}')"
+                            class="btn btn-outline-dark" data-bs-toggle="tooltip" data-bs-placement="top"
+                            title="Asignar Empleados">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"
+                              class="bi bi-people-fill" viewBox="0 0 16 16">
+                              <path
+                                d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1H7Zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-5.784 6A2.238 2.238 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.325 6.325 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1h4.216ZM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
+                            </svg>
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                  {% else %}
+                  <h1>No Existe Proyectos Registrados</h1>
+                </div>
+
+                {% endif %}
+              
+            </div>
+          </div>
+          </div>
+          <div class="modal fade" id="edicion" role="dialog">
+
+          </div>
+{% endblock %}
+
+{% block extrajs %}
+<script type="text/javascript">
+  var $ = jQuery.noConflict();
+  function abrir_modal_edicion(url){
+    $('#edicion').load(url, function (){
+      $(this).modal('show');
+    });
+  }
+  function abrir_modal_creacion(url){
+    $('#creacion').load(url, function (){
+      $(this).modal('show');
+    });
+  } 
+</script>
+{% endblock extrajs %} 

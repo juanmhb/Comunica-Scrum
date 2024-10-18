@@ -1,0 +1,45 @@
+<table border="1">
+    <tr>
+      {% for fecha in fechas %}
+      <!--Si se desea mostrar la fecha completa, borrar "|date:"j"-->
+      <td id="gris">{{ fecha|date:"j" }}</td>
+      {% endfor %}
+    </tr>
+    <br>
+
+    <tr>
+      {% for fecha in fechas %}
+      <!--Si se desea mostrar la fecha completa, borrar "|date:"j"-->
+
+      {% if fecha|date:"j" == "7" %}
+
+      <!---->
+      {% for p in dia %}
+        {% if p.dia|date:"j" == fecha|date:"j" %}
+        <td>{{ p.horasDedicadas }}/0</td>
+        {% endif %}
+        {% if p.dia|date:"j" == fecha|date:"j" %}
+        <td>{{ p.horasDedicadas }}/0</td>
+        {% endif %}
+        {% if p.dia|date:"j" == fecha|date:"j" %}
+        <td>{{ p.horasDedicadas }}/0</td>
+        {% endif %}
+        {% if p.dia|date:"j" == fecha|date:"j" %}
+        <td>{{ p.horasDedicadas }}/0</td>
+        {% endif %}
+        {% if p.dia|date:"j" == fecha|date:"j" %}
+        <td>{{ p.horasDedicadas }}/0</td>
+        {% endif %}
+        {% if p.dia|date:"j" == fecha|date:"j" %}
+        <td>{{ p.horasDedicadas }}/0</td>
+        {% endif %}
+        {% if p.dia|date:"j" == fecha|date:"j" %}
+        <td>{{ p.horasDedicadas }}/0</td>
+        {% endif %}
+      {% endfor %}
+      <!---->
+      {% endif %}
+
+      {% endfor %}
+    </tr>
+  </table>
