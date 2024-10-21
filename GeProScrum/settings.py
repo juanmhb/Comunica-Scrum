@@ -50,6 +50,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Manejo de archivo estáticos
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -103,7 +104,7 @@ DATABASES = {
 #Acceso a render.com
 DATABASES["default"] = dj_database_url.parse("postgresql://dbcomunica_scrum_user:JQQc7Af7o0Gm9IozynPGim8ZUGiiUNKD@dpg-cs8uqt8gph6c73btkeg0-a.oregon-postgres.render.com/dbcomunica_scrum")
 
-
+DATABASE_URL = "postgresql://dbcomunica_scrum_user:JQQc7Af7o0Gm9IozynPGim8ZUGiiUNKD@dpg-cs8uqt8gph6c73btkeg0-a.oregon-postgres.render.com/dbcomunica_scrum"
 
 
 # Password validation
@@ -175,3 +176,5 @@ MESSAGE_TAGS = {
     messages.WARNING: 'warning',
     messages.ERROR: 'error',
 }
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
