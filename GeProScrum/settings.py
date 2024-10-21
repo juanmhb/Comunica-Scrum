@@ -22,14 +22,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-#96g7n=k%!if-)0d4fwd(#uk5oa7hj#vpo&a#%!9+h28_pc+#i'
+SECRET_KEY = os.getenv('SECRET_KEY')
+#SECRET_KEY = 'django-insecure-#96g7n=k%!if-)0d4fwd(#uk5oa7hj#vpo&a#%!9+h28_pc+#i'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 #DEBUG = True
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 #ALLOWED_HOSTS = ['127.0.0.1']
-ALLOWED_HOSTS = ['Comunica-Scrum.onrender.com', 'localhost', '127.0.0.1', 'tu-dominio.com']
+#ALLOWED_HOSTS = ['Comunica-Scrum.onrender.com', 'localhost', '127.0.0.1', 'tu-dominio.com']
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
 
 MESSAGE_STORAGE= "django.contrib.messages.storage.cookie.CookieStorage"
 
@@ -89,24 +91,27 @@ CRISPY_TEMPLATE_PACK = "bootstrap4"
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
 #Acceso Local
-DATABASES = {
-    'default':  {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        #'NAME': 'postgres',
-        'NAME': 'DBScrum2',
-        'HOST': '127.0.0.1',
-        'USER': 'postgres',
-        #'PASSWORD': 'root',
-        'PASSWORD': '1CanCan!',
-        'PORT': 5432,
-    }
-}
+# DATABASES = {
+#     'default':  {
+#         'ENGINE': 'django.db.backends.postgresql_psycopg2',
+#         #'NAME': 'postgres',
+#         'NAME': 'DBScrum2',
+#         'HOST': '127.0.0.1',
+#         'USER': 'postgres',
+#         #'PASSWORD': 'root',
+#         'PASSWORD': '1CanCan!',
+#         'PORT': 5432,
+#     }
+# }
 
 #Acceso a render.com
-DATABASES["default"] = dj_database_url.parse("postgresql://dbcomunica_scrum_user:JQQc7Af7o0Gm9IozynPGim8ZUGiiUNKD@dpg-cs8uqt8gph6c73btkeg0-a.oregon-postgres.render.com/dbcomunica_scrum")
+#DATABASES["default"] = dj_database_url.parse("postgresql://dbcomunica_scrum_user:JQQc7Af7o0Gm9IozynPGim8ZUGiiUNKD@dpg-cs8uqt8gph6c73btkeg0-a.oregon-postgres.render.com/dbcomunica_scrum")
 
-DATABASE_URL = "postgresql://dbcomunica_scrum_user:JQQc7Af7o0Gm9IozynPGim8ZUGiiUNKD@dpg-cs8uqt8gph6c73btkeg0-a.oregon-postgres.render.com/dbcomunica_scrum"
-
+#DATABASE_URL = "postgresql://dbcomunica_scrum_user:JQQc7Af7o0Gm9IozynPGim8ZUGiiUNKD@dpg-cs8uqt8gph6c73btkeg0-a.oregon-postgres.render.com/dbcomunica_scrum"
+DATABASE_URL = os.getenv('DATABASE_URL')
+DATABASES = {
+    'default': dj_database_url.config(default=os.getenv('DATABASE_URL'))
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
