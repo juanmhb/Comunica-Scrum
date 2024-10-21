@@ -29,7 +29,7 @@ SECRET_KEY = 'django-insecure-#96g7n=k%!if-)0d4fwd(#uk5oa7hj#vpo&a#%!9+h28_pc+#i
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 #ALLOWED_HOSTS = ['127.0.0.1']
-ALLOWED_HOSTS = ['.onrender.com', 'localhost', '127.0.0.1', 'tu-dominio.com']
+ALLOWED_HOSTS = ['Comunica-Scrum.onrender.com', 'localhost', '127.0.0.1', 'tu-dominio.com']
 
 MESSAGE_STORAGE= "django.contrib.messages.storage.cookie.CookieStorage"
 
