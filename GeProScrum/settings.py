@@ -27,8 +27,8 @@ SECRET_KEY = "dccddf0b4fa6ebda0c8c12428a57a712"
 #SECRET_KEY = 'django-insecure-#96g7n=k%!if-)0d4fwd(#uk5oa7hj#vpo&a#%!9+h28_pc+#i'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-#DEBUG = True
-DEBUG = os.getenv('DEBUG', 'False') == 'True'
+DEBUG = True
+#DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 #ALLOWED_HOSTS = ['127.0.0.1']
 ALLOWED_HOSTS = ['comunica-Scrum.onrender.com', 'localhost', '127.0.0.1', 'tu-dominio.com']
