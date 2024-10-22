@@ -89,14 +89,14 @@ def Login(request):
                 else:
                     return redirect('Scrum:index')
             else:
-                return render(request, 'Scrum/Login.html',{"form":form})
+                return render(request, 'Scrum/login.html',{"form":form})
                 # return redirect('Scrum:index')      
         else:
-            return render(request, 'Scrum/Login.html',{"form":form})
+            return render(request, 'Scrum/login.html',{"form":form})
             # return redirect('Scrum:index')
     else:
         form=AuthenticationForm()
-        return render(request, 'Scrum/Login.html',{"form":form})
+        return render(request, 'Scrum/login.html',{"form":form})
 
 
 def Registro(request):
