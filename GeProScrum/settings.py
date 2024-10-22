@@ -30,8 +30,9 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 #ALLOWED_HOSTS = ['127.0.0.1']
-#ALLOWED_HOSTS = ['Comunica-Scrum.onrender.com', 'localhost', '127.0.0.1', 'tu-dominio.com']
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
+ALLOWED_HOSTS = ['Comunica-Scrum.onrender.com', 'localhost', '127.0.0.1', 'tu-dominio.com']
+#ALLOWED_HOSTS = ['https://fly.io/apps/sisgepro-scrum', 'localhost', '127.0.0.1', 'tu-dominio.com']
+#ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
 
 MESSAGE_STORAGE= "django.contrib.messages.storage.cookie.CookieStorage"
 
@@ -44,6 +45,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    #'whitenoise.runserver_nostatic'
     'django.contrib.staticfiles',
     'Scrum.apps.ScrumConfig',
     "crispy_forms",
@@ -91,27 +93,33 @@ CRISPY_TEMPLATE_PACK = "bootstrap4"
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
 #Acceso Local
-# DATABASES = {
-#     'default':  {
-#         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-#         #'NAME': 'postgres',
-#         'NAME': 'DBScrum2',
-#         'HOST': '127.0.0.1',
-#         'USER': 'postgres',
-#         #'PASSWORD': 'root',
-#         'PASSWORD': '1CanCan!',
-#         'PORT': 5432,
-#     }
-# }
+DATABASES = {
+    'default':  {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        #'NAME': 'postgres',
+        'NAME': 'DBScrum2',
+        'HOST': '127.0.0.1',
+        'USER': 'postgres',
+        #'PASSWORD': 'root',
+        'PASSWORD': '1CanCan!',
+        'PORT': 5432,
+    }
+}
 
 #Acceso a render.com
-#DATABASES["default"] = dj_database_url.parse("postgresql://dbcomunica_scrum_user:JQQc7Af7o0Gm9IozynPGim8ZUGiiUNKD@dpg-cs8uqt8gph6c73btkeg0-a.oregon-postgres.render.com/dbcomunica_scrum")
+DATABASES["default"] = dj_database_url.parse("postgresql://dbcomunica_scrum_user:JQQc7Af7o0Gm9IozynPGim8ZUGiiUNKD@dpg-cs8uqt8gph6c73btkeg0-a.oregon-postgres.render.com/dbcomunica_scrum")
 
-#DATABASE_URL = "postgresql://dbcomunica_scrum_user:JQQc7Af7o0Gm9IozynPGim8ZUGiiUNKD@dpg-cs8uqt8gph6c73btkeg0-a.oregon-postgres.render.com/dbcomunica_scrum"
-DATABASE_URL = os.getenv('DATABASE_URL')
-DATABASES = {
-    'default': dj_database_url.config(default=os.getenv('DATABASE_URL'))
-}
+#Acceso a fly.io.com
+#DATABASES["default"] = dj_database_url.parse("postgres://postgres:AG3a818hPDz7cbN@sisgepro-scrum-db.internal/sisgepro-scrum-db")
+#dj_database_url.parse("postgres://sisgepro_scrum:VLs9Y7caFFXWlUu@sisgepro-scrum-db.flycast:5432/sisgepro_scrum")
+#dj_database_url.parse("postgres://postgres:AG3a818hPDz7cbN@sisgepro-scrum-db.flycast:5432")
+
+
+# DATABASE_URL = "postgresql://dbcomunica_scrum_user:JQQc7Af7o0Gm9IozynPGim8ZUGiiUNKD@dpg-cs8uqt8gph6c73btkeg0-a.oregon-postgres.render.com/dbcomunica_scrum"
+# DATABASE_URL = os.getenv('DATABASE_URL')
+# DATABASES = {
+#     'default': dj_database_url.config(default=os.getenv('DATABASE_URL'))
+# }
 
 # Password validation
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
@@ -147,12 +155,19 @@ MESSAGE_STORAGE = "django.contrib.messages.storage.cookie.CookieStorage"
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
-import os 
+
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 
 STATIC_URL = '/static/'
 
 # Agrega esta configuración para la ruta donde Django colocará los archivos estáticos
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# Rutas donde Django buscará archivos estáticos
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
 
 # Agrega también este bloque si usas archivos media (cargados por el usuario):
 MEDIA_URL = '/media/'
@@ -162,7 +177,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-LOGO_SISTEMA = "LOGO COMUNICA SCRUM.JPG"
+LOGO_SISTEMA = "logo-comunica-scrum.JPG"
 
 #Configuración para el envío de correos
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -182,5 +197,5 @@ MESSAGE_TAGS = {
     messages.WARNING: 'warning',
     messages.ERROR: 'error',
 }
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 
