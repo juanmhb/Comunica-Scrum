@@ -72,10 +72,7 @@ ROOT_URLCONF = 'GeProScrum.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [
-            os.path.join(BASE_DIR, 'Scrum/templates'),
-            os.path.join(BASE_DIR, 'Mensajes/templates'),
-        ],
+        'DIRS': [],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
