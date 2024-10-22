@@ -31,7 +31,8 @@ SECRET_KEY = "dccddf0b4fa6ebda0c8c12428a57a712"
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 #ALLOWED_HOSTS = ['127.0.0.1']
-ALLOWED_HOSTS = ['Comunica-Scrum.onrender.com', 'localhost', '127.0.0.1', 'tu-dominio.com']
+ALLOWED_HOSTS = ['comunica-Scrum.onrender.com', 'localhost', '127.0.0.1', 'tu-dominio.com']
+
 #ALLOWED_HOSTS = ['https://fly.io/apps/sisgepro-scrum', 'localhost', '127.0.0.1', 'tu-dominio.com']
 #ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
 
@@ -109,7 +110,13 @@ DATABASES = {
 
 #Acceso a render.com
 DATABASES["default"] = dj_database_url.parse("postgresql://dbcomunica_scrum_user:JQQc7Af7o0Gm9IozynPGim8ZUGiiUNKD@dpg-cs8uqt8gph6c73btkeg0-a.oregon-postgres.render.com/dbcomunica_scrum")
- 
+
+
+# DATABASES = {
+#     'default': dj_database_url.config(conn_max_age=600, ssl_require=True)
+# }
+
+
 
 #Acceso a fly.io.com
 #DATABASES["default"] = dj_database_url.parse("postgres://postgres:AG3a818hPDz7cbN@sisgepro-scrum-db.internal/sisgepro-scrum-db")
@@ -117,7 +124,8 @@ DATABASES["default"] = dj_database_url.parse("postgresql://dbcomunica_scrum_user
 #dj_database_url.parse("postgres://postgres:AG3a818hPDz7cbN@sisgepro-scrum-db.flycast:5432")
 
 
-# DATABASE_URL = "postgresql://dbcomunica_scrum_user:JQQc7Af7o0Gm9IozynPGim8ZUGiiUNKD@dpg-cs8uqt8gph6c73btkeg0-a.oregon-postgres.render.com/dbcomunica_scrum"
+DATABASE_URL = "postgresql://dbcomunica_scrum_user:JQQc7Af7o0Gm9IozynPGim8ZUGiiUNKD@dpg-cs8uqt8gph6c73btkeg0-a.oregon-postgres.render.com/dbcomunica_scrum"
+
 # DATABASE_URL = os.getenv('DATABASE_URL')
 # DATABASES = {
 #     'default': dj_database_url.config(default=os.getenv('DATABASE_URL'))
