@@ -115,7 +115,7 @@ def Registro(request):
                 alumno = Empleado.objects.create(rfc=formularioEmpleado.cleaned_data["rfc"],telefono=formularioEmpleado.cleaned_data["telefono"] ,cedulaprofesional=formularioEmpleado.cleaned_data["cedulaprofesional"],Pais=formularioEmpleado.cleaned_data["Pais"],Idioma=formularioEmpleado.cleaned_data["Idioma"],Usuario=user)
             except 	IntegrityError:
                 user.delete()
-                return render(request, 'Scrum/registro.html',{'error_message':'Ya Existe El Correo Electronico'})
+                return render(request, 'Scrum/registro.html',{'error_message':'Ya Existe El Correo Electrónico'})
             # login(request, user)
             return HttpResponseRedirect(reverse('Scrum:index'))
         data['form'] = formulario
