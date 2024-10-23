@@ -46,7 +46,7 @@ class EmpleadoForm(forms.ModelForm):
                     'placeholder':'Ingrese la Cédula Profesional'
                 }
             ),
-            'Pais': forms.Select(
+            'País': forms.Select(
                 attrs = {
                     'class':'form-control',
                     'placeholder': 'Ingrese el País'
