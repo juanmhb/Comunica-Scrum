@@ -65,7 +65,7 @@ class UpdateMensajePDF_Forms(forms.ModelForm):
             #),
             'FechaHora': forms.DateInput(
                 # format="%Y-%m-%d",
-                format='%Y-%d-%m %H:%M',
+                format="%Y-%m-%d %H:%M",
                 attrs = {
                     'class':'form-control',
                     # 'type': 'date',
