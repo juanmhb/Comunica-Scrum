@@ -4372,13 +4372,13 @@ def enviar_mensaje2(request, id):
                 from_email=Remitente,  # Remitente
                 to=ListaDestinatarios,
             )   
-            for arch in Archivos:
-                #print(f"archivo: {arch.Archivo}")
-                #ArchivosAdjuntos = ArchivosAdjuntos  + "'"+str(arch.Archivo)+"'" + ','
-                email.attach_file(str(arch.Archivo))
-                #print(f"archivo: {arch.Archivo}")
-            #ArchivosAdjuntos = ArchivosAdjuntos[:-1]
-            #print(f"archivos adjuntos: {ArchivosAdjuntos}")
+            # for arch in Archivos:
+            #     #print(f"archivo: {arch.Archivo}")
+            #     #ArchivosAdjuntos = ArchivosAdjuntos  + "'"+str(arch.Archivo)+"'" + ','
+            #     email.attach_file(str(arch.Archivo))
+            #     #print(f"archivo: {arch.Archivo}")
+            # #ArchivosAdjuntos = ArchivosAdjuntos[:-1]
+            # #print(f"archivos adjuntos: {ArchivosAdjuntos}")
 
             #email.attach_file(ArchivosAdjuntos)
             email.send()
