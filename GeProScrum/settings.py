@@ -179,7 +179,7 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
 
-# Agrega también este bloque si usas archivos media (cargados por el usuario):
+# Agrega también este bloque si usas archivos media (cargados por el usuario): 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
