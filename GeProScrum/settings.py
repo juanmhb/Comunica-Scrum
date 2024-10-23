@@ -195,7 +195,7 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'jmhernan@gmail.com'
-EMAIL_HOST_PASSWORD = 'qcph ffqb nywk flun'#'1CanCan!'
+EMAIL_HOST_PASSWORD = 'qcph ffqb nywk flun'
 
 # Habilitar el Messages Framework
 from django.contrib.messages import constants as messages

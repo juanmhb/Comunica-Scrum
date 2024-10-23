@@ -175,7 +175,7 @@ class EditarHistoriaUsuarioBL_Forms(forms.ModelForm):
         labels={
             'Estatus':'Estatus',
             'nombre':'Nombre de la historia de usuario',
-            'ultimaactualizacion':'Fecha de ultima actualizacion (aaaa-mm-dd)',
+            'ultimaactualizacion':'Fecha de última actualización (aaaa-mm-dd)',
             'descripcion':'Descripción de la historia de usuario',
             'HorasEstimadas':'Horas estimadas',
             'Prioridad':'Prioridad',
@@ -201,7 +201,7 @@ class Archivos_forms(forms.ModelForm):
         model = m_Archivos
         fields=['Descripcion','Archivo','Mensaje','Proyecto']
         labels={
-            'Descripcion':'Nombre del archivo',
+            'Descripcion':'Nombre del archivo', 
             'Archivo':'Archivo',
         }
 
