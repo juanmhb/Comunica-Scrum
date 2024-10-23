@@ -169,7 +169,7 @@ class CrearProyecto(LoginRequiredMixin, CreateView):
     model = Proyecto
     template_name = 'Scrum/registrar_proyecto.html'
     form_class = ProyectoForm
-    success_url = reverse_lazy('Scrum:listar_proyetos')
+    success_url = reverse_lazy('Scrum:listar_proyectos')
 
     def form_valid(self, form):
         form.instance.JefeProyecto = JefeProyecto.objects.get(Usuario=self.request.user)
@@ -180,7 +180,7 @@ class ActualizarProyecto(LoginRequiredMixin, UpdateView):
     # model = Proyecto
     # template_name = 'Scrum/detalle_proyecto.html'
     # form_class = ProyectoForm
-    # success_url = reverse_lazy('Scrum:listar_proyetos')
+    # success_url = reverse_lazy('Scrum:listar_proyectos')
     model = Proyecto
     template_name = 'Scrum/detalle_proyecto.html'
     form_class = ProyectoForm
@@ -197,7 +197,7 @@ class ActualizarProyecto(LoginRequiredMixin, UpdateView):
 
 class EliminarProyecto(LoginRequiredMixin, DeleteView):
     model = Proyecto
-    success_url = reverse_lazy('Scrum:listar_proyetos')
+    success_url = reverse_lazy('Scrum:listar_proyectos')
 
 
 # ------------------------------------------------------------------CRUD ProductBacklog----------------------------------------------------------------------
@@ -251,7 +251,7 @@ class CrearHistoriaUsuario(LoginRequiredMixin, CreateView):
 
 class EliminarHistoriaUsuario(LoginRequiredMixin, DeleteView):
     model = HistoriaUsuario
-    # success_url = reverse_lazy('Scrum:listar_proyetos')
+    # success_url = reverse_lazy('Scrum:listar_proyectos')
 
     def get_success_url(self):
          return reverse('Scrum:productbacklog', kwargs={'pk': self.object.Proyecto.pk})
@@ -277,7 +277,7 @@ class ActualizarHistoriaUsuarioSprint(LoginRequiredMixin, UpdateView):
     
 class EliminarHistoriaUsuarioSprint(LoginRequiredMixin, DeleteView):
     model = HistoriaUsuario
-    # success_url = reverse_lazy('Scrum:listar_proyetos')
+    # success_url = reverse_lazy('Scrum:listar_proyectos')
 
     def get_success_url(self):
          return reverse('Scrum:listar_sprint_Historias', kwargs={'pk': self.object.Sprint.pk})
@@ -327,7 +327,7 @@ class CrearSprint(LoginRequiredMixin,CreateView):
 
 class EliminarSprint(LoginRequiredMixin, DeleteView):
     model = Sprint
-    # success_url = reverse_lazy('Scrum:listar_proyetos')
+    # success_url = reverse_lazy('Scrum:listar_proyectos')
 
     def get_success_url(self):
          return reverse('Scrum:listar_sprint', kwargs={'pk': self.object.Proyecto.pk})
@@ -1002,6 +1002,6 @@ def AsignarEmpleados(request, pk):
                     EmpleadoProyecto.objects.create(Empleado=object_empleado, Proyecto=proyecto)
             except IntegrityError:
                 return render(request, 'Scrum/Asignar_empleados.html', {'error_message': 'Ya Existe El Correo Electronico'})
-            return HttpResponseRedirect(reverse('Scrum:listar_proyetos'))
+            return HttpResponseRedirect(reverse('Scrum:listar_proyectos'))
 
     return render(request, 'Scrum/Asignar_empleados.html', data)

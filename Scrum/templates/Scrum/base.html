@@ -103,7 +103,7 @@
                     <div class="bg-white py-2 collapse-inner rounded">
                         <h6 class="collapse-header">Inicio de proyectos</h6>
                         {% if user.usuarioempleado.Roles.NombreRol == 'Project Manager' %}
-                            <a class="collapse-item" href="{% url 'Scrum:listar_proyetos' %}">Proyectos</a>
+                            <a class="collapse-item" href="{% url 'Scrum:listar_proyectos' %}">Proyectos</a>
                         {% else %}
                             <a class="collapse-item" href="{% url 'Scrum:listar_proyectos_Empleado' %}">Proyectos</a>
                         {% endif %}
