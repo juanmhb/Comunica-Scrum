@@ -181,7 +181,7 @@ class HistoriaUsuario(models.Model):
     HorasEstimadas = models.IntegerField(null=True, blank=True)
     Prioridad = models.CharField(max_length=1,choices=ListaPrioridad,null=True, blank=True)
     # Prioridad = models.IntegerField(null=True, blank=True)
-    CriteriosAceptacion = models.CharField(max_length=400,null=True, blank=True)
+    CriteriosAceptacion = models.CharField(max_length=1200,null=True, blank=True)
     #CriteriosAceptacion = models.CharField(max_length=1,choices=ListaCriterio,null=True, blank=True)
     MensajeRPBL = models.ForeignKey(Mensaje,  on_delete=models.CASCADE,null=True, blank=True  )
     # tereas_asignadas = models.BooleanField(null=True)
