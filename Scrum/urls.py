@@ -14,7 +14,7 @@ urlpatterns = [
     path('exit/', views.exit, name='exit'),   
 
     # URL PROYECTOS 
-    path('listar_proyectos/', ListadoProyectos.as_view(), name = 'listar_proyetos'),
+    path('listar_proyectos/', ListadoProyectos.as_view(), name = 'listar_proyectos'),
     path('listar_proyectos_Empleado/', ListadoProyectosEmpleados.as_view(), name = 'listar_proyectos_Empleado'),
     path('crear_proyectos/', CrearProyecto.as_view(), name='crear_proyectos'),
     path('editar_proyecto/<int:pk>', ActualizarProyecto.as_view() , name = 'editar_proyecto'),
