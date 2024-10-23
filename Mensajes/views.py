@@ -24,6 +24,7 @@ from django.core.mail import EmailMessage
 from django.core.mail import send_mail
 from django.contrib import messages
 from django.shortcuts import get_object_or_404
+from io import BytesIO
 
 # ----------------------------------------------------------------------------------------------------------------------------
 # ---------------------------------------- Reunión de Refinamiento del Product Backlog ---------------------------------------
@@ -979,7 +980,8 @@ def descargar_archivo(request, id):
     response['Content-Disposition'] = 'attachment; filename="archivo.pdf"'  # Cambia el nombre del archivo según sea necesario
     return response
 
-def cargar_documento(request):
+def cargar_documento_OLD(request):
+    #print("Guardar documento: cargar_documento")
     if request.method == 'POST':
         form = Archivos_forms(request.POST, request.FILES)
         if form.is_valid():
@@ -990,9 +992,28 @@ def cargar_documento(request):
         form = Archivos_forms()
     return render(request, 'Mensajes/ProductOwner/guardarArchivo.html', {'form': form})
 
+def cargar_documento(request):
+    if request.method == 'POST':
+        form = Archivos_forms(request.POST, request.FILES)
+        if form.is_valid():
+            archivo_pdf = request.FILES['Archivo']  # Aquí obtenemos el archivo PDF subido
+            
+            # Leer el contenido del archivo como binario
+            archivo_binario = archivo_pdf.read()
+            
+            # Guardar tanto el archivo físico como el binario
+            nuevo_archivo = form.save(commit=False)  # No guardamos aún, ya que modificaremos `ArchivoObj`
+            nuevo_archivo.ArchivoObj = archivo_binario  # Guardamos el archivo en el campo `BinaryField`
+            nuevo_archivo.save()  # Ahora guardamos el objeto con el campo binario
+
+            return redirect('Scrum:index')  # Cambia esto a donde quieras redirigir
+    else:
+        form = Archivos_forms()
+    return render(request, 'Mensajes/ProductOwner/guardarArchivo.html', {'form': form})
+
 def cargar_documentoConID(request, id):
     mensajes = Mensaje.objects.filter(pk=id)
-
+    #print("Guardar documento: cargar_documentoConID")
     if request.method == 'POST':
         form = ArchivosID_forms(request.POST, request.FILES)
         if form.is_valid():
@@ -1435,7 +1456,12 @@ def enviar_mensaje_Planeacion(request, id):
                 to=ListaDestinatarios,
             )   
             for arch in Archivos:
-                email.attach_file(str(arch.Archivo))
+                 # Convertimos el contenido binario del archivo a un objeto BytesIO
+                archivo_binario = BytesIO(arch.ArchivoObj)
+
+                # Adjuntar el archivo al correo con el nombre original del archivo
+                email.attach(arch.Archivo.name, archivo_binario.read(), 'application/pdf')
+                #email.attach_file(str(arch.Archivo))
             email.send()
             #Fin Envío del correo
 
@@ -3481,7 +3507,12 @@ def enviar_mensaje_Reunion_Diaria(request, id):
                 to=ListaDestinatarios,
             )   
             for arch in Archivos:
-                email.attach_file(str(arch.Archivo))
+                 # Convertimos el contenido binario del archivo a un objeto BytesIO
+                archivo_binario = BytesIO(arch.ArchivoObj)
+
+                # Adjuntar el archivo al correo con el nombre original del archivo
+                email.attach(arch.Archivo.name, archivo_binario.read(), 'application/pdf')
+                #email.attach_file(str(arch.Archivo))
             email.send()
             #Fin Envío del correo
 
@@ -4372,13 +4403,18 @@ def enviar_mensaje2(request, id):
                 from_email=Remitente,  # Remitente
                 to=ListaDestinatarios,
             )   
-            # for arch in Archivos:
-            #     #print(f"archivo: {arch.Archivo}")
-            #     #ArchivosAdjuntos = ArchivosAdjuntos  + "'"+str(arch.Archivo)+"'" + ','
-            #     email.attach_file(str(arch.Archivo))
-            #     #print(f"archivo: {arch.Archivo}")
-            # #ArchivosAdjuntos = ArchivosAdjuntos[:-1]
-            # #print(f"archivos adjuntos: {ArchivosAdjuntos}")
+            for arch in Archivos:
+                #print(f"archivo: {arch.Archivo}")
+                #ArchivosAdjuntos = ArchivosAdjuntos  + "'"+str(arch.Archivo)+"'" + ','
+
+                # Se convierte el contenido binario del archivo a un objeto BytesIO
+                archivo_binario = BytesIO(arch.ArchivoObj)
+                 # Adjuntar el archivo al correo con el nombre original del archivo
+                email.attach(arch.Archivo.name, archivo_binario.read(), 'application/pdf')
+                #email.attach_file(str(arch.Archivo))
+                #print(f"archivo: {arch.Archivo}")
+            #ArchivosAdjuntos = ArchivosAdjuntos[:-1]
+            #print(f"archivos adjuntos: {ArchivosAdjuntos}")
 
             #email.attach_file(ArchivosAdjuntos)
             email.send()

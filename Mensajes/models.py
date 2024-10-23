@@ -153,6 +153,7 @@ class m_RefinamientoProductBL(models.Model):
 class m_Archivos(models.Model):
     Descripcion = models.CharField(max_length=100)
     Archivo = models.FileField(upload_to='documents/')
+    ArchivoObj = models.BinaryField(null=True)  # Almacenar el archivo PDF aquí
     Mensaje = models.ForeignKey(Mensaje,on_delete=models.CASCADE, null=True, blank=True)
     Proyecto = models.ForeignKey(Proyecto,on_delete=models.CASCADE, null=True, blank=True)
 
