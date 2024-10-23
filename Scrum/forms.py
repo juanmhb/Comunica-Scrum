@@ -222,7 +222,7 @@ class HistoriaUsuarioForm(forms.ModelForm):
             'CriteriosAceptacion': forms.Textarea(
                 attrs = {
                     'class':'form-control',
-                    'rows':'3',
+                    'rows':'8',
                     'placeholder': 'Ingrese los Criterios de Aceptación'
                 }
             ),
