@@ -98,7 +98,7 @@ class ProyectoForm(forms.ModelForm):
             'fechafinal':'Fecha de Conclusión',
             'objetivo':'Objetivo',
             'impacto':'Impacto',
-            'homologacionvision':'Homologacion de la Visión'
+            'homologacionvision':'Homologación de la Visión'
         }
 
         widgets={
