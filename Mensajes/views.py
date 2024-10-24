@@ -4236,20 +4236,39 @@ def vistaEjecucionSprintID(request, id_ReunionDiaria):
     #tarea = Tarea.objects.all()
 
     #tareaAvance = TareaAvance.objects.all()
-    Query = """SELECT ta.* 
-            FROM public.\"Scrum_tarea\" as t inner join public.\"Scrum_historiausuario\" as hu on
-            (t.\"HistoriaUsuario_id\" = hu.id and
-            hu.\"Estatus_id\" in (4,5,6)
+    # Query = """SELECT ta.* 
+    #         FROM public.\"Scrum_tarea\" as t inner join public.\"Scrum_historiausuario\" as hu on
+    #         (t.\"HistoriaUsuario_id\" = hu.id and
+    #         hu.\"Estatus_id\" in (4,5,6)
+    #         ) inner join public.\"Scrum_sprint\" as sp on (
+    #             hu.\"Sprint_id\" = sp.id
+    #         )  inner join public.\"Scrum_tareaavance\" as ta on (
+    #             t.id = ta.\"tarea_id\" and
+    #             ta.\"HistoriaUsuario_id\" = hu.id
+    #             )
+    #         where
+    #         sp.id = %s""" % id_Sprint
+    Query = """SELECT hu.id , hu.\"NumeroHU\", hu.nombre NombreHU, t.id id_Tarea, t.nombre nombreTarea, t.horasestimadas,
+            ta.id id_TareaAvance, ta.\"horasDedicadas\", ta.\"horasRestantes\", ta.\"horasReales\", sp.\"numerosprint\", hu.\"Estatus_id\" StatusSprint,
+            ta.dia_1, ta.dia_2, ta.dia_3, ta.dia_4, ta.dia_5, ta.dia_6, ta.dia_7, ta.dia_8, ta.dia_9, ta.dia_10,
+            ta.dia_11, ta.dia_12, ta.dia_13, ta.dia_14, ta.dia_15, ta.dia_16, ta.dia_17, ta.dia_18, ta.dia_19, ta.dia_20,
+            ta.dia_21, ta.dia_22, ta.dia_23, ta.dia_24, ta.dia_25, ta.dia_26, ta.dia_27, ta.dia_28, ta.dia_29, ta.dia_30, ta.dia_31
+            FROM public."Scrum_historiausuario" as hu left join public."Scrum_tarea" as t on
+            (
+                hu.id = t.\"HistoriaUsuario_id"
+            ) left join public.\"Scrum_tareaavance\" as ta on (
+                t.id = ta.\"tarea_id\" and
+                ta.\"HistoriaUsuario_id\" = hu.id and
+                ta.\"horasDedicadas\" = 0
             ) inner join public.\"Scrum_sprint\" as sp on (
                 hu.\"Sprint_id\" = sp.id
-            )  inner join public.\"Scrum_tareaavance\" as ta on (
-                t.id = ta.\"tarea_id\" and
-                ta.\"HistoriaUsuario_id\" = hu.id
-                )
+            )
             where
-            sp.id = %s""" % id_Sprint
+            sp.id = %s and
+            hu.\"Estatus_id\" in (4,5,6)""" % id_Sprint
+
     tareaAvance = TareaAvance.objects.raw(Query)
-    print(f"Registro de tareasavance: {len(list(tareaAvance))}")
+    print(f"Registro de tareasavance: {len(list(tareaAvance))}, {list(tareaAvance)}")
 
     msm = Mensaje.objects.filter(pk=id_ReunionDiaria)
     mensaje = get_object_or_404(Mensaje, id=id_ReunionDiaria)
@@ -4270,20 +4289,45 @@ def vistaEjecucionSprintID(request, id_ReunionDiaria):
 
     # sprintbacklog = sprint_Backlog.objects.all()
     fechas = [dSprint.fechainiciosprint + timedelta(days=i) for i in range(diferencia_dias + 1)]
+    print (f"fechas: {fechas}")
 
     # diaDedicado = dia_sprint.objects.all()
 
+    # Lista para almacenar la matriz
+    matriz_avance = []
+
+    # Iteramos sobre los resultados del Query (tareas de avance)
+    for tarea in tareaAvance:
+        fila = []
+
+        # Iteramos sobre cada fecha del sprint
+        for j, fecha in enumerate(fechas, start=1):
+            # Comparar la fecha actual con los campos dia_1, dia_2, ..., dia_n
+            for i in range(1, 32):
+                field_name = f'dia_{i}'
+                # Usar getattr para obtener el valor del campo 'dia_n' del query
+                valor_dia = getattr(tarea, field_name, '0/0')
+                
+                # Si no hay valor (None), agregamos '0/0', sino tomamos el valor del campo
+                if valor_dia is None:
+                    fila.append('0/0')
+                else:
+                    fila.append(valor_dia)
+    
+        # Añadir la fila a la matriz
+        matriz_avance.append(fila)
+    print (f"matriz_avance: {matriz_avance}")
     data = {
-        'form': HU,
-        'tarea':tarea,
-        'avance':tareaAvance,
-        'diferencia_dias': diferencia_dias,
-        'mensaje':msm,
-        'dEmpleado':dEmpleado,
-        'mes':mes,
-        'fechas':fechas,
-        # 'dia':diaDedicado
-        # 'sprintbl': sprintbacklog
+            'form': HU,
+            'tarea':tarea,
+            'avance':tareaAvance,
+            'diferencia_dias': diferencia_dias,
+            'mensaje':msm,
+            'dEmpleado':dEmpleado,
+            'mes':mes,
+            'fechas':fechas,
+            # 'dia':diaDedicado
+            # 'sprintbl': sprintbacklog
     }
 
     return render(request, 'Mensajes/ProductOwner/plantillaEjecucion2.html', data)
