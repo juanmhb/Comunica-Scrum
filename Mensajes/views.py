@@ -445,7 +445,7 @@ def plantillaRefinamiento(request, id):
         'form3': datos4
     }
 
-    pdf = render_to_pdf('Mensajes/ProductOwner/plantillaRefinamiento.html', data)
+    pdf = render_to_pdf('Mensajes/ProductOwner/plantillaRefinamiento.html', data).encode('UTF-8')
     return HttpResponse(pdf, content_type='application/pdf')
 
 # Plantilla para el mensaje de retroalimentacion del product backlok
