@@ -29,7 +29,6 @@
 </head>
 
 <body>
-
   <div class="container">
     <div class="row">
       <div class="col-sm">
@@ -93,6 +92,7 @@
               </tr>
               {% for tarea in historia.HistoriaTareas.all %}
                 <tr>
+                  
                   <td>{{ forloop.counter }}</td>
                   <td align="center">{{ tarea.nombre }}</td>
                   <td>{{ tarea.Empleado.Usuario }}</td>
