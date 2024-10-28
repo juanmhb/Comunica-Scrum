@@ -323,7 +323,7 @@ def historiasEnSprint(request, id):
 
     # Estos datos se extraen de la historia de usuario seleccionada y posteriormente se guardan en el modelo sprint_Backlog
     sprint = producto.Sprint
-    print(f"sprint: {sprint} poryecto: {producto.Sprint.Proyecto}")
+    print(f"sprint: {sprint} proyecto: {producto.Sprint.Proyecto}")
     proyecto = producto.Sprint.Proyecto
     historia = producto.id
     id_historia = HistoriaUsuario.objects.get(pk=historia)
@@ -331,7 +331,7 @@ def historiasEnSprint(request, id):
     sprintBacklog = sprint_Backlog(Proyecto=proyecto, Sprint=sprint, historiaUsuario=id_historia)
     sprintBacklog.save()
     
-    return redirect(to="Mensajes:listaHistoriasPlaneacionSprint")
+    return redirect(to="Mensajes:listaHistoriasPlaneacionSprint", id=sprint.id)
 
 # Esta funcion cambia el estatus de la historia de usuario seleccionada a "Cancelada"
 def cancelarHistoria2(request, id):
@@ -340,7 +340,7 @@ def cancelarHistoria2(request, id):
     producto.Estatus = ref
     producto.save()
     
-    return redirect(to="Mensajes:listaHistoriasPlaneacionSprint")
+    return redirect(to="Mensajes:listaHistoriasPlaneacionSprint", id=producto.sprint.id)
 
 # Cancelara SOLO la historia si el usuario cambia de opinion
 #def cancelarHistoriaPS(request, id):
@@ -365,7 +365,7 @@ def cancelarHistoriaPS(request, id):
     historia.Estatus = ref
     historia.save()
 
-    return redirect(to="Mensajes:listaHistoriasPlaneacionSprint")
+    return redirect(to="Mensajes:listaHistoriasPlaneacionSprint", id=historia.sprint.id)
 
 class ActualizarHistoriaUsuarioPlaneacionSprint(LoginRequiredMixin, UpdateView):
     model = HistoriaUsuario
