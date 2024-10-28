@@ -970,14 +970,23 @@ def enviar_mensajeBL(request, id):
 
 # --------------------------------- CRUD PDF --------------------------------------------------
 def descargar_archivo(request, id):
-    # instancia = get_object_or_404(Mensaje, pk=id)
+    # instancia = get_object_or_404(m_Archivos, pk=id)
+    # # Aquí se asume que el campo 'archivo' en el modelo es un FileField o similar
+    # with instancia.Archivo.open() as f:
+    #     response = HttpResponse(f.read(), content_type='application/pdf')  # Cambia el content_type según el tipo de archivo
+    # response['Content-Disposition'] = 'attachment; filename="archivo.pdf"'  # Cambia el nombre del archivo según sea necesario
+
+    # Obtiene la instancia del archivo
     instancia = get_object_or_404(m_Archivos, pk=id)
     
-    # Aquí se asume que el campo 'archivo' en el modelo es un FileField o similar
-    with instancia.Archivo.open() as f:
-        response = HttpResponse(f.read(), content_type='application/pdf')  # Cambia el content_type según el tipo de archivo
-        
-    response['Content-Disposition'] = 'attachment; filename="archivo.pdf"'  # Cambia el nombre del archivo según sea necesario
+    # Convierte los datos binarios en un flujo de BytesIO
+    archivo_binario = BytesIO(instancia.ArchivoObj)
+    archivo_binario.seek(0)  # Asegura que la lectura comience desde el inicio
+
+    # Crea la respuesta HTTP para la descarga
+    response = HttpResponse(archivo_binario.read(), content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{instancia.Archivo.name.split("/")[-1]}"'
+    
     return response
 
 def cargar_documento_OLD(request):
