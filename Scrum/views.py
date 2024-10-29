@@ -24,6 +24,7 @@ from django.views.decorators.csrf import csrf_protect
 from django.db.models import Sum
 from django.db.models import Max
 from django.db.models import Subquery, OuterRef
+from django.db import transaction
 
 logger = logging.getLogger(__name__)
 
@@ -282,17 +283,20 @@ class EliminarHistoriaUsuarioSprint(LoginRequiredMixin, DeleteView):
     template_name = 'Scrum/historiausuariosprint_confirm_delete.html'  # Especifica tu plantilla personalizada aquí
 
     def delete(self, request, *args, **kwargs):
-        # Obtener el objeto que se va a eliminar
-        sprint_backlog = self.get_object()
 
-        # Obtener la instancia de HistoriaUsuario asociada y actualizarla
-        historia_usuario = sprint_backlog.historiaUsuario
-        historia_usuario.Estatus = 1  # Capturada Cambia el estatus
-        historia_usuario.Sprint = None  # Asigna NULL al campo Sprint
-        historia_usuario.save()
+        with transaction.atomic():
+            # Obtener el objeto que se va a eliminar
+            sprint_backlog = self.get_object()
 
-        # Llama al método delete original para eliminar el objeto
-        return super().delete(request, *args, **kwargs)
+            # Obtener la instancia de HistoriaUsuario asociada y actualizarla
+            historia_usuario = sprint_backlog.historiaUsuario
+            historia_usuario.Estatus = 1  # Estatus=1=Capturada 
+            historia_usuario.Sprint = None  # Asigna NULL al campo Sprint
+            historia_usuario.save()  # Guarda los cambios antes de eliminar
+
+            # Llama al método delete original para eliminar el objeto
+            response =  super().delete(request, *args, **kwargs)
+        return response
     
     # historia_id = model.historiaUsuario.id
     # HU = HistoriaUsuario.objects.get(pk=historia_id)
