@@ -23,6 +23,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.csrf import csrf_protect
 from django.db.models import Sum
 from django.db.models import Max
+from django.db.models import Subquery, OuterRef
 
 logger = logging.getLogger(__name__)
 
@@ -276,9 +277,10 @@ class ActualizarHistoriaUsuarioSprint(LoginRequiredMixin, UpdateView):
           return reverse('Scrum:listar_sprint_Historias', kwargs={'pk': self.object.Sprint.pk})
     
 class EliminarHistoriaUsuarioSprint(LoginRequiredMixin, DeleteView):
-    model = HistoriaUsuario
+    #model = HistoriaUsuario
+    model = sprint_Backlog
     # success_url = reverse_lazy('Scrum:listar_proyectos')
-
+    #print(f"self: kwargs={'pk': self.object.Sprint.pk}" )
     def get_success_url(self):
          return reverse('Scrum:listar_sprint_Historias', kwargs={'pk': self.object.Sprint.pk})
 
@@ -295,16 +297,30 @@ def ListadoSprintEmpleados(request, pk):
     return render(request,'Scrum/Empleado/gestion_sprint.html', {'Sprints': list(set(Sprints)),'pk':pk})
 
 def ListadoSprintHistorias(request, pk):
+    # sprint = get_object_or_404(Sprint, pk=pk)
+    # HistoriasProductBacklog = HistoriaUsuario.objects.filter(Sprint__pk=pk)
+    # pkProyecto = sprint.Proyecto.pk
+
+    # return render(request, 'Scrum/gestion_proyectos.html', {
+    #     'HistoriasProductBacklog': HistoriasProductBacklog,
+    #     'pk': pkProyecto,
+    #     'Sprint': sprint
+    # })
     sprint = get_object_or_404(Sprint, pk=pk)
-    HistoriasProductBacklog = HistoriaUsuario.objects.filter(Sprint__pk=pk)
     pkProyecto = sprint.Proyecto.pk
+
+    # Modificar la consulta para incluir el ID de sprint_Backlog relacionado
+    HistoriasProductBacklog = HistoriaUsuario.objects.filter(Sprint__pk=pk).annotate(
+        sprint_backlog_id=Subquery(
+            sprint_Backlog.objects.filter(historiaUsuario=OuterRef('pk')).values('id')[:1]
+        )
+    )
 
     return render(request, 'Scrum/gestion_proyectos.html', {
         'HistoriasProductBacklog': HistoriasProductBacklog,
         'pk': pkProyecto,
         'Sprint': sprint
     })
-
 class CrearSprint(LoginRequiredMixin,CreateView):
     model = Sprint
     template_name = 'Scrum/registrar_sprint.html'
