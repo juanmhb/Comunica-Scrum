@@ -281,6 +281,25 @@ class EliminarHistoriaUsuarioSprint(LoginRequiredMixin, DeleteView):
     model = sprint_Backlog
     template_name = 'Scrum/historiausuariosprint_confirm_delete.html'  # Especifica tu plantilla personalizada aquí
 
+    def delete(self, request, *args, **kwargs):
+        # Obtener el objeto que se va a eliminar
+        sprint_backlog = self.get_object()
+
+        # Obtener la instancia de HistoriaUsuario asociada y actualizarla
+        historia_usuario = sprint_backlog.historiaUsuario
+        historia_usuario.Estatus = 1  # Capturada Cambia el estatus
+        historia_usuario.Sprint = None  # Asigna NULL al campo Sprint
+        historia_usuario.save()
+
+        # Llama al método delete original para eliminar el objeto
+        return super().delete(request, *args, **kwargs)
+    
+    # historia_id = model.historiaUsuario.id
+    # HU = HistoriaUsuario.objects.get(pk=historia_id)
+    # HU.Estatus = 1
+    # HU.Sprint = None
+    # HU.save()
+
     def get_success_url(self):
          return reverse('Scrum:listar_sprint_Historias', kwargs={'pk': self.object.Sprint.pk})
 
