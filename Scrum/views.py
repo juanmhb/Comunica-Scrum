@@ -279,8 +279,8 @@ class ActualizarHistoriaUsuarioSprint(LoginRequiredMixin, UpdateView):
 class EliminarHistoriaUsuarioSprint(LoginRequiredMixin, DeleteView):
     #model = HistoriaUsuario
     model = sprint_Backlog
-    # success_url = reverse_lazy('Scrum:listar_proyectos')
-    #print(f"self: kwargs={'pk': self.object.Sprint.pk}" )
+    template_name = 'Scrum/historiausuariosprint_confirm_delete.html'  # Especifica tu plantilla personalizada aquí
+
     def get_success_url(self):
          return reverse('Scrum:listar_sprint_Historias', kwargs={'pk': self.object.Sprint.pk})
 
