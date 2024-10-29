@@ -69,7 +69,6 @@
                       <th>Fecha de actualización</th>
                       <th>Descripción</th>
                       <th>Estado</th>
-                      <th>Id PBL</th>
                       {% if Sprint %}
                       <th>Asignar</th>
                       {% endif %}
@@ -84,7 +83,6 @@
                         <td>{{ Historia.ultimaactualizacion }}</td>
                         <td>{{ Historia.descripcion }}</td>
                         <td>{{ Historia.Estatus }}</td>
-                        <td>{{ Historia.sprint_backlog_id }}</td>
                         {% if Sprint %}
                         <td>
                           {% if Historia.tereasasignadas == True %}
@@ -120,8 +118,6 @@
                                 <path d="M0 0h16v16H0V0zM1 1v14h14V1H1zm4 1v4H2V2h3zm5 0v4H7V2h4zm5 0v4h-3V2h3zm-5 5v4H7V7h4zm5 0v4h-3V7h3zM7 12v4H2v-4h5zm5 0v4H7v-4h5z"/>
                               </svg>
                             </a>
-                            <p>Historia ID: {{ Historia.id }}</p>
-                            <p>Sprint Backlog ID: {{ Historia.sprint_backlog_id }}</p>
                             {% if Historia.sprint_backlog_id %}
                             <a data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar HU" href="{% url 'Scrum:eliminar_historiausuario_sprint' Historia.sprint_backlog_id %}" class="btn btn-outline-danger">
                               <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
