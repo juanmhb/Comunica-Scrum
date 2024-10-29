@@ -382,7 +382,7 @@ class ActualizarSprint(LoginRequiredMixin, UpdateView):
          return reverse('Scrum:listar_sprint', kwargs={'pk': self.object.Proyecto.pk})
 
 
-def AsignarHistriasSprint(request, pk):
+def AsignarHistoriasSprint(request, pk):
     sprint = get_object_or_404(Sprint, pk=pk)
     pkProyecto = sprint.Proyecto
     form = SprintHistoriasUsuarioForm(pk=pkProyecto.pk)
@@ -396,8 +396,20 @@ def AsignarHistriasSprint(request, pk):
                 for historia_id in listH:
                     updateHistoria = get_object_or_404(HistoriaUsuario, pk=historia_id)
                     updateHistoria.Sprint = sprint
-                    updateHistoria.Estatus = status[1]
+                    updateHistoria.Estatus = status[3] # [0] = Capturada esta el valor de 1,.. [3] = En Sprint esta el valor 4
                     updateHistoria.save()
+                #------------------------------------
+                #Agregar en el modelo sprint_Backlog
+                # Crea una nueva instancia de sprint_Backlog
+                SBacklog = sprint_Backlog(
+                    Proyecto=pkProyecto,
+                    Sprint=sprint,
+                    historiaUsuario=updateHistoria
+                )
+                
+                # Guarda la instancia en la base de datos
+                SBacklog.save()
+                #------------------------------------
             except IntegrityError:
                 return render(request, 'ingles/registro.html', {'error_message': 'Ya Existe El Correo Electronico'})
             return HttpResponseRedirect(reverse('Scrum:listar_sprint', kwargs={'pk': pkProyecto.pk}))
