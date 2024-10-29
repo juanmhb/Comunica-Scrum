@@ -4169,7 +4169,7 @@ def archivosRecibidosRevisionEmpleado(request, id):
 def vistaHistoriasHU(request):
     # dato = MensajeRetroA.objects.filter(Receptor=request.user)
     #dato = MensajeRetroA.objects.filter(pk=id)
-    dato = HistoriaUsuario.objects.filter(Estatus=4)
+    dato = HistoriaUsuario.objects.filter(Estatus=4) # EN Sprint
     # dato = HistoriaUsuario.objects.all()
     tarea = Tarea.objects.all()
     # hu = HistoriaUsuario.objects.filter(pk=id)

@@ -488,7 +488,14 @@ def tareas_avance(request, sprint_id=None, historia_usuario_id=None):
     if sprint_id is not None and historia_usuario_id is not None:
         try:
             historia_usuario = HistoriaUsuario.objects.get(pk=historia_usuario_id)
-            tareas = Tarea.objects.filter(HistoriaUsuario__pk=historia_usuario_id)
+            #tareas = Tarea.objects.filter(HistoriaUsuario__pk=historia_usuario_id)
+                # Filtra las tareas por historia_usuario_id y usuario conectado
+              # Obtiene el Empleado asociado al usuario autenticado
+            empleado = request.user.usuarioempleado
+            tareas = Tarea.objects.filter(
+                HistoriaUsuario__pk=historia_usuario_id,
+                Empleado=empleado  # Filtra tareas del usuario conectado
+            )
             sprint = Sprint.objects.get(pk=sprint_id)
             proyecto_pk = historia_usuario.Proyecto.pk if historia_usuario.Proyecto else None
             sprint_pk = sprint.pk if sprint else None

@@ -349,7 +349,7 @@ class TareaAvanceForm(forms.ModelForm):
             #Oculta TODOS los campos de los días de captura
             for i in range(1, 32): # del 1 al 31, el 32 no se considera
                 self.fields[f'dia_{i}'].widget = forms.HiddenInput()
-
+            ordered_fields = ['horasReales'] + ['fechaAvance']
             # Añadir campos para cada día 
             for i, dia in enumerate(self.dias_habiles, start=1):
                 field_name = f'dia_{dia.day}'
@@ -364,6 +364,10 @@ class TareaAvanceForm(forms.ModelForm):
                         attrs={'class': 'form-control', 'disabled': 'disabled'} if dia.weekday() >= 5 else {'class': 'form-control'}
                     )
                 )
+                ordered_fields +=[field_name]
+            #print(f"ordered_fields: {ordered_fields}")
+            #Se reordenan los campos
+            self.fields = {field_name: self.fields[field_name] for field_name in ordered_fields}
     def clean(self):
         cleaned_data = super().clean()
         horas_dedicadas = 0
