@@ -430,7 +430,8 @@ def vistaRefinamiento(request, id):
 # Renderizar refinamientoBL a PDF
 def plantillaRefinamiento(request, id):
     # datos = AsistentesEventosScrum.objects.all()
-    historiasBL = HistoriaUsuario.objects.filter(Q(Estatus=3) & Q(MensajeRPBL=id)) # 3=Refinadas
+    #historiasBL = HistoriaUsuario.objects.filter(Q(Estatus=3) & Q(MensajeRPBL=id)) # 3=Refinadas
+    historiasBL = HistoriaUsuario.objects.filter( Q(MensajeRPBL=id))
     # datos3 = Mensaje.objects.filter(Emisor=request.user)
     datos4 = Mensaje.objects.filter(pk=id)
 
