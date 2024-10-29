@@ -315,7 +315,8 @@ def ListadoSprintHistorias(request, pk):
             sprint_Backlog.objects.filter(historiaUsuario=OuterRef('pk')).values('id')[:1]
         )
     )
-    print(f"sprint_Backlog: {HistoriasProductBacklog.sprint_Backlog_id}")
+    for HU in HistoriasProductBacklog:
+        print(f"sprint_Backlog: {HU.sprint_backlog_id}")
     return render(request, 'Scrum/gestion_proyectos.html', {
         'HistoriasProductBacklog': HistoriasProductBacklog,
         'pk': pkProyecto,
