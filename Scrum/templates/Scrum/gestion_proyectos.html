@@ -69,6 +69,7 @@
                       <th>Fecha de actualización</th>
                       <th>Descripción</th>
                       <th>Estado</th>
+                      <th>Id PBL</th>
                       {% if Sprint %}
                       <th>Asignar</th>
                       {% endif %}
@@ -83,6 +84,7 @@
                         <td>{{ Historia.ultimaactualizacion }}</td>
                         <td>{{ Historia.descripcion }}</td>
                         <td>{{ Historia.Estatus }}</td>
+                        <td>{{ Historia.sprint_backlog_id }}</td>
                         {% if Sprint %}
                         <td>
                           {% if Historia.tereasasignadas == True %}
