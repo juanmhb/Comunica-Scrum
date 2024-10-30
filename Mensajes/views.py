@@ -416,7 +416,7 @@ def vistaRefinamiento(request, id):
     # Obtener todos los AsistentesEventosScrum asociados a este mensaje
     asistentes = AsistentesEventosScrum.objects.filter(Mensaje=mensaje)
 
-    datos2 = HistoriaUsuario.objects.filter(Q(Estatus=3) & Q(MensajeRPBL=id)) # 3=Refinadas
+    datos2 = HistoriaUsuario.objects.filter(Q(Estatus__in=[3,4,5,6,7,8]) & Q(MensajeRPBL=id)) # 3=Refinadas
     #print(f"HU {datos2[0].HorasEstimadas}")
     datos3 = Mensaje.objects.filter(pk=id)
     data = {
@@ -499,8 +499,15 @@ def plantillaPlaneacionSprint(request, id):
     #idPlaneacion = m_PlanificacionSprint.objects.get(pk=id)
     # planeacion = m_PlanificacionSprint.objects.filter(pk=id)
 
+    # Obtener el Empleado relacionado con el usuario actual
+    empleado = request.user.usuarioempleado
+
+    # Obtener los proyectos en los que el empleado participa
+    proyectos = EmpleadoProyecto.objects.filter(Empleado=empleado).values_list('Proyecto', flat=True)
+
+
     planeacion = Mensaje.objects.filter(pk=id)
-    historias = HistoriaUsuario.objects.filter(Estatus__in=[4, 5]) # 4= HU en Sprint 5=HU Divididas
+    historias = HistoriaUsuario.objects.filter(Q(Proyecto__in=proyectos) & Q(Estatus__in=[4, 5, 6, 7, 8])) # 4= HU en Sprint 5=HU Divididas
     mensaje = Mensaje.objects.get(pk=id)
     asistentes = AsistentesEventosScrum.objects.filter(Mensaje=mensaje)
     comentarios = m_Comentarios.objects.filter(Mensaje=mensaje)
@@ -512,9 +519,6 @@ def plantillaPlaneacionSprint(request, id):
     total_horas = sum(item.HorasEstimadas for item in historias)
     total_dias = total_horas / 8
 
-    # porcentaje = (total_horas * total_dias) / 100
-    porcentaje = (total_horas + total_dias) / 2
-
     data = {
         'form': planeacion,
         'form2': historias,
@@ -522,7 +526,6 @@ def plantillaPlaneacionSprint(request, id):
         'idiomaPais':idiomaPais,
         'horas':total_horas,
         'dias':total_dias,
-        'porcentaje':porcentaje,
         'comentarios':comentarios
     }
 
@@ -2034,23 +2037,35 @@ class ActualizarAsistenteEmpleadoPS(LoginRequiredMixin, UpdateView):
 def listaRevisionSprint(request):
     if request.user.is_authenticated:
         usuario = request.user
-        empleado = Empleado.objects.get(Usuario=usuario)
-        mensajes = Mensaje.objects.filter(Q(Emisor=empleado) & Q(EventoScrum="5")) 
-        asistentes = AsistentesEventosScrum.objects.all()
+        #empleado = Empleado.objects.get(Usuario=usuario)
+        #mensajes = Mensaje.objects.filter(Q(Emisor=empleado) & Q(EventoScrum="5")) # 5= Reunión del Cierre del Sprint
+
+
+        # Obtener el Empleado relacionado con el usuario actual
+        empleado = request.user.usuarioempleado
+
+        # Obtener los proyectos en los que el empleado participa
+        proyectos = EmpleadoProyecto.objects.filter(Empleado=empleado).values_list('Proyecto', flat=True)
+
+        #Filtra los mensajes de las ceremonias de Cierre del Sprint, relacionados a un proyecto determinado
+        mensajes = Mensaje.objects.filter(Q(Emisor=empleado) & Q(EventoScrum="5") & Q(Proyecto__in=proyectos)) # 5= Reunión del Cierre del Sprint
+
+
+        #asistentes = AsistentesEventosScrum.objects.all()
 
         planeaciacionSprint = m_PlanificacionSprint.objects.all()
 
         data = {
         'form2':mensajes,
-        'form3':asistentes
+        #'form3':asistentes
         }
 
-        user = request.user
+        #user = request.user
 
-        if user is not None:
-            login(request, user)
+        if usuario is not None:
+            login(request, usuario)
             # Redirecciona al usuario dependiendo de su rol
-            if user.usuarioempleado.Roles.NombreRol == 'Product Owner':
+            if usuario.usuarioempleado.Roles.NombreRol == 'Product Owner':
                 return render(request, 'Mensajes/ProductOwner/listaRevisionSprint.html', data)
             else:
                 # si el usuario no es Scrum Master se mostrara el siguiente mensaje
@@ -2064,7 +2079,18 @@ def listaRevisionSprint(request):
 
 # Muestra una lista de los sprints disponibles para heredar sus datos
 def subListaRevisionSprint(request):
-    sprint = Sprint.objects.all()
+    #sprint = Sprint.objects.all()
+    # Obtener el Empleado relacionado con el usuario actual
+    empleado = request.user.usuarioempleado
+
+    # Obtener los proyectos en los que el empleado participa
+    proyectos = EmpleadoProyecto.objects.filter(Empleado=empleado).values_list('Proyecto', flat=True)
+
+    # Filtrar los sprints de esos proyectos con el estatus 3, 4 o 5
+    sprint = Sprint.objects.filter(
+        Proyecto__in=proyectos,
+        Estatus__pk__in=[1, 3] # 1=Creado, 3=EN ejecución
+    )
 
     data = {
         'form': sprint
@@ -2364,56 +2390,109 @@ def vistaRevisionSprint(request, id):
     return render(request, 'Mensajes/ProductOwner/plantillaRevisionSprint.html', data)
 
 def PlantillaRevisionSprint(request, id):
-    planeacion = Mensaje.objects.filter(pk=id)
-    historias = HistoriaUsuario.objects.filter(Q(Estatus=4) | Q(Estatus=5) | Q(Estatus=6) | Q(Estatus=7))
+    #planeacion = Mensaje.objects.filter(pk=id)
     mensaje = Mensaje.objects.get(pk=id)
+    id_Sprint = mensaje.Sprint.id
+    # Status de las HU
+    # 4	"En Sprint"
+    # 5	"Dividida en Tareas"
+    # 6	"En Progreso"
+    # 7	"Completada"
+    # 8	"Aceptada"
+    historias = HistoriaUsuario.objects.filter(Q(Sprint = mensaje.Sprint) & Q(Estatus__in=[4, 5, 6, 7, 8]))
+   
     asistentes = AsistentesEventosScrum.objects.filter(Mensaje=mensaje)
     comentarios = m_Comentarios.objects.filter(Mensaje=mensaje)
 
     usuario = request.user
-    idiomaPais = Empleado.objects.filter(Usuario=usuario)
+    empleado = Empleado.objects.filter(Usuario=usuario)
 
     # Suma los valores de los objetos
-    total_horas = sum(item.HorasEstimadas for item in historias)
-    total_dias = total_horas / 24
+    # total_horas = sum(item.HorasEstimadas for item in historias)
+    # total_dias = total_horas / 8
 
     # porcentaje = (total_horas * total_dias) / 100
-    porcentaje = (total_horas + total_dias) / 2
-
+    # porcentaje = (total_horas + total_dias) / 2
+    #porcentaje = 20
     # Total de horas de tareas
-    tareas = Tarea.objects.all()
-    total_tareas = sum(item.horasestimadas for item in tareas)
-    tareas_dias = total_tareas / 24
+    #tareas = Tarea.objects.all()
 
-    num = random.randint(1, 16)
-    registros = TareaAvance.objects.all()
+    # Filtra las tareas asociadas a las historias de usuario filtradas anteriormente
+    tareas = Tarea.objects.filter(HistoriaUsuario__in=historias)
+    #total_tareas = sum(item.horasestimadas for item in tareas)
+    total_horas_estimadas = sum(item.horasestimadas for item in tareas)
+    total_dias_estimados = total_horas_estimadas/8
+    #tareas_dias = total_tareas / 8
+
+    #num = random.randint(1, 16)
+    #registros = TareaAvance.objects.all()
+    # Filtra los registros de TareaAvance asociados a esas tareas
+    registros = TareaAvance.objects.filter(tarea__in=tareas)
+
+    Query = """select id, numero_hu, nombre_hu, horasestimadas, horasreales, horasrestantes, estatus_id, huaceptada,
+        case
+            when
+                HorasReales = 0 and  HorasRestantes = 0 Then 0.0
+            when 
+                HorasReales <> 0 and  HorasRestantes = 0 Then 100.0
+            else
+                ((HorasEstimadas - HorasRestantes) / HorasEstimadas ::float) * 100
+        end AS progreso
+        from (SELECT hu.id, hu.\"NumeroHU\" AS numero_hu, hu.nombre AS nombre_hu, eh.\"estatus\" AS Estatus_id,  hu.\"HUAceptada\" AS HUAceptada,
+            COALESCE(sum(t.\"horasestimadas\"), 0) AS HorasEstimadas,
+            COALESCE(sum(ta.\"horasReales\"), 0) AS HorasReales,
+            COALESCE(sum(ta.\"horasRestantes\"), 0) AS HorasRestantes
+        FROM public.\"Scrum_historiausuario\" as hu left join public.\"Scrum_tarea\" as t on
+        (
+            hu.id = t.\"HistoriaUsuario_id\"
+        ) left join public.\"Scrum_tareaavance\" as ta on (
+            t.id = ta.\"tarea_id\" and
+            ta.\"HistoriaUsuario_id\" = hu.id and
+            ta.\"horasDedicadas\" = 0
+        ) inner join public.\"Scrum_sprint\" as sp on (
+            hu.\"Sprint_id\" = sp.id
+        ) inner join public."Scrum_estatushistoria" as eh on (
+            hu.\"Estatus_id\" = eh.id
+        )
+        where
+        sp.id =  %s  and
+        hu.\"Estatus_id\" in (4,5,6,7,8)
+        group by hu.id, hu.\"NumeroHU\", hu.nombre, eh.\"estatus\", hu.\"HUAceptada\"
+        ) as temp""" % id_Sprint
+    
+    tareaAvance = TareaAvance.objects.raw(Query)
     if registros:
-        suma = registros.aggregate(total=models.Sum('horasDedicadas'))['total']
-        diasReales = suma / 24
+        total_horas_reales = registros.aggregate(total=models.Sum('horasDedicadas'))['total']
+        #diasReales = suma / 8
         # Si la historia esta en progreso, se muestra el siguiente calculo
         # (horas_reales * horas_estimadas) * 100
-        enProgreso = (suma / total_tareas) * 100
+        #enProgreso = (suma / total_tareas) * 100
     else:
         # Si no hay registros mostrara 0 por default
-        suma = 0
-        diasReales = 0
-        enProgreso = 0
-
+        total_horas_reales = 0
+        # suma = 0
+        # diasReales = 0
+        # enProgreso = 0
+    #enProgreso = 0
+    total_dias_reales = total_horas_reales/8
     data = {
-        'form': planeacion,
-        'form2': historias,
-        'form3': asistentes,
-        'idiomaPais':idiomaPais,
-        'horas':total_horas,
-        'dias':total_dias,
-        'porcentaje':porcentaje,
+        'tareaAvance': tareaAvance,
+        'mensaje': mensaje,
+        #'historias': historias,
+        'asistentes': asistentes,
+        'Empleado':empleado,
+        'total_horas_estimadas': total_horas_estimadas,
+        'total_horas_reales': total_horas_reales,
+        'total_dias_estimados':total_dias_estimados,
+        'total_dias_reales':total_dias_reales,
+        #'porcentaje':porcentaje,
         'comentarios':comentarios,
-        'total_tareas':total_tareas,
-        'dias_tareas':tareas_dias,
-        'suma':suma,
-        'registros': registros,
-        'reales':diasReales,
-        'progreso':enProgreso,
+        #'total_tareas':total_tareas,
+        #'dias_tareas':tareas_dias,
+        #'suma':suma,
+        #'registros': registros,
+        #'reales':diasReales,
+        #'progreso':enProgreso,
 
     }
 

@@ -182,7 +182,7 @@ class HistoriaUsuario(models.Model):
     Prioridad = models.CharField(max_length=1,choices=ListaPrioridad,null=True, blank=True)
     # Prioridad = models.IntegerField(null=True, blank=True)
     CriteriosAceptacion = models.CharField(max_length=2000, null=True, blank=True)
-    #CriteriosAceptacion = models.CharField(max_length=1,choices=ListaCriterio,null=True, blank=True)
+    HUAceptada = models.CharField(max_length=1,choices=ListaCriterio,null=True, blank=True)
     MensajeRPBL = models.ForeignKey(Mensaje,  on_delete=models.CASCADE,null=True, blank=True  )
     # tereas_asignadas = models.BooleanField(null=True)
     tereasasignadas = models.BooleanField(default=False)
