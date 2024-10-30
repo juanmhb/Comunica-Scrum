@@ -14,9 +14,13 @@
               #gris{
                   background-color:rgb(194, 194, 194);
               }
-      table tr, th, td {
+      /* table tr, th, td {
         height: 20px;
-        vertical-align: bottom;
+        vertical-align: top;
+      } */
+      .table-row-auto td {
+          width: 200px; /* Ancho específico de las celdas */
+          word-wrap: break-word; /* Permite que el texto se ajuste dentro de la celda */
       }
       </style>
       <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
@@ -34,10 +38,7 @@
    
    <tr>
     <td align="center">Fecha y hora</td>
-    <td align="center"> {{ p.FechaHora }}</td>
-    <td> &nbsp; </td>
-    <td> &nbsp; </td>
-    <td> &nbsp; </td>
+    <td  colspan="4" > {{ p.FechaHora }}</td>
    </tr>
  
    <tr>
@@ -47,9 +48,7 @@
    <tr>
     <td id="azul" align="center">Idioma</td>
     <td id="azul" align="center">Español</td>
-    <td id="azul"> &nbsp; </td>
-    <td id="azul"> &nbsp; </td>
-    <td id="azul"> &nbsp; </td>
+    <td colspan="3" id="azul"> &nbsp; </td>
    </tr>
    <tr>
     <td align="center">País</td>
@@ -116,95 +115,44 @@
    </tr>
 
    {% for p in form2 %}
-   <tr>
-    <!--<td id="azul" align="center"> HU001 </td>
-    <td id="azul" align="center"> Pantalla de acceso </td>-->
-    <!-- <td id="azul"> HU00{{ p.id }}</td> -->
-    <td id="azul"> {{ p.NumeroHU}}</td> 
-    <td id="azul"> {{ p.nombre | capfirst }} </td>
-    <td id="azul" align="center"> &nbsp; </td>
-    <td id="azul" align="center"> &nbsp; </td>
-    <td id="azul" align="center"> &nbsp; </td>
-   </tr>
-
-    <!-- <td id="azul"> &nbsp; </td>
-    <td id="azul"> &nbsp; </td>
-    <td id="azul" align="center"> &nbsp; </td>
-    <td id="azul" align="center"> &nbsp; </td>
-    <td id="azul" align="center"> &nbsp; </td> -->
-
-   <tr>
-    <td align="center"> &nbsp; </td>
-    <td align="center"> Tiempo estimado: </td>
-    <td align="center"> {{ p.HorasEstimadas}} </td>
-    <td align="center"> &nbsp; </td>
-    <td align="center"> &nbsp; </td>
-   </tr>
+    <tr class="table-row-auto">
+      <td id="azul"> {{ p.NumeroHU}}</td> 
+      <td colspan="4" id="azul"> {{ p.nombre | capfirst }} </td>
+    </tr>
+    <tr>
+      <td align="center"> &nbsp; </td>
+      <td align="center"> Tiempo estimado: </td>
+      <td colspan="3"> {{ p.HorasEstimadas}} hrs </td>
+    </tr>
+    
+    <tr>
+      <td  align="center"> &nbsp; </td>
+      <td  align="center"> Prioridad: </td>
+      <td colspan="3"  > {{p.get_Prioridad_display}} </td>
+    </tr>
   
-   <tr>
-    <td id="azul" align="center"> &nbsp; </td>
-    <td id="azul" align="center"> Prioridad: </td>
-    {% if p.Prioridad == "1" %}
-    <td id="azul" align="center"> Alta </td>
-    {% elif p.Prioridad == "2" %}
-    <td id="azul" align="center"> Media </td>
-    {% elif p.Prioridad == "3" %}
-    <td id="azul" align="center"> Baja </td>
-    {% else %}
-    <td id="azul" align="center"> Dato invalido </td>
-    {% endif %}
-    <td id="azul" align="center"> &nbsp; </td>
-    <td id="azul" align="center"> &nbsp; </td>
-   </tr>
- 
-   <tr>
-    <td align="center"> &nbsp; </td>
-    <td align="center"> Descripción: </td>
-    <td align="center"> {{ p.descripcion }} </td>
-    <td align="center"> &nbsp; </td>
-    <td align="center"> &nbsp; </td>
-   </tr>
-   
-   <tr>
-    <td id="azul" align="center"></td>
-    <td id="azul" align="center">Criterio de aceptación:</td>
-    <!-- {% if p.CriteriosAceptacion == "1" %}
-    <td id="azul" align="center" colspan="3">Si</td>
-    {% elif p.CriteriosAceptacion == "2" %}
-    <td id="azul" align="center" colspan="3">No</td>
-    {% else %}-->
-    <td id="azul" align="center" colspan="3"> {{p.CriteriosAceptacion}}</td>
-    <!-- {% endif %} -->
-   </tr>
-   <tr>
-      <td align="center" colspan="3">&nbsp; </td>
-   </tr>
-   <!--
-   <tr>
-    <td align="center"> HU0002 </td>
-    <td align="center">Historia de usuario 2</td>
-    <td align="center" colspan="3"> &nbsp; </td>
-   </tr>
-  -->
-
+    <tr  class="table-row-auto">
+      <td align="center"> &nbsp; </td>
+      <td align="center"> Descripción: </td>
+      <td colspan="3" style="width: 500px;" > {{ p.descripcion }} </td>
+    </tr>
+    
+    <tr  class="table-row-auto">
+      <td  align="center"></td>
+      <td  align="center">Criterio de aceptación:</td>
+      <td  colspan="3"> {{p.CriteriosAceptacion}}</td>
+      </tr>
+    <tr>
+        <td align="center" colspan="5">&nbsp; </td>
+    </tr>
   {% endfor %}
-   <tr>
-    <td align="center">&nbsp; </td>
-    <td align="center">&nbsp; </td>
-    <td align="center" colspan="3">&nbsp; </td>
-   </tr>
+
    {% for p in form3 %}
-   <tr>
-    <td align="center" id="azul"> Objetivo </td>
-    <td align="center" id="azul" colspan="4"> {{ p.Descripcion }} </td>
-   </tr>
+    <tr  class="table-row-auto">
+      <td align="center" id="azul"> Objetivo </td>
+      <td  id="azul" colspan="4"> {{ p.Descripcion }} </td>
+    </tr>
    {% endfor %}
-   <!--Opcional
-   <tr>
-    <td id="azul" align="center"> Retroalimentación </td>
-    <td id="azul" align="center" colspan="4">&nbsp; </td>
-   </tr>
-  -->
   </table>
   </div> 
 
