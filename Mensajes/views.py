@@ -506,7 +506,7 @@ def plantillaPlaneacionSprint(request, id):
     proyectos = EmpleadoProyecto.objects.filter(Empleado=empleado).values_list('Proyecto', flat=True)
 
 
-    planeacion = Mensaje.objects.filter(pk=id)
+    #planeacion = Mensaje.objects.filter(pk=id)
     historias = HistoriaUsuario.objects.filter(Q(Proyecto__in=proyectos) & Q(Estatus__in=[4, 5, 6, 7, 8])) # 4= HU en Sprint 5=HU Divididas
     mensaje = Mensaje.objects.get(pk=id)
     asistentes = AsistentesEventosScrum.objects.filter(Mensaje=mensaje)
@@ -520,7 +520,7 @@ def plantillaPlaneacionSprint(request, id):
     total_dias = total_horas / 8
 
     data = {
-        'form': planeacion,
+        #'form': planeacion,
         'form2': historias,
         'form3': asistentes,
         'idiomaPais':idiomaPais,
@@ -1168,20 +1168,21 @@ def cargar_documentoConIDReunionDiaria(request, id):
 # Lista planeacion sprint, sin parametros
 def listaPlaneacionSprint(request):
     if request.user.is_authenticated:
+        # Obtener el Empleado relacionado con el usuario actual
+        #empleado = request.user.usuarioempleado
         usuario = request.user
         empleado = Empleado.objects.get(Usuario=usuario)
-        mensajes = Mensaje.objects.filter(Q(Emisor=empleado) & Q(EventoScrum="3")) # Reunión de Planeación del Sprint
-        asistentes = AsistentesEventosScrum.objects.all()
-        # print(f"Usuario.id: {usuario }, empleado: {empleado}, user: {request.user}" )
-        # print(f"Mensajes: {mensajes}")
-        # print(f"asistentes: {asistentes}")
 
-        planeaciacionSprint = m_PlanificacionSprint.objects.all()
+        # Obtener los proyectos en los que el empleado participa
+        proyectos = EmpleadoProyecto.objects.filter(Empleado=empleado).values_list('Proyecto', flat=True)
+        mensajes = Mensaje.objects.filter(Q(Emisor=empleado) & Q(EventoScrum="3") & Q(Proyecto__in=proyectos)) # Reunión de Planeación del Sprint
+        #asistentes = AsistentesEventosScrum.objects.all()
+        #planeaciacionSprint = m_PlanificacionSprint.objects.all()
 
         data = {
-        'form': planeaciacionSprint,
+        #'form': planeaciacionSprint,
         'form2':mensajes,
-        'form3':asistentes
+        #'form3':asistentes
         }
 
         user = request.user
@@ -1190,9 +1191,9 @@ def listaPlaneacionSprint(request):
             login(request, user)
             # Redirecciona al usuario dependiendo de su rol
             if user.usuarioempleado.Roles.NombreRol == 'Product Owner':
-                print(f"Usuario.id PO: {usuario }, empleado: {empleado}, user: {request.user}" )
-                print(f"Mensajes PO: {mensajes}")
-                print(f"asistentes PO: {asistentes}")
+                # print(f"Usuario.id PO: {usuario }, empleado: {empleado}, user: {request.user}" )
+                # print(f"Mensajes PO: {mensajes}")
+                # print(f"asistentes PO: {asistentes}")
                 return render(request, 'Mensajes/ProductOwner/listaPlaneacionSprint.html', data)
             else:
                 # si el usuario no es Scrum Master se mostrara el siguiente mensaje
