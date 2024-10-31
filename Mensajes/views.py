@@ -1176,13 +1176,13 @@ def listaPlaneacionSprint(request):
         # Obtener los proyectos en los que el empleado participa
         proyectos = EmpleadoProyecto.objects.filter(Empleado=empleado).values_list('Proyecto', flat=True)
         mensajes = Mensaje.objects.filter(Q(Emisor=empleado) & Q(EventoScrum="3") & Q(Proyecto__in=proyectos)) # Reunión de Planeación del Sprint
-        #asistentes = AsistentesEventosScrum.objects.all()
-        #planeaciacionSprint = m_PlanificacionSprint.objects.all()
+        asistentes = AsistentesEventosScrum.objects.all()
+        planeaciacionSprint = m_PlanificacionSprint.objects.all()
 
         data = {
-        #'form': planeaciacionSprint,
+        'form': planeaciacionSprint,
         'form2':mensajes,
-        #'form3':asistentes
+        'form3':asistentes
         }
 
         user = request.user
