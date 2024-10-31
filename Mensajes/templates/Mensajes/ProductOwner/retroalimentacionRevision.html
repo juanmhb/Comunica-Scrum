@@ -22,6 +22,7 @@
                 <th scope="col">Emisor</th>
                 <!--<th scope="col">Contestacion</th>-->
                 <th scope="col">Descripcion</th>
+                <th scope="col">Contestación</th>
                 <!--<th scope="col">Status</th>-->
                 
                 <th scope="col">Opciones</th>
@@ -38,23 +39,8 @@
                 <td>{{ p.Mensaje }}</td>
                 <td>{{ p.Emisor.Usuario }}</td>
                 <td>{{ p.Descripcion }}</td>
-                <!--<td>{{ p.Contestacion }}</td>-->
-                <!--
-                {% if p.Status == "1" %}
-                <td>Generado</td>
-                {% elif p.Status == "2" %}
-                <td>Enviado</td>
-                {% elif p.Status == "3" %}
-                <td>Comprendido</td>
-                {% elif p.Status == "4" %}
-                <td>Comprendido</td>
-                {% elif p.Status == "5" %}
-                <td>No comprendido</td>
-                {% else %}
-                <td>Sin registros</td>
-                {% endif %}
-                -->
-                
+                <td>{{ p.Contestacion }}</td>
+                              
                 <td>
                   <!--Opcional-->
                   <!--

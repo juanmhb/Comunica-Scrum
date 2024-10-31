@@ -86,7 +86,7 @@ urlpatterns = [
     path('enviarRetroPlaneacion/<id>/', login_required(enviar_mensajePS), name='enviarRetroPlaneacion'), # Contestacion
 
     # Recibir mensaje de retralimentacion de planeacion del sprint, product owner
-    path('retroPlaneacionSprintP/', login_required(mensajes_RetroAlimentacionPlaneacion), name='retroPlaneacionSprintP'), # Product Owner
+    path('retroPlaneacionSprintP/<id>/', login_required(mensajes_RetroAlimentacionPlaneacion), name='retroPlaneacionSprintP'), # Product Owner
 
     # Recibir mensajes Reunion de planeacion del sprint, Scrum Master
     path('mensajePlaneacionScrumMaster/', login_required(listaPlaneacionSprintScrumMaster), name='mensajePlaneacionScrumMaster'), # Scrum Master
@@ -126,7 +126,7 @@ urlpatterns = [
     path('enviarRetroRevision/<id>/', login_required(enviar_mensajeRS), name='enviarRetroRevision'), # Contestacion
 
     # Recibir mensaje de retralimentacion de revisión del sprint, product owner
-    path('retroRevisionSprint/', login_required(mensajes_RetroAlimentacionRevision), name='retroRevisionSprint'),
+    path('retroRevisionSprint/<id>/', login_required(mensajes_RetroAlimentacionRevision), name='retroRevisionSprint'),
 
     # Renderizado a PDF
     path('plantillaRevisionSprint/<id>/', login_required(PlantillaRevisionSprint), name='plantillaRevisionSprint'),
@@ -171,7 +171,7 @@ urlpatterns = [
     path('enviarRetroRetroRetrospectiva/<id>/', login_required(enviar_mensaje_RetroRetrospectiva), name='enviarRetroRetroRetrospectiva'), # Contestacion
 
     # Recibir mensaje de retralimentacion de retrospectiva del sprint, product owner
-    path('retroRetrospectivaSprint/', login_required(mensajes_RetroAlimentacionRetrospectiva), name='retroRetrospectivaSprint'),
+    path('retroRetrospectivaSprint/<id>', login_required(mensajes_RetroAlimentacionRetrospectiva), name='retroRetrospectivaSprint'),
 
     # Renderizado a PDF
     path('plantillaRetrospectivaSprint/<id>/', login_required(plantillaRetrospectivaSprint), name='plantillaRetrospectivaSprint'),
@@ -216,11 +216,11 @@ urlpatterns = [
     path('eliminarAsistenteReunionDiaria/<id>', login_required(eliminar_asistente_reunion_Diaria), name='eliminarAsistenteReunionDiaria'),
 
     # Enviar mensaje de Reunion Diaria, Product Owner
-    path('enviarMensajeReunionDiaria/<id>', login_required(enviar_mensaje_Reunion_Diaria), name='enviarMensajeReunionDiaria'),
+    path('enviarMensajeReunionDiaria/<int:id>/<int:Accion>/', login_required(enviar_mensaje_Reunion_Diaria), name='enviarMensajeReunionDiaria'),
     path('enviarRetroRetroReunionDiaria/<id>/', login_required(enviar_Retro_Reunion_Diaria), name='enviarRetroRetroReunionDiaria'), # Contestacion
 
     # Recibir mensaje de retralimentacion de la reunion diaria, product owner
-    path('retroReunionDiaria/', login_required(mensajes_RetroAlimentacionReunionDiaria), name='retroReunionDiaria'),
+    path('retroReunionDiaria/<id>/', login_required(mensajes_RetroAlimentacionReunionDiaria), name='retroReunionDiaria'),
 
     # Vista y renderizado PDF
     path('vistaReunionDiaria/<id>/', login_required(vistaReunionDiaria), name='vistaReunionDiaria'),

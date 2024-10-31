@@ -24,6 +24,7 @@
                 <th scope="col">Mensaje</th>
                 <th scope="col">Emisor</th>
                 <!--<th scope="col">Receptor</th>-->
+                <th scope="col">Retroalimentación</th>
                 <th scope="col">Contestacion</th>
                 <th scope="col">Status</th>
                 
@@ -41,6 +42,7 @@
                 <td>{{ p.Mensaje }}</td>
                 <td>{{ p.Emisor.Usuario }}</td>
                 <!--<td>{{ p.Receptor }}</td>-->
+                <td>{{ p.Descripcion }}</td>
                 <td>{{ p.Contestacion }}</td>
                 {% if p.Status == "1" %}
                 <td>Generado</td>
