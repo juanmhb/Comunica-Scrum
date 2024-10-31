@@ -506,7 +506,7 @@ def plantillaPlaneacionSprint(request, id):
     proyectos = EmpleadoProyecto.objects.filter(Empleado=empleado).values_list('Proyecto', flat=True)
 
 
-    #planeacion = Mensaje.objects.filter(pk=id)
+    planeacion = Mensaje.objects.filter(pk=id)
     historias = HistoriaUsuario.objects.filter(Q(Proyecto__in=proyectos) & Q(Estatus__in=[4, 5, 6, 7, 8])) # 4= HU en Sprint 5=HU Divididas
     mensaje = Mensaje.objects.get(pk=id)
     asistentes = AsistentesEventosScrum.objects.filter(Mensaje=mensaje)
@@ -520,7 +520,7 @@ def plantillaPlaneacionSprint(request, id):
     total_dias = total_horas / 8
 
     data = {
-        #'form': planeacion,
+        'form': planeacion,
         'form2': historias,
         'form3': asistentes,
         'idiomaPais':idiomaPais,
@@ -1176,13 +1176,13 @@ def listaPlaneacionSprint(request):
         # Obtener los proyectos en los que el empleado participa
         proyectos = EmpleadoProyecto.objects.filter(Empleado=empleado).values_list('Proyecto', flat=True)
         mensajes = Mensaje.objects.filter(Q(Emisor=empleado) & Q(EventoScrum="3") & Q(Proyecto__in=proyectos)) # Reunión de Planeación del Sprint
-        asistentes = AsistentesEventosScrum.objects.all()
-        planeaciacionSprint = m_PlanificacionSprint.objects.all()
+        #asistentes = AsistentesEventosScrum.objects.all()
+        #planeaciacionSprint = m_PlanificacionSprint.objects.all()
 
         data = {
-        'form': planeaciacionSprint,
+        #'form': planeaciacionSprint,
         'form2':mensajes,
-        'form3':asistentes
+        #'form3':asistentes
         }
 
         user = request.user
