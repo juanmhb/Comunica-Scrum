@@ -15,7 +15,7 @@
   <body>
 
 <div>
-  <table border="1">
+  <table border="0.1">
     {% for p in form|slice:":1" %}
    <tr>
     <td id="azul" align="center">Proyecto</td>
@@ -25,13 +25,7 @@
    {% for p in form|slice:":1" %}
    <tr>
     <td align="center">Fecha</td>
-    <td align="center">{{ p.FHCreacion }} </td>
-    <td> &nbsp;&nbsp;&nbsp;&nbsp; </td>
-    <td> &nbsp;&nbsp;&nbsp;&nbsp; </td>
-    <td> &nbsp;&nbsp;&nbsp;&nbsp; </td>
-    <td> &nbsp;&nbsp;&nbsp;&nbsp; </td>
-    <td> &nbsp;&nbsp;&nbsp;&nbsp; </td>
-    <td> &nbsp;&nbsp;&nbsp;&nbsp; </td>
+    <td  colspan="7">{{ p.FHCreacion }} </td>
    </tr>
    {% endfor %}
    {% for p in form|slice:":1" %}
@@ -101,9 +95,9 @@
   
     <tr>
       <!--<th scope="row">Destinatarios</th>-->
-      <td>Destinatario</td>
-      <td>Nombre</td>
-      <td>Rol</td>
+      <td  align="center">Destinatario</td>
+      <td  align="center">Nombre</td>
+      <td  align="center">Rol</td>
       <td></td>
       <td></td>
       <td><!-- Vacio --></td>
@@ -152,8 +146,12 @@
   {% for p in form|slice:":1"  %}
    <tr>
    <td align="center" id="azul">Retroalimentación</td>
-    <td colspan="7" align="center" id="azul">{{ p.Contestacion }}</td>
+    <td colspan="7"  id="azul">{{ p.Descripcion }}</td>
    </tr>
+   <tr>
+    <td align="center" >Contestación</td>
+     <td colspan="7"  >{{ p.Contestacion }}</td>
+    </tr>
    {% endfor %}
   </table>
   </div> 
