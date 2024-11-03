@@ -393,16 +393,30 @@ class TareaAvanceForm(forms.ModelForm):
 
     def save(self, commit=True):
         instance = super().save(commit=False)
+        #print(f"2.1 commit: {commit}")
         # Actualiza los campos de horasDedicadas y horasRestantes basados en los datos limpios
         if commit:
+            tarea_avance = TareaAvance.objects.get(id=instance.id)  # Obtenemos una instancia de TareaAvance
+            horas_estimadas = tarea_avance.tarea.horasestimadas  # Accedemos a horasestimadas desde Tarea
+            # print(f"2.1.1 horas_estimadas: {horas_estimadas}")
+            # print(f"2.1.1 instance.id: {instance.id}")
+            # print(f"2.1.2 instance.horasDedicadas: {instance.horasDedicadas}")
+            instance_horas_dedicadas = instance.horasDedicadas
             instance.horasDedicadas = self.cleaned_data.get('horasDedicadas', 0)
+            #print(f"2.2 instance.horasDedicadas: {instance.horasDedicadas}")
             instance.horasReales = self.cleaned_data.get('horasReales', 0)
+           # print(f"2.3 instance.horasReales: {instance.horasReales}")
             # Calcula las horas restantes
             horas_dedicadas = instance.horasDedicadas
+            #print(f"2.4 horas_dedicadas: {horas_dedicadas}")
             horas_restantes = instance.horasRestantes if instance.horasRestantes else 0
+            #print(f"2.5 horas_restantes: {horas_restantes}")
             horas_reales = instance.horasReales 
-            instance.horasRestantes = max(horas_restantes - horas_reales, 0)
-            
+            #print(f"2.6 horas_reales: {horas_reales}")
+            #instance.horasRestantes = max(horas_restantes - horas_reales, 0)
+            instance.horasRestantes = max(horas_estimadas - horas_reales, 0)
+
+            #print(f"2.7 instance.horas_restantes: {instance.horasRestantes}")
             # Actualiza los campos de los días
             for i in range(1, len(self.dias_habiles) + 1):
                 #field_name = f'dia_{i}'
