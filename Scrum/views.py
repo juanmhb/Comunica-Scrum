@@ -618,6 +618,11 @@ class ActualizarTareaAvance(LoginRequiredMixin, UpdateView):
                     #print(f"1.6 new_instance.fechaAvance: {new_instance.fechaAvance}")
                     new_instance.save()
                 HayRegistro = False
+            elif horas_dedicadas == 0:
+                for tareaAv in self.ModTarAv:
+                    if tareaAv.fechaAvance == dia: # Se debe eliminar el registro, debido a que existe un registro en la BD, pero NO tiene una dedicadas
+                        TareaAvance.objects.filter(id=tarea_avance_id).delete()
+
         # Redirige a la vista que muestra el listado de tareas sin el duplicado
         return redirect(self.get_success_url())
 
