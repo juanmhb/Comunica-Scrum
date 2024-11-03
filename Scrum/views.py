@@ -591,22 +591,31 @@ class ActualizarTareaAvance(LoginRequiredMixin, UpdateView):
         tarea_avance_id = self.kwargs.get('pk', None)
         Tarea=TareaAvance.objects.get(pk=tarea_avance_id)
         tarea_id = Tarea.tarea_id
-        self.ModTarAv = TareaAvance.objects.filter(tarea_id=tarea_id)
-        
+        self.ModTarAv = TareaAvance.objects.filter(tarea_id=tarea_id).order_by('id')
+        # for tAv in self.ModTarAv:
+        #     print(f"tAv.fechaAvance: {tAv.fechaAvance}, tAv.id: {tAv.id} ")
 
         HayRegistro = False
+        #print(f"lista_dias_horas: {lista_dias_horas}")
         for dia, horas_dedicadas, horas_restantes in lista_dias_horas:
+            #print(f"1.0 horas_dedicadas: {horas_dedicadas}")
+           # print(f"1.1 HayRegistro: {HayRegistro}")
             if horas_dedicadas != 0:
                 for tareaAv in self.ModTarAv:
                     if tareaAv.fechaAvance == dia: # Se deben actualizar las horas dedicadas en la BD del registro en cuestión
+                        #print(f"1.2 tareaAv.id: {tareaAv.id}")
+                        #print(f"1.3 tareaAv.fechaAvance: {tareaAv.fechaAvance}")
                         tareaAv.horasDedicadas = horas_dedicadas
+                        #print(f"1.4 tareaAv.horasDedicadas: {tareaAv.horasDedicadas}")
                         tareaAv.save() #Actualiza  la BD, de los registros que ya están en la BD
                         HayRegistro = True
                 if not HayRegistro: #Se agrega el registro
                     new_instance = form.save(commit=False)
                     new_instance.id = None
                     new_instance.horasDedicadas = horas_dedicadas
+                    #print(f"1.5new_instance.horasDedicadas : {new_instance.horasDedicadas }")
                     new_instance.fechaAvance = dia
+                    #print(f"1.6 new_instance.fechaAvance: {new_instance.fechaAvance}")
                     new_instance.save()
                 HayRegistro = False
         # Redirige a la vista que muestra el listado de tareas sin el duplicado
