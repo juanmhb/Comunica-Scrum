@@ -155,11 +155,11 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'es-mx'
 
-TIME_ZONE = 'UTC'
+#TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Mexico_City'
+USE_TZ = True  # Asegúrate de que USE_TZ esté habilitado para manejar zonas horarias
 
 USE_I18N = True
-
-USE_TZ = True
 
 MESSAGE_STORAGE = "django.contrib.messages.storage.cookie.CookieStorage"
 # Static files (CSS, JavaScript, Images)

@@ -37,11 +37,6 @@ def listaRefinamientoProductBL(request):
         mensajes = Mensaje.objects.filter(Q(Emisor=empleado) & Q(EventoScrum="2"))
         mensajes2 = m_RefinamientoProductBL.objects.filter(Emisor=empleado)
         asistentes = AsistentesEventosScrum.objects.all()
-        # print(f"Usuario.id: {usuario }, empleado: {empleado}, user: {request.user}" )
-        # print(f"Mensajes: {mensajes}")
-        # print(f"Mensajes2: {mensajes2}")
-        # print(f"asistentes: {asistentes}")
-
         data = {
             'form':mensajes2,
             'form2':mensajes,
@@ -323,7 +318,7 @@ def historiasEnSprint(request, id):
 
     # Estos datos se extraen de la historia de usuario seleccionada y posteriormente se guardan en el modelo sprint_Backlog
     sprint = producto.Sprint
-    print(f"sprint: {sprint} proyecto: {producto.Sprint.Proyecto}")
+    # print(f"sprint: {sprint} proyecto: {producto.Sprint.Proyecto}")
     proyecto = producto.Sprint.Proyecto
     historia = producto.id
     id_historia = HistoriaUsuario.objects.get(pk=historia)
@@ -1483,7 +1478,7 @@ def enviar_mensaje_Planeacion(request, id):
             return redirect('Mensajes:listaPlaneacionSprint')  # Redirigir a la página de mensajes enviados
     else:
         if msm.Status == '2': #El mensaje ya fue enviado
-            print(f"idSms.Status2 : {msm.Status} ")
+            #print(f"idSms.Status2 : {msm.Status} ")
             # Obtener el mensaje
             MensajeAviso = get_object_or_404(Mensaje, pk=id)
             # Mandar un mensaje que será mostrado en el template
@@ -1903,13 +1898,13 @@ def mensajes_PlaneacionRetroEmpleado(request, id):
     empleado = Empleado.objects.get(Usuario=usuario)
     # mensajes = Mensaje.objects.filter(Destinatario=empleado)
     #recibidos = MensajeReceptor.objects.filter(Receptor=empleado)
-    print(f"usuario: {usuario}, empleado: {empleado}, id_mensaje: {id}")
+    #print(f"usuario: {usuario}, empleado: {empleado}, id_mensaje: {id}")
     #usuario = request.user
 
     #retroalimentacion = MensajeRetroA.objects.filter(Receptor=usuario)
     # (Receptor=empleado)
     mensaje = Mensaje.objects.get(pk=id) 
-    print(f"Mensaje: {mensaje}")
+    #print(f"Mensaje: {mensaje}")
     retroalimentacion = MensajeRetroA.objects.filter(Q(Emisor=empleado) & Q(EventoScrum="3") & Q(Mensaje=mensaje))
     msmEnviado = MensajeRetroA.objects.filter(Q(Emisor=empleado) & Q(Contestacion__isnull=True))
 
@@ -2819,6 +2814,7 @@ def mensajes_RevisionRetroEmpleado(request, id):
 # ------------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------ Reunión de Retrospectiva del Sprint -----------------------------
 def vistaRetrospectivaSprint(request, id):
+    
     retrospectiva = Mensaje.objects.filter(pk=id)
     mensaje = Mensaje.objects.get(pk=id)
     asistentes = AsistentesEventosScrum.objects.filter(Mensaje=mensaje)
@@ -2828,7 +2824,7 @@ def vistaRetrospectivaSprint(request, id):
     idiomaPais = Empleado.objects.filter(Usuario=usuario)
 
     data = {
-        'form': retrospectiva,
+        'form': mensaje,
         'form3': asistentes,
         'idiomaPais':idiomaPais,
         'comentarios':comentarios
@@ -2837,6 +2833,7 @@ def vistaRetrospectivaSprint(request, id):
     return render(request, 'Mensajes/ProductOwner/plantillaRetrospectivaSprint.html', data)
 
 def plantillaRetrospectivaSprint(request, id):
+    #print(f"plantillaRetrospectivaSprint id: {id} ")
     retrospectiva = Mensaje.objects.filter(pk=id)
     mensaje = Mensaje.objects.get(pk=id)
     asistentes = AsistentesEventosScrum.objects.filter(Mensaje=mensaje)
@@ -2846,7 +2843,7 @@ def plantillaRetrospectivaSprint(request, id):
     idiomaPais = Empleado.objects.filter(Usuario=usuario)
 
     data = {
-        'form': retrospectiva,
+        'form': mensaje,
         'form3': asistentes,
         'idiomaPais':idiomaPais,
         'comentarios':comentarios
@@ -2871,8 +2868,12 @@ def listaRetrospectivaSprint(request):
     if request.user.is_authenticated:
         usuario = request.user
         empleado = Empleado.objects.get(Usuario=usuario)
-        mensajes = Mensaje.objects.filter(Q(Emisor=empleado) & Q(EventoScrum="6")) # Evento - Retrospectiva Sprint 
+
+        # Obtener los proyectos en los que el empleado participa
+        proyectos = EmpleadoProyecto.objects.filter(Empleado=empleado).values_list('Proyecto', flat=True)
+        mensajes = Mensaje.objects.filter(Q(Emisor=empleado) & Q(EventoScrum="6") & Q( Proyecto__in=proyectos,)) # Evento - Retrospectiva Sprint 
         asistentes = AsistentesEventosScrum.objects.all()
+        #asistentes = AsistentesEventosScrum.objects.filter(Mensaje=idSms)
 
         data = {
         'form2':mensajes,
@@ -2955,51 +2956,86 @@ def eliminar_retrospectiva(request, id):
     producto.delete()
     return redirect(to="Mensajes:listaRetrospectivaSprint")
 
-def enviar_mensaje_Retrospectiva(request, id):
-    idSms = Mensaje.objects.get(pk=id)
-    receptor = User.objects.get(pk=5)
-
+def enviar_mensaje_Retrospectiva(request, id, Accion):
+    msm = Mensaje.objects.get(pk=id)
     usuario = request.user.id
     empleado = Empleado.objects.get(Usuario=usuario)
 
     if request.method == 'POST':
         form = envAsistentesForms(request.POST)
         if form.is_valid():
-            msm = Mensaje.objects.filter(pk=id)
+            mensajeid = msm
+            proyecto = msm.Proyecto
+            eventoScrum = msm.EventoScrum
+            status = msm.Status
+            fecha = msm.FechaHora
+            archivo = msm.archivo
+            sprint = msm.Sprint
+            DescripcionEventoScrum = msm.EventoScrum.Descripcion
+            FechaHoraReunion = msm.FechaHora #m_PlanificacionSprint.objects.get(Mensaje=id).FechaHora 
+            NombreProyecto = msm.Proyecto.nombreproyecto
 
-            for contenido in msm:
-                proyecto = contenido.Proyecto
-                eventoScrum=contenido.EventoScrum
-                mensaje=contenido
-                status=contenido.Status
-                fecha=contenido.FechaHora
-                archivo=contenido.archivo
-                sprint=contenido.Sprint
-                
-            mensajeid = contenido
-            proyecto = contenido.Proyecto
-            eventoScrum = contenido.EventoScrum
-            status = contenido.Status
-            fecha = contenido.FechaHora
-            archivo = contenido.archivo
-            sprint = contenido.Sprint
+            #Actualiza el status del mensaje enviado
+            msm.Status = 2 #Enviado
+            msm.FHUltimaMod = datetime.now()
+            msm.save() #Actualiza  la BD
 
-            res = AsistentesEventosScrum.objects.filter(Mensaje=idSms)
+            res = AsistentesEventosScrum.objects.filter(Mensaje=msm)
+            Destinatarios = ""
 
             for asistente in res:
                 mensaje = MensajeReceptor(Proyecto=proyecto, Mensaje=mensajeid, Receptor=asistente.Usuario, EventoScrum=eventoScrum, 
                                           Emisor=empleado ,FHCreacion=fecha,Status="1", archivo=archivo, Sprint=sprint)
-                mensaje.save()
-            
+                if Accion == 1:
+                    mensaje.save() #Guarda la Información en la BD "Mensajes_mensajereceptor" por cada uno de los destinatarios
+                Destinatarios = Destinatarios + str(asistente.Usuario.Usuario.email) + ', ' 
+                
+            Destinatarios = Destinatarios[:-2] #Elimina la última coma y espacio
+
+            #Inicia Envía el correo
+            Archivos = m_Archivos.objects.filter(Mensaje=msm)
+            #ArchivosAdjuntos=""
+
+            #Envío de correo
+            asunto = DescripcionEventoScrum +  'Reunión: ' +  str(FechaHoraReunion) #'Reunión de Retrospectiva'
+            Remitente = request.user.email
+            CuerpoMensaje = "Ceremonia: " + DescripcionEventoScrum + '\r\n Proyecto: ' + NombreProyecto + '\r\n' + 'Reunión: ' +  str(FechaHoraReunion) #'Reunión de  Retrospectiva
+            ListaDestinatarios = Destinatarios.split(",")
+            email = EmailMessage(
+                subject=asunto,
+                body=CuerpoMensaje,
+                from_email=Remitente,  
+                to=ListaDestinatarios,
+            )   
+            for arch in Archivos:
+                 # Convertimos el contenido binario del archivo a un objeto BytesIO
+                archivo_binario = BytesIO(arch.ArchivoObj)
+
+                # Adjuntar el archivo al correo con el nombre original del archivo
+                email.attach(arch.Archivo.name, archivo_binario.read(), 'application/pdf')
+            if Accion == 2:
+                email.send()
+            #Fin Envío del correo
+                
             time.sleep(2)
             return redirect('Mensajes:listaRetrospectivaSprint')  # Redirigir a la página de mensajes enviados
     else:
+        if msm.Status == '2': #El mensaje ya fue enviado
+            # print(f"idSms.Status2 : {msm.Status} ")
+            # Obtener el mensaje
+            MensajeAviso = get_object_or_404(Mensaje, pk=id)
+            # Mandar un mensaje que será mostrado en el template
+            messages.success(request, 'El mensaje ya fue enviado.')
+            # Renderizar el template y pasar los datos necesarios
+            return render(request, 'Scrum/MensajePantalla.html', {'mensaje': MensajeAviso, 'Ruta': '/listaRetrospectivaSprint'})
+
+
         form = envAsistentesForms
         form2 = Mensaje.objects.filter(pk=id)
-        form3 = AsistentesEventosScrum.objects.filter(Mensaje=idSms)
+        form3 = AsistentesEventosScrum.objects.filter(Mensaje=msm)
         idmensaje = Mensaje.objects.get(pk=id)
         archivos = m_Archivos.objects.filter(Mensaje=idmensaje)
-    return render(request, 'Mensajes/ProductOwner/enviarMensajeRetrospectiva.html', {'form': form, 'receptor': receptor, 'form2':form2, 'form3':form3, 'archivos':archivos})
+    return render(request, 'Mensajes/ProductOwner/enviarMensajeRetrospectiva.html', {'form': form, 'form2':form2, 'form3':form3, 'archivos':archivos})
 
 # ------------- Retroalimentacion de la Reunion de Retrospectiva del Sprint, Product Owner --------------
 def mensajes_RetroAlimentacionRetrospectiva(request, id):
@@ -3007,7 +3043,7 @@ def mensajes_RetroAlimentacionRetrospectiva(request, id):
         usuario = request.user
         empleado = Empleado.objects.get(Usuario=usuario)
         #retroalimentacion = MensajeRetroA.objects.filter(Q(Receptor=empleado) & Q(EventoScrum="6")) 
-        retroalimentacion = MensajeRetroA.objects.filter(Q(Receptor=empleado) & Q(EventoScrum="6")& Q(Mensaje=id)) 
+        retroalimentacion = MensajeRetroA.objects.filter(Q(EventoScrum="6")& Q(Mensaje=id)) 
 
         user = request.user
 
@@ -3028,43 +3064,47 @@ def mensajes_RetroAlimentacionRetrospectiva(request, id):
 
 # Retroalimentación de la Reunión de Revisión del Sprint, contestacion
 def enviar_mensaje_RetroRetrospectiva(request, id):
-    retroalimentacion = MensajeRetroA.objects.filter(pk=id) # hera el id del mensaje recibido con los datos
+    #retroalimentacion = MensajeRetroA.objects.filter(Mensaje__id=id) # hera el id del mensaje recibido con los datos
+    retroalimentacion = MensajeRetroA.objects.get(Mensaje__id=id)
+    id_MensajeRetro = retroalimentacion.pk
     usuario = request.user
     empleado = Empleado.objects.get(Usuario=usuario)
-
+    
     if request.method == 'POST':
         form = retroAlimentacionBL_Forms(request.POST)
         if form.is_valid():
+            Respuesta = form.cleaned_data['Contestacion']	
+            MensajeRetroA.objects.filter(id=id_MensajeRetro).update(Contestacion=  Respuesta )
 
-            for retro in retroalimentacion:
-                Descripcion=retro.Descripcion
-                Proyecto=retro.Proyecto,
-                EventoScrum=retro.EventoScrum, 
-                Mensaje=retro.Mensaje, # hereda por defecto el id del mensaje
-                Receptor=retro.Emisor, # hereda el emisar del mensaje, NO el del request.user
-                Emisor=retro.Receptor
-                Status=retro.Status
+            # for retro in retroalimentacion:
+            #     Descripcion=retro.Descripcion
+            #     Proyecto=retro.Proyecto,
+            #     EventoScrum=retro.EventoScrum, 
+            #     Mensaje=retro.Mensaje, # hereda por defecto el id del mensaje
+            #     Receptor=retro.Emisor, # hereda el emisar del mensaje, NO el del request.user
+            #     Emisor=retro.Receptor
+            #     Status=retro.Status
 
-            proyecto = retro.Proyecto
-            eventoScrum = retro.EventoScrum
-            mensajeid = retro.Mensaje
-            #receptorid = retro.Receptor
-            #emisorRetro = retro.Emisor
-            descripcion = retro.Descripcion
-            contenido = form.cleaned_data['Contestacion']
-            # status = form.cleaned_data['Status']
-            status = retro.Status
+            # proyecto = retro.Proyecto
+            # eventoScrum = retro.EventoScrum
+            # mensajeid = retro.Mensaje
+            # #receptorid = retro.Receptor
+            # #emisorRetro = retro.Emisor
+            # descripcion = retro.Descripcion
+            # contenido = form.cleaned_data['Contestacion']
+            # # status = form.cleaned_data['Status']
+            # status = retro.Status
             
-            emisorid = retro.Emisor
+            # emisorid = retro.Emisor
 
-            idreceptor = retro.Emisor
-            idreceptore = retro.Emisor.Usuario.id
+            # idreceptor = retro.Emisor
+            # idreceptore = retro.Emisor.Usuario.id
 
-            mensaje = MensajeRetroA(Proyecto=proyecto, EventoScrum=eventoScrum, Mensaje=mensajeid, Receptor=idreceptor,
-                                   Descripcion=descripcion, Contestacion=contenido, Status=status, Emisor=empleado)
+            # mensaje = MensajeRetroA(Proyecto=proyecto, EventoScrum=eventoScrum, Mensaje=mensajeid, Receptor=idreceptor,
+            #                        Descripcion=descripcion, Contestacion=contenido, Status=status, Emisor=empleado)
 
-            mensaje.save()
-            return redirect('Mensajes:retroRetrospectivaSprint')  # Redirigir a la página de mensajes enviados
+            # mensaje.save()
+            return redirect('Mensajes:retroRetrospectivaSprint', id=id)  # Redirigir a la página de mensajes enviados
     else:
         form = retroAlimentacionBL_Forms()
     return render(request, 'Mensajes/ProductOwner/retroContestacionBL.html', {'form': form})
@@ -3311,7 +3351,11 @@ def listaRetrospectivaSprintEmpleado(request):
     if request.user.is_authenticated:
         usuario = request.user
         empleado = Empleado.objects.get(Usuario=usuario)
-        mensajes = MensajeReceptor.objects.filter(Q(Receptor=empleado) & Q(EventoScrum="6")) # Evento - Retrospectiva Sprint
+
+        # Obtener los proyectos en los que el empleado participa
+        proyectos = EmpleadoProyecto.objects.filter(Empleado=empleado).values_list('Proyecto', flat=True)
+
+        mensajes = MensajeReceptor.objects.filter(Q(Receptor=empleado) & Q(EventoScrum="6") & Q(Proyecto__in=proyectos)) # Evento - Retrospectiva Sprint
         asistentes = AsistentesEventosScrum.objects.all()
 
         data = {
@@ -3457,10 +3501,11 @@ def enviar_mensajeRetrospectivaEmpleado(request, id):
 def mensajes_RetrospectivaRetroEmpleado(request, id):
     usuario = request.user
     empleado = Empleado.objects.get(Usuario=usuario)
+    #print(f"empleado: {empleado}, empleado_id: {empleado.id},  usuario: {usuario}, usuario_id: {usuario.id}, id: {id}")
     recibidos = MensajeReceptor.objects.filter(Receptor=empleado)
 
     mensaje = Mensaje.objects.get(pk=id)
-    retroalimentacion = MensajeRetroA.objects.filter(Q(Receptor=empleado) & Q(EventoScrum="6") & Q(Mensaje=mensaje))
+    retroalimentacion = MensajeRetroA.objects.filter(Q(Emisor=empleado) & Q(EventoScrum="6") & Q(Mensaje=mensaje))
     msmEnviado = MensajeRetroA.objects.filter(Q(Emisor=empleado) & Q(Contestacion__isnull=True))
 
     data = {
@@ -3633,7 +3678,7 @@ def enviar_mensaje_Reunion_Diaria(request, id, Accion):
             return redirect('Mensajes:listaReunionDiaria') 
     else:
         if msm.Status == '2': #El mensaje ya fue enviado
-            print(f"idSms.Status2 : {msm.Status} ")
+            #print(f"idSms.Status2 : {msm.Status} ")
             # Obtener el mensaje
             MensajeAviso = get_object_or_404(Mensaje, pk=id)
             # Mandar un mensaje que será mostrado en el template
@@ -4431,8 +4476,6 @@ def vistaEjecucionSprintID(request, id_ReunionDiaria):
 def enviar_mensaje2(request, id):
     # mensaje = Mensaje.objects.filter(pk=id) 
     idSms = Mensaje.objects.get(pk=id)
-    print(f"idSms.Status : {idSms.Status} ")
-
     #IdProyecto = idSms.Proyecto
     receptor = User.objects.get(pk=5)
     # emisor = request.user
@@ -4440,27 +4483,7 @@ def enviar_mensaje2(request, id):
     usuario = request.user.id
     empleado = Empleado.objects.get(Usuario=usuario)
 
-    # usuarios = User.objects.filter(pk=5) 
-    # print(f"request.method : {request.method } ")
-    # print(f"idSms : {idSms} ")
-    # print(f"total de Mensajes : {Mensaje.objects.count()} ")
-    # print(f"Status : {idSms.Status} ")
-    # print(f"id Mensaje : {idSms.id} ")
-    # print(f"EventoScrum : {idSms.EventoScrum} ")
-    # print(f"receptor : {receptor} ")
-    # print(f"usuario : {usuario} ")
-    # print(f"empleado : {empleado} ")
-
     if request.method == 'POST':
-        # if idSms.Status == '2': #E mensaje ya fue enviado
-        #     print(f"idSms.Status2 : {idSms.Status} ")
-        #     # Obtener el mensaje
-        #     MensajeAviso = get_object_or_404(Mensaje, pk=id)
-        #     # Mandar un mensaje que será mostrado en el template
-        #     messages.success(request, 'El mensaje ya había sido enviado.')
-        #     # Renderizar el template y pasar los datos necesarios
-        #     return render(request, 'Mensajes/ProductOwner/MensajePantalla.html', {'mensaje': MensajeAviso, 'Ruta': '/listaRefinamiento'})
-
 
         # form = MensajeForms(request.POST)
         form = envAsistentesForms(request.POST)
@@ -4468,26 +4491,6 @@ def enviar_mensaje2(request, id):
             # idSms = Mensaje.objects.get(pk=id)
             msm = Mensaje.objects.filter(pk=id)
             
-            # for contenido in msm:
-            #     proyecto = contenido.Proyecto
-            #     eventoScrum=contenido.EventoScrum
-            #     mensaje=contenido
-            #     status=contenido.Status
-            #     fecha=contenido.FechaHora
-            #     archivo=contenido.archivo
-            #     print(f"archivo: {archivo}")
-            # #proyecto = contenido.Proyecto
-            # #descripcion = contenido.Descripcion
-            # #eventoScrum = contenido.EventoScrum
-            # #status = contenido.Status
-                
-            # mensajeid = contenido
-            # proyecto = contenido.Proyecto
-            # eventoScrum = contenido.EventoScrum
-            # status = contenido.Status
-            # fecha = contenido.FechaHora
-            # archivo = contenido.archivo
-            # print(f"archivo: {archivo}")
             contenido = msm.first()
             mensaje=contenido
             mensajeid = contenido
@@ -4509,8 +4512,6 @@ def enviar_mensaje2(request, id):
             res = AsistentesEventosScrum.objects.filter(Mensaje=idSms)
             Destinatarios = ""
             for asistente in res:
-                # mensaje = Mensaje(Emisor=empleado, Proyecto=proyecto, Descripcion=descripcion, Status="2", 
-                #               EventoScrum=eventoScrum, FechaHora=fecha, Destinatario=asistente.Usuario, archivo=archivo)
                 mensajeRecep = MensajeReceptor(Proyecto=proyecto, Mensaje=mensajeid, Receptor=asistente.Usuario, EventoScrum=eventoScrum, 
                                           Emisor=empleado ,FHCreacion=fecha,Status="1", archivo=archivo)
                 mensajeRecep.save()

@@ -273,8 +273,19 @@ class ActualizarHistoriaUsuarioSprint(LoginRequiredMixin, UpdateView):
     model = HistoriaUsuario
     template_name = 'Scrum/detalle_historiausuario_sprint.html'
     form_class = HistoriaUsuarioForm
- 
+
+    #El campo Sprint en el formulario HistoriaUsuarioForm como un campo deshabilitado ('disabled': 'disabled'). 
+    #En HTML, los campos deshabilitados no se envían al servidor cuando se realiza el formulario, lo que significa que Django 
+    #recibe un valor None para ese campo y lo almacena como NULL en la base de datos.
+    # def form_valid(self, form):
+    #     # Asignar el valor de Sprint de la instancia original antes de guardar
+    #     print(f"self.object.Sprint.pk: {self.object.Sprint.pk}")
+    #     if not form.cleaned_data.get('Sprint'):
+    #         form.instance.Sprint = self.object.Sprint
+    #     return super().form_valid(form)
+    
     def get_success_url(self):
+          #print(f"self.object.Sprint.pk: {self.object.Sprint.pk}")
           return reverse('Scrum:listar_sprint_Historias', kwargs={'pk': self.object.Sprint.pk})
     
 class EliminarHistoriaUsuarioSprint(LoginRequiredMixin, DeleteView):
@@ -602,7 +613,8 @@ class ActualizarTareaAvance(LoginRequiredMixin, UpdateView):
            # print(f"1.1 HayRegistro: {HayRegistro}")
             if horas_dedicadas != 0:
                 for tareaAv in self.ModTarAv:
-                    if tareaAv.fechaAvance == dia: # Se deben actualizar las horas dedicadas en la BD del registro en cuestión
+                    if tareaAv.fechaAvance == dia and tareaAv.horasDedicadas != 0: # Se deben actualizar las horas dedicadas en la BD del registro en cuestión
+                        #Puede ser que el primer registro, donde las horasDedicadas = 0, coincida con la fecha de otro registro
                         #print(f"1.2 tareaAv.id: {tareaAv.id}")
                         #print(f"1.3 tareaAv.fechaAvance: {tareaAv.fechaAvance}")
                         tareaAv.horasDedicadas = horas_dedicadas
@@ -620,7 +632,7 @@ class ActualizarTareaAvance(LoginRequiredMixin, UpdateView):
                 HayRegistro = False
             elif horas_dedicadas == 0:
                 for tareaAv in self.ModTarAv:
-                    if tareaAv.fechaAvance == dia: # Se debe eliminar el registro, debido a que existe un registro en la BD, pero NO tiene una dedicadas
+                    if tareaAv.fechaAvance == dia and tareaAv.horasDedicadas != 0: # Se debe eliminar el registro, debido a que existe un registro en la BD, pero NO tiene una dedicadas
                         TareaAvance.objects.filter(id=tareaAv.id).delete()
 
         # Redirige a la vista que muestra el listado de tareas sin el duplicado
