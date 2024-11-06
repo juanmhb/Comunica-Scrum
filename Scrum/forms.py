@@ -156,7 +156,7 @@ class ProyectoForm(forms.ModelForm):
 class HistoriaUsuarioForm(forms.ModelForm):
     class Meta:
         model = HistoriaUsuario
-        fields = ['nombre','fechacreacion','ultimaactualizacion','descripcion', 'HorasEstimadas', 'Prioridad', 'CriteriosAceptacion']
+        fields = ['nombre','fechacreacion','ultimaactualizacion','descripcion', 'HorasEstimadas', 'Prioridad', 'Estatus', 'CriteriosAceptacion', 'HUAceptada', 'Sprint']
         labels = {
             'nombre':'Nombre',
             'fechacreacion':'Fecha de creación',
@@ -164,7 +164,10 @@ class HistoriaUsuarioForm(forms.ModelForm):
             'descripcion':'Descripción',
             'HorasEstimadas':'Horas Estimadas',
             'Prioridad' :'Prioridad',
-            'CriteriosAceptacion': 'Criterios de Aceptación'
+            'Status' : 'Estatus',
+            'CriteriosAceptacion': 'Criterios de Aceptación',
+            'HUAceptada': ' Historia de Usuario Aceptada',
+            'Sprint': 'Sprint',
 
         }
         widgets={
@@ -225,6 +228,15 @@ class HistoriaUsuarioForm(forms.ModelForm):
                     'rows':'8',
                     'placeholder': 'Ingrese los Criterios de Aceptación'
                 }
+
+            ),
+            'Sprint': forms.Select(
+                attrs = {
+                    'class':'form-control',
+                    'placeholder':'Seleccionar Sprint',
+                    #'disabled': 'disabled',
+                    'readonly': 'readonly',
+                }
             ),
         }
 
@@ -233,13 +245,14 @@ class HistoriaUsuarioForm(forms.ModelForm):
 class SprintForm(forms.ModelForm):
     class Meta:
         model = Sprint
-        fields = ['nombresprint','fechainiciosprint','fechafinalsprint','numerosprint','objetivosprint']
+        fields = ['nombresprint','fechainiciosprint','fechafinalsprint','numerosprint','objetivosprint', 'Estatus']
         labels = {
             'nombresprint':'Nombre',
             'fechainiciosprint':'Fecha de Inicio',
             'fechafinalsprint':'Fecha de Finalización',
             'numerosprint':'Número de Sprint',
-            'objetivosprint':'Objetivo de Sprint'
+            'objetivosprint':'Objetivo de Sprint',
+            'Estatus':'Status',
         }
         widgets={
             'nombresprint': forms.TextInput(
@@ -281,7 +294,7 @@ class SprintForm(forms.ModelForm):
 class TareaForm(forms.ModelForm):
     class Meta:
         model = Tarea
-        fields = ['nombre', 'Rol', 'Prioridad', 'fechainicioplaneado', 'fechafinalplaneado', 'horasestimadas', 'Empleado']
+        fields = ['nombre', 'Rol', 'Prioridad', 'fechainicioplaneado', 'fechafinalplaneado', 'horasestimadas', 'Empleado', 'Estatus']
         labels = {
             'nombre': 'Nombre',
             'Rol': 'Rol del Participante',
@@ -290,6 +303,7 @@ class TareaForm(forms.ModelForm):
             'fechafinalplaneado': 'Fecha de terminación planeada',
             'horasestimadas': 'Horas estimadas',
             'Empleado': 'Seleccionar Empleados',
+            'Estatus': 'Seleccionar Status',
         }
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ingrese nombre'}),
@@ -299,6 +313,7 @@ class TareaForm(forms.ModelForm):
             'fechafinalplaneado': DateInput(format="%Y-%m-%d",attrs = {'class':'form-control','placeholder':'Ingrese fecha final planeada'}),
             'horasestimadas': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Ingrese horas estimadas'}),
             'Empleado': forms.Select(attrs={'class': 'form-control'}),
+            'Estatus': forms.Select(attrs={'class': 'form-control'}),
         }
 
 

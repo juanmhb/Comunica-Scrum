@@ -69,9 +69,9 @@
                       <th>Fecha de actualización</th>
                       <th>Descripción</th>
                       <th>Estado</th>
-                      {% if Sprint %}
+                      <!-- {% if Sprint %}
                       <th>Asignar</th>
-                      {% endif %}
+                      {% endif %} -->
                       <th>Opciones</th>
                     </thead>
                     <tbody>
@@ -81,9 +81,9 @@
                         <td>{{ Historia.nombre }}</td>
                         <td>{{ Historia.fechacreacion }}</td>
                         <td>{{ Historia.ultimaactualizacion }}</td>
-                        <td>{{ Historia.descripcion }}</td>
+                        <td style="width: 300px; max-width: 300px; word-wrap: break-word; overflow-wrap: break-word;">{{ Historia.descripcion }}</td>
                         <td>{{ Historia.Estatus }}</td>
-                        {% if Sprint %}
+                        <!-- {% if Sprint %}
                         <td>
                           {% if Historia.tereasasignadas == True %}
                             <button type="button" class="btn btn-success btn-sm" disabled>Completado</button>
@@ -91,7 +91,7 @@
                             <button type="button" class="btn btn-warning btn-sm" disabled>Incompleto</button> 
                           {% endif %}
                         </td>
-                        {% endif %}
+                        {% endif %} -->
 
                         <td>
                           

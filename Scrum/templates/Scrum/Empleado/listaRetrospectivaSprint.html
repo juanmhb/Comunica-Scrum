@@ -21,6 +21,7 @@
                 <th scope="col">Emisor</th>
                 <th scope="col">Descripción</th>
                 <th scope="col">Sprint</th>
+                <th scope="col">Status</th>
                 <th scope="col">Archivo</th>
                 
                 <th scope="col">Opciones</th>
@@ -40,7 +41,7 @@
                 <td>{{ p.Mensaje }}</td>
                 
                 <td>{{ p.Sprint }}</td>
-                
+                <td>{{ p.get_Status_display }}</td>
                 <td>
                   
                   <a href="{% url 'Mensajes:archivosRetrospectivaEmpleado' p.Mensaje.id %}" class="btn btn-outline-primary"

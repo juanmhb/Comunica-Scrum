@@ -167,7 +167,7 @@ urlpatterns = [
     path('eliminarAsistenteRetrospectiva/<id>', login_required(eliminar_asistente_retrospectiva), name='eliminarAsistenteRetrospectiva'),
 
     # Enviar mensaje de Retrospectiva del Sprint, Product Owner
-    path('enviarMensajeRetrospectiva/<id>', login_required(enviar_mensaje_Retrospectiva), name='enviarMensajeRetrospectiva'),
+    path('enviarMensajeRetrospectiva/<int:id>/<int:Accion>/', login_required(enviar_mensaje_Retrospectiva), name='enviarMensajeRetrospectiva'),
     path('enviarRetroRetroRetrospectiva/<id>/', login_required(enviar_mensaje_RetroRetrospectiva), name='enviarRetroRetroRetrospectiva'), # Contestacion
 
     # Recibir mensaje de retralimentacion de retrospectiva del sprint, product owner

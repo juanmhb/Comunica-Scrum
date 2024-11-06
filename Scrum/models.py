@@ -48,7 +48,7 @@ class EstatusTarea(models.Model):
         ordering = ['pk']
 
     def __str__(self):
-        return self.estatus
+        return self.descripcion
 
 
 class EstatusSprint(models.Model):
