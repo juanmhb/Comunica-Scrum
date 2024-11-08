@@ -278,15 +278,19 @@ class ActualizarHistoriaUsuarioSprint(LoginRequiredMixin, UpdateView):
     #En HTML, los campos deshabilitados no se envían al servidor cuando se realiza el formulario, lo que significa que Django 
     #recibe un valor None para ese campo y lo almacena como NULL en la base de datos.
     # def form_valid(self, form):
+    #     sprint_id = self.kwargs.get('pk', None)
+    #     print(f"sprint_id : {sprint_id }")
     #     # Asignar el valor de Sprint de la instancia original antes de guardar
-    #     print(f"self.object.Sprint.pk: {self.object.Sprint.pk}")
+        
     #     if not form.cleaned_data.get('Sprint'):
     #         form.instance.Sprint = self.object.Sprint
     #     return super().form_valid(form)
     
     def get_success_url(self):
-          #print(f"self.object.Sprint.pk: {self.object.Sprint.pk}")
-          return reverse('Scrum:listar_sprint_Historias', kwargs={'pk': self.object.Sprint.pk})
+        sprint_id = self.kwargs.get('pk', None)
+        print(f"sprint_id : {sprint_id }")
+        #return reverse('Scrum:listar_sprint_Historias', kwargs={'pk': self.object.Sprint.pk})
+        return reverse('Scrum:listar_sprint_Historias', kwargs={'pk': sprint_id})
     
 class EliminarHistoriaUsuarioSprint(LoginRequiredMixin, DeleteView):
     #model = HistoriaUsuario

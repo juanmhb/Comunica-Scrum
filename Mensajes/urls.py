@@ -82,7 +82,7 @@ urlpatterns = [
     path('plantillaPlaneacionSprint/<id>/', login_required(plantillaPlaneacionSprint), name='plantillaPlaneacionSprint'),
 
     # Enviar mensaje de Planeacion del Sprint, Product Owner
-    path('enviarMensajePlaneacion/<id>', login_required(enviar_mensaje_Planeacion), name='enviarMensajePlaneacion'),
+    path('enviarMensajePlaneacion/<id>/<int:Accion>/', login_required(enviar_mensaje_Planeacion), name='enviarMensajePlaneacion'),
     path('enviarRetroPlaneacion/<id>/', login_required(enviar_mensajePS), name='enviarRetroPlaneacion'), # Contestacion
 
     # Recibir mensaje de retralimentacion de planeacion del sprint, product owner
@@ -256,8 +256,10 @@ urlpatterns = [
     # --------------------------------------- Plantillas pendientes -------------------------------------
 
     # Historias HU (Historias de usaurio divididas)
-    path('vistaHistoriasHU', views.vistaHistoriasHU, name='vistaHistoriasHU'), # Beta
-    path('plantillaHistoriasHU', login_required(plantillaHistoriasHU), name='plantillaHistoriasHU'), # Beta
+    
+    #path('vistaHistoriasHU/<int:id_sprint>/', views.vistaHistoriasHU, name='vistaHistoriasHU'), # Beta
+    #path('vistaHistoriasHU/', views.vistaHistoriasHU, name='vistaHistoriasHU'), # Beta
+    path('plantillaHistoriasHU/<int:id_sprint>/', login_required(plantillaHistoriasHU), name='plantillaHistoriasHU'), # Beta
 
     # mensaje de la Ejecución del Sprint
     path('vistaEjecucionSprint/<id_ReunionDiaria>/', views.vistaEjecucionSprint, name='vistaEjecucionSprint'), # Beta

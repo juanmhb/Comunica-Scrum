@@ -10,17 +10,16 @@
 <form class="form" method="post" action="" style="color: black;">
     {% csrf_token %} 
 
-    {% for p in form %}
     <br>
-    <label class="requiredField" for="FechaHora">Fecha y hora <!--(AAAA-MM-DD HH:MM)--> ({{ p.FechaHora }})</label>
-    <input class="form-control textinput" type="datetime-local" name="FechaHora" id="FechaHora" value="{{ p.FechaHora }}" required>
+    <label class="requiredField" for="FechaHora">Fecha y hora <!--(AAAA-MM-DD HH:MM)--> ({{ mensaje.FechaHora }})</label>
+    <input class="form-control textinput" type="datetime-local" name="FechaHora" id="FechaHora" value="{{ mensaje.FechaHora|date:"Y-m-d\\TH:i" }}"  required>
     <br>
     <label class="requiredField" for="Descripcion">Descripción:</label>
-    <textarea name="Descripcion" cols="40" rows="3" class="form-control textarea" placeholder="Ingrese la descripcion de este mensaje" maxlength="400" id="id_Descripcion" value="{{ p.Descripcion }}">{{ p.Descripcion}}</textarea>
+    <textarea name="Descripcion" cols="40" rows="3" class="form-control textarea" placeholder="Ingrese la descripcion de este mensaje" maxlength="400" id="id_Descripcion" value="{{ mensaje.Descripcion }}">{{ mensaje.Descripcion}}</textarea>
     <br>
     <label class="requiredField" for="Proyecto">Proyecto</label>
     <select name="Proyecto" class="select form-control" id="categoria" onchange="cargarSubcategorias()">
-        <option value="{{ p.Proyecto }}">---------</option>
+        <option value="{{ mensaje.Proyecto }}">---------</option>
         {% for categoria in proyectos %}
             <option value="{{ categoria.id }}" selected>{{ categoria.nombreproyecto }}</option>
         {% endfor %}
@@ -28,7 +27,7 @@
     <br>
     <label class="requiredField" for="Sprint">Sprint</label>
     <select name="Sprint" class="select form-control" id="categoria" onchange="cargarSubcategorias()">
-        <option value="{{ p.Sprint }}">---------</option>
+        <option value="{{ mensaje.Sprint }}">---------</option>
         {% for categoria in sprint %}
             <option value="{{ categoria.id }}" selected>{{ categoria.nombresprint}}</option>
         {% endfor %}
@@ -37,14 +36,14 @@
     <!--
     <label class="requiredField" for="archvio">Archivo (opcional)</label>
     <select name="archivo" class="select form-control" id="categoria" onchange="cargarSubcategorias()" required>
-        <option value="{{ p.archivo }}">---------</option>
+        <option value="{{ mensaje.archivo }}">---------</option>
          for categoria in archivos 
             <option value="{{ categoria.id }}" selected>{{ categoria.Descripcion }}</option>
          endfor 
     </select>
     <br>
 -->
-    {% endfor %}
+
 
 
     <div class=" margin: auto;">
