@@ -29,14 +29,14 @@
           <tr style="height: 50px;">
               <td style="height: 50px; text-align: left; width: 30%;">
                   <!-- <img src="{{ request.build_absolute_uri }}{% static 'Scrum/img/TecNM.jpg' %}" alt="Logo 1" class="logo"> -->
-                  <img src="static/Scrum/img/TecNM.jpg" alt="Logo 1" class="logo">
+                  <img src="{% static 'Scrum/img/TecNM.jpg' %}" alt="Logo 1" class="logo">
               </td>
               <td style="text-align: center; width: 30%;">
                   <h1 class="titulo">Reunión de Planeación del Sprint</h1>
                   <h3>{% now "d-m-Y H:i" %}</h3>
               </td>
               <td style="text-align: right; width: 40%;">
-                  <img src="{{ request.build_absolute_uri }}{% static 'Scrum/img/cenidet.png' %}" alt="Logo 2" class="logo">
+                  <img src="{% static 'Scrum/img/cenidet.png' %}"  alt="Logo 2" class="logo">
               </td>
           </tr>
       </table>
@@ -51,42 +51,33 @@
   <table border="0.1">
 
     {% for p in form %}
-   <tr>
-    <td id="azul" align="center">Proyecto</td>
-    <td colspan="4" align="center" id="azul">{{ p.Proyecto }}</td>
-   </tr>
-   
-   <tr>
-    <td align="center">Fecha y hora</td>
-    <td align="center">{{ p.FechaHora }}</td>
-    <td><!-- Vacio --></td>
-    <td><!-- Vacio --></td>
-    <td><!-- Vacio --></td>
-   </tr>
-   
-   <tr>
-    <td colspan="5" align="center" style="color: rgb(0, 113, 157);">Planificación del <!--Sprint n--> {{ p.Sprint }}</td>
-   </tr>
-   {% endfor %}
+      <tr style=" height: 20px; vertical-align: bottom; ">
+        <td id="azul" align="center">Proyecto</td>
+        <td colspan="4" align="center" id="azul">{{ p.Proyecto }}</td>
+      </tr>
+      
+      <tr style=" height: 20px; vertical-align: bottom; ">
+        <td align="center">Fecha y hora</td>
+        <td colspan="4"> &nbsp; {{ p.FechaHora }}</td>
+      </tr>
+      
+      <tr style=" height: 20px; vertical-align: bottom; ">
+        <td colspan="5" align="center" style="color: rgb(0, 113, 157);">Planificación del <!--Sprint n--> {{ p.Sprint }}</td>
+      </tr>
+    {% endfor %}
    {% for p in idiomaPais %}
-   <tr>
-    <td id="azul" align="center">Idioma</td>
-    <td id="azul" align="center">{{ p.Idioma}}</td>
-    <td id="azul"><!-- Vacio --></td>
-    <td id="azul"><!-- Vacio --></td>
-    <td id="azul"><!-- Vacio --></td>
-   </tr>
-   
-   <tr>
-    <td align="center">País</td>
-    <td align="center">{{ p.Pais }}</td>
-    <td><!-- Vacio --></td>
-    <td><!-- Vacio --></td>
-    <td><!-- Vacio --></td>
-   </tr>
+      <tr style=" height: 20px; vertical-align: bottom; ">
+          <td id="azul" align="center">Idioma</td>
+          <td colspan="4" id="azul" > &nbsp; {{ p.Idioma}}</td>
+        </tr>
+      
+      <tr style=" height: 20px; vertical-align: bottom; ">
+        <td align="center">País</td>
+        <td colspan="4"> &nbsp;{{ p.Pais }}</td>
+      </tr>
    {% endfor %}
    
-   <tr>
+   <tr style=" height: 20px; vertical-align: bottom; ">
     <td id="gris" align="center">Asistentes:</td>
     <td id="gris" align="center">Nombre</td>
     <td id="gris" align="center">Rol</td>
@@ -95,41 +86,23 @@
    </tr>
    {% for p in form3 %}
    <tbody>
-    <tr>
+    <tr style=" height: 20px; vertical-align: bottom; ">
       <th scope="row"> &nbsp; </th>
       <!-- "| capfirst" sirve para poner la inicial con mayuscula -->
       <td>{{ p.Usuario.Usuario }}</td>
       <td>{{ p.Rol }}</td>
-      <td>
-        {% if p.Status == '1' %}
-        Obligatorio
-        {% elif p.Status == '2' %}
-        Opcional
-        {% else %}
-        Dato invalido
-        {% endif %}
+      <td> {{p.get_Status_display}}
       </td>
-      <td>
-        {% if p.TipoAsistencia == 'S' %}
-        Sincrona
-        {% elif p.TipoAsistencia == 'A' %}
-        Asincrona
-        {% else %}
-        Dato invalido
-        {% endif %}
+      <td> {{p.get_TipoAsistencia_display}}
       </td>
     </tr>
   </tbody>
   {% endfor %}
   <!--Espacios en blanco-->
   <tr>
-    <td align="center"> &nbsp; </td>
-    <td align="center"> &nbsp; </td>
-    <td align="center"> &nbsp; </td>
-    <td align="center"> &nbsp; </td>
-    <td align="center"> &nbsp; </td>
-   </tr>
-  <tr>
+    <td colspan="5" align="center"> &nbsp; </td>
+  </tr>
+  <tr style=" height: 20px; vertical-align: bottom; ">
     <td id="gris" align="center">Sprint Backlog</td>
     <td id="gris" align="center"> HU </td>
     <td id="gris" align="center"> Nombre </td>
@@ -138,74 +111,45 @@
    </tr>
 
    {% for p in form2 %}
-   <tr>
-    <!--<td id="azul" align="center"> HU001 </td>
-    <td id="azul" align="center"> Pantalla de acceso </td>-->
-    <td > &nbsp; </td>
-    <!-- <td > HU00{{ forloop.counter }}</td> -->
-    <td > {{ p.NumeroHU}}</td>
-    <td > {{ p.nombre | capfirst }} </td>
-    <td align="center"> {{p.get_Prioridad_display}}
-      <!-- {% if p.Prioridad == '1' %}
-      Alta
-      {% elif p.Prioridad == '2' %}
-      Media
-      {% elif p.Prioridad == '3' %}
-      Baja
-      {% else %}
-      Sin respuesta
-      {% endif %} -->
-    </td>
-    <td  align="center"> {{ p.HorasEstimadas }} </td>
-   </tr>
+    <tr >
+      <!--<td id="azul" align="center"> HU001 </td>
+      <td id="azul" align="center"> Pantalla de acceso </td>-->
+      <td > &nbsp; </td>
+      <!-- <td > HU00{{ forloop.counter }}</td> -->
+      <td > {{ p.NumeroHU}}</td>
+      <td style="width: 300px; max-width: 300px; word-wrap: break-word; overflow-wrap: break-word;" > {{ p.nombre | capfirst }} </td>
+      <td align="center"> {{p.get_Prioridad_display}} </td>
+      <td  align="center"> {{ p.HorasEstimadas }} </td>
+    </tr>
    {% endfor %}
-
-    <td id="azul"> &nbsp; </td>
-    <td id="azul"> &nbsp; </td>
-    <td id="azul" align="center"> &nbsp; </td>
+   <tr style=" height: 20px; vertical-align: bottom; ">
+    <td colspan="3" id="azul"> &nbsp; </td>
     <td id="azul" align="center"> Horas: </td>
     <td id="azul" align="center"> {{ horas }} </td>
-
-   <tr>
-    <td align="center"> &nbsp; </td>
-    <td align="center"> &nbsp; </td>
-    <td align="center"> &nbsp; </td>
+   </tr>
+   <tr style=" height: 20px; vertical-align: bottom; ">
+    <td colspan="3" align="center"> &nbsp; </td>
     <td align="center"> Dias: </td>
     <td align="center"> {{ dias|floatformat:2 }}</td>
    </tr>
    <tr>
-    <td align="center"> &nbsp; </td>
-    <td align="center"> &nbsp; </td>
-    <td align="center"> &nbsp; </td>
-    <td align="center"> &nbsp; </td>
-    <td align="center"> &nbsp; </td>
+    <td colspan="5" align="center"> &nbsp; </td>
    </tr>
    {% for p in form%}
-   <tr>
-    <td id="azul" align="center">Objetivo del sprint</td>
-    <td id="azul" colspan="4" align="center">{{ p.Descripcion }}</td>
-   </tr>
+    <tr>
+      <td id="azul" align="center">Objetivo del sprint</td>
+      <td style="width: 300px; max-width: 300px; word-wrap: break-word; overflow-wrap: break-word;" id="azul" colspan="4" >{{ p.Descripcion }}</td>
+    </tr>
    {% endfor %}
-   <!--
-   <tr>
-    <td align="center"> HU0002 </td>
-    <td align="center">Historia de usuario 2</td>
-    <td align="center" colspan="3"> &nbsp; </td>
-   </tr>
-  -->
   <tr>
-    <td align="center"> &nbsp; </td>
-    <td align="center"> &nbsp; </td>
-    <td align="center"> &nbsp; </td>
-    <td align="center"> &nbsp; </td>
-    <td align="center"> &nbsp; </td>
+    <td colspan="5" align="center"> &nbsp; </td>
    </tr>
 
    {% for p in comentarios %}
-   <tr>
-    <td id="azul" align="center">Comentario de {{ p.Emisor.Usuario }}: </td>
-    <td id="azul" align="center" colspan="4">{{ p.Comentarios }}</td>
-   </tr>
+    <tr >
+      <td align="center">Comentario de {{ p.Emisor.Usuario }}: </td>
+      <td style="width: 300px; max-width: 300px; word-wrap: break-word; overflow-wrap: break-word;"  colspan="4">{{ p.Comentarios }}</td>
+    </tr>
    {% endfor %}
 
   </table>

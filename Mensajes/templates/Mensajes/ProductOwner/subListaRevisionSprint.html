@@ -18,9 +18,8 @@
                 <th scope="col">#</th>
                 <th scope="col">Proyecto</th>
                 <th scope="col">Sprint</th>
-                <th scope="col">Status</th>
                 <th scope="col">Objetivo</th>
-                
+                <th scope="col">Status</th>
                 <th scope="col">Opciones</th>
               </tr>
             </thead>
@@ -31,11 +30,9 @@
               <tr>
                 <th scope="row">{{ forloop.counter }}</th>
                 <td>{{ p.Proyecto }}</td>
-
                 <td>{{ p.nombresprint }}</td>
-                <td>{{ p.Estatus }}</td>
                 <td>{{ p.objetivosprint }}</td>
-                
+                <td>{{ p.Estatus }}</td>
                 <td>
                     <a class="btn btn-outline-success" data-bs-toggle="tooltip" data-bs-placement="top"
                             title="Crear" href="{% url 'Mensajes:crearSubRevisionSprint' p.id %}">

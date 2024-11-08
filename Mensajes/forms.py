@@ -78,7 +78,7 @@ class UpdateMensajePDF_Forms(forms.ModelForm):
                 attrs = {
                     'class':'form-control',
                     'rows':'3',
-                    'placeholder': 'Ingrese la descripcion de este mensaje'
+                    'placeholder': 'Ingrese la descripción de este mensaje'
                 }
             ),
         }
