@@ -5,13 +5,13 @@
     <style>
       #bg{
                   background-color:yellow;
-              }
-              #azul{
-                  background-color:rgb(194, 238, 255);
-              }
-              #gris{
-                  background-color:rgb(194, 194, 194);
-              }
+      }
+      #azul{
+          background-color:rgb(194, 238, 255);
+      }
+      #gris{
+          background-color:rgb(194, 194, 194);
+      }
       table tr, th, td {
           /* height: 20px; */
           vertical-align: bottom;
@@ -62,16 +62,8 @@
    <tr style="height: 20px;">
     <td id="azul" align="center">Emisor</td>
     <td id="azul" align="center">{{ p.Emisor.Usuario }} </td>
+    <td id="azul" align="center">{{ p.Emisor.Roles.NombreRol }} </td>
     <!--Determina que rol tiene el emisor-->
-    {% if  p.Emisor.Roles.NombreRol == 'Product Owner' %}
-    <td id="azul" align="center">Product Owner</td>
-    {% elif  p.Emisor.Roles.NombreRol == 'Scrum Master' %}
-    <td id="azul" align="center">Scrum Master</td>
-    {% elif  p.Emisor.Roles.NombreRol == 'Developers' %}
-    <td id="azul" align="center">Empleado</td>
-    {% else %}
-    <td id="azul" align="center">Jefe de proyecto</td>
-    {% endif %}
     <td colspan="5" id="azul" align="center"></td>
    </tr>
    </tbody>
@@ -86,24 +78,14 @@
     </tr>
 
   {% for p in form %}
-  <tbody>
-  <tr style="height: 20px;">
-    <td align="center"></td>
-    <td align="center">{{ p.Receptor.Usuario }}</td>
-    <!--Determina que rol tiene el destinatario-->
-    <!--user.usuarioempleado.Roles.NombreRol-->
-    {% if p.Receptor.Roles.NombreRol == 'Product Owner' %}
-    <td  align="center">Product Owner</td>
-    {% elif p.Receptor.Roles.NombreRol == 'Scrum Master' %}
-    <td  align="center">Scrum Master</td>
-    {% elif p.Receptor.Roles.NombreRol == 'Developers' %}
-    <td align="center">Empleado</td>
-    {% else %}
-    <td  align="center">Jefe de proyecto</td>
-    {% endif %}
-    <td colspan="5" align="center"></td>
-   </tr>
-  </tbody>
+    <tbody>
+    <tr style="height: 20px;">
+      <td align="center"></td>
+      <td align="center">{{ p.Receptor.Usuario }}</td>
+      <td align="center">{{  p.Receptor.Roles.NombreRol }}</td>
+      <td colspan="5" align="center"></td>
+    </tr>
+    </tbody>
   {% endfor %}
    
    <tbody>
@@ -113,15 +95,14 @@
   </tbody>
   
   {% for p in form|slice:":1"  %}
-   <tr>
-    <td align="center" id="azul">Retroalimentación</td>
-    <td class="table-row-auto" colspan="7" id="azul">{{ p.Descripcion }}</td>
-   </tr>
-   <tr>
-    <td align="center" >Contestación</td>
-    <td class="table-row-auto" colspan="7">{{ p.Contestacion }}</td>
-   </tr>
-
+    <tr>
+      <td align="center" id="azul">Retroalimentación</td>
+      <td class="table-row-auto" colspan="7" id="azul">{{ p.Descripcion }}</td>
+    </tr>
+    <tr>
+      <td align="center" >Contestación</td>
+      <td class="table-row-auto" colspan="7">{{ p.Contestacion }}</td>
+    </tr>
    {% endfor %}
   </table>
   </div> 

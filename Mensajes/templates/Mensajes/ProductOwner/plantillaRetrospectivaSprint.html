@@ -49,24 +49,24 @@
     <div>
         <table class="table" border="0.1">
 
-                <tr>
+                <tr style=" height: 20px; vertical-align: bottom; ">
                     <td id="gris">Proyecto</td>
                     <td colspan="4" align="center" id="gris">{{ form.Proyecto }}</td>
                 </tr>
-                <tr>
+                <tr style=" height: 20px; vertical-align: bottom; ">
                     <td colspan="5" align="center" style="color: rgb(0, 113, 157);"> Reunión de Restrospectiva del {{ form.Sprint }}</td>
                 </tr>
-                <tr>
+                <tr style=" height: 20px; vertical-align: bottom; ">
                     <td id="azul">Fecha y hora reunión</td>
                     <td colspan="4" id="azul">  &nbsp {{ form.FechaHora }}</td>
                 </tr>
 
             {% for p in idiomaPais %}
-            <tr>
+            <tr style=" height: 20px; vertical-align: bottom; ">
                 <td>Pais</td>
                 <td colspan="4">  &nbsp {{ p.Pais }}</td>
             </tr>
-            <tr>
+            <tr style=" height: 20px; vertical-align: bottom; ">
                 <td id="azul">Idioma</td>
                 <td colspan="4"  id="azul">  &nbsp {{ p.Idioma }}</td>
             </tr>
@@ -74,7 +74,7 @@
             <tr>
                 <td colspan="5"> &nbsp; </td>
             </tr>
-            <tr>
+            <tr style=" height: 20px; vertical-align: bottom; ">
                 <td id="gris" align="center">Asistentes:</td>
                 <td id="gris" align="center">Nombre</td>
                 <td id="gris" align="center"> Rol </td>
@@ -82,7 +82,7 @@
                 <td id="gris" align="center"> Tipo Asistencia </td>
             </tr>
             {% for p in form3 %}
-            <tr>
+            <tr style=" height: 20px; vertical-align: bottom; ">
                 <th> &nbsp; </th>
                 <td>{{ p.Usuario.Usuario }}</td>
                 <td>{{ p.Rol }}</td>
@@ -97,19 +97,19 @@
             <tr>
                 <td colspan="5" align="center"> &nbsp; </td>
             </tr>
-            <tr id="azul">
+            <tr id="azul" style="  vertical-align: bottom; ">
                 <td>Objetivo:</td>
                 <td colspan="4">{{ form.Descripcion }}</td>
             </tr>
             {% for p in comentarios %}
-            <tr>
-                <td >Reflexiones/Comentarios ({{ p.Emisor.Usuario }}):</td>
-                <td colspan="4">{{ p.Comentarios }}</td>
-            </tr>
-            <tr>
-                <td id="gris">Oportunidades de mejora ({{ p.Emisor.Usuario }}):</td>
-                <td colspan="4" id="gris">{{ p.OportunidadesMejora }}</td>
-            </tr>
+                <tr>
+                    <td >Reflexiones/Comentarios ({{ p.Emisor.Usuario }}):</td>
+                    <td colspan="4">{{ p.Comentarios }}</td>
+                </tr>
+                <tr>
+                    <td id="gris">Oportunidades de mejora ({{ p.Emisor.Usuario }}):</td>
+                    <td colspan="4" id="gris">{{ p.OportunidadesMejora }}</td>
+                </tr>
             {% endfor %}
 
         </table>

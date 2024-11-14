@@ -14,7 +14,9 @@
         </div>
         <div class="modal-footer">
             <button class="btn btn-outline-danger" type="button" data-bs-dismiss="modal">Salir</button>
-            <button class="btn btn-outline-primary" type="submit">Confirmar</button>
+            {% if user.usuarioempleado.Roles.NombreRol != 'Developers' %}
+                <button class="btn btn-outline-primary" type="submit">Confirmar</button>
+            {% endif %}
         </div>
     </form>
        

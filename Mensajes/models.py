@@ -206,13 +206,13 @@ class m_HomologacionVision(models.Model):
         return self.Emisor
 
 class m_RetrospectivaSprint(models.Model):
-    Comentarios = models.CharField(max_length=200)
+    Comentarios = models.CharField(max_length=400)
     FechaHora = models.DateTimeField(auto_now_add=True)
     Emisor = models.ForeignKey(Empleado,on_delete=models.CASCADE, null=True, blank=True)
     Mensaje = models.ForeignKey(Mensaje,on_delete=models.CASCADE, null=True, blank=True)
     Proyecto = models.ForeignKey(Proyecto,on_delete=models.CASCADE, null=True, blank=True)
     Sprint = models.ForeignKey(Sprint,on_delete=models.CASCADE, null=True, blank=True)
-    OportunidadesMejora = models.CharField(max_length=200)
+    OportunidadesMejora = models.CharField(max_length=400)
     
     class Meta:
         ordering = ['pk']
@@ -235,7 +235,7 @@ class m_CierreSprint(models.Model):
     #    return self.Emisor
 
 class m_Comentarios(models.Model):
-    Comentarios = models.CharField(max_length=200)
+    Comentarios = models.CharField(max_length=400)
     Emisor = models.ForeignKey(Empleado,on_delete=models.CASCADE, null=True, blank=True)
     EventoScrum = models.ForeignKey(m_EventoScrum,on_delete=models.CASCADE, blank=True,null=True)
     Mensaje = models.ForeignKey(Mensaje,on_delete=models.CASCADE, null=True, blank=True)

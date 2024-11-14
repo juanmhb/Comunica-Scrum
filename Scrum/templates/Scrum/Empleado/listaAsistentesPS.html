@@ -31,27 +31,10 @@
               <tr>
                 <th scope="row">{{ forloop.counter }}</th>
                 <td>{{ p.Proyecto }}</td>
-                <!--<td>{{ p.roles }}</td>-->
                 <td>{{ p.FechaHora }}</td>
                 <td>{{ p.EventoScrum }}</td>
-                
-                {% if p.Status == "1" %}
-                <td>Obligatorio</td>
-                {% elif p.Status == "2" %}
-                <td>Opcional</td>
-                {% else %}
-                <td>Ninguno</td>
-                {% endif %}
-
-                {% if p.TipoAsistencia == "S" %}
-                <td>Síncrona</td>
-                {% elif p.TipoAsistencia == "A" %}
-                <td>Asíncrona</td>
-                {% else %}
-                <td>Ninguno</td>
-                {% endif %}
-                
-                
+                <td>{{ p.get_Status_display }}</td>
+                <td>{{ p.get_TipoAsistencia_display }}</td>
                 <td>
                     <a class="btn btn-outline-success" data-bs-toggle="tooltip" data-bs-placement="top"
                             title="Editar" href="{% url 'Mensajes:editarAsistenteEmpleadoPS' p.id %}">

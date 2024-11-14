@@ -16,7 +16,7 @@
               <tr>
                 <th scope="col">#</th>
                 <th scope="col">Proyecto</th>
-                <th scope="col">Fecha de creacion</th>
+                <th scope="col">Fecha de creación</th>
                 <th scope="col">Evento Scrum</th>
                 <th scope="col">Status</th>
                 <th scope="col">Tipo de asistencia</th>
@@ -33,24 +33,8 @@
                 <td>{{ p.Proyecto }}</td>
                 <td>{{ p.FechaHora }}</td>
                 <td>{{ p.EventoScrum }}</td>
-                
-                {% if p.Status == "1" %}
-                <td>Obligatorio</td>
-                {% elif p.Status == "2" %}
-                <td>Opcional</td>
-                {% else %}
-                <td>Ninguno</td>
-                {% endif %}
-
-                {% if p.TipoAsistencia == "S" %}
-                <td>Síncrona</td>
-                {% elif p.TipoAsistencia == "A" %}
-                <td>Asíncrona</td>
-                {% else %}
-                <td>Ninguno</td>
-                {% endif %}
-                
-                
+                <td>{{ p.get_Status_display }}</td>
+                <td>{{ p.get_TipoAsistencia_display }}</td>
                 <td>
                     <a class="btn btn-outline-success" data-bs-toggle="tooltip" data-bs-placement="top"
                             title="Editar" href="{% url 'Mensajes:editarAsistenteRevisionEmpleado' p.id %}">

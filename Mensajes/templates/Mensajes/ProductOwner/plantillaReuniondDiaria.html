@@ -52,7 +52,7 @@
    </tr>
    
    <tr>
-    <td colspan="5" align="center" style="color: rgb(0, 113, 157);">Reunión Diaria &nbsp;</td>
+    <td colspan="5" align="center" style="color: rgb(0, 113, 157);">Reunión Diaria, &nbsp; Sprint {{sprint_id}}</td>
    </tr>
    {% endfor %}
    {% for p in idiomaPais %}
@@ -122,16 +122,16 @@
         <td colspan="5" align="center" id="gris">{{ p.Emisor.Usuario.first_name }}&nbsp;{{ p.Emisor.Usuario.last_name }}</td>
     </tr>
     <tr>
+      <td>Obstáculos del día anterior:</td>
+      <td colspan="4">{{ p.ObstaculosPresentados }}</td>
+    </tr>
+    <tr id="azul" >
         <td>Trabajo realizado el dia anterior:</td>
-        <td id="azul" colspan="4">{{ p.TrabajoRealizadoDiaAnterior }}</td>
+        <td colspan="4">{{ p.TrabajoRealizadoDiaAnterior }}</td>
     </tr>
     <tr>
-        <td>Obstáculos:</td>
-        <td colspan="4">{{ p.ObstaculosPresentados }}</td>
-    </tr>
-    <tr>
-        <td>Planificación del siguiente dia:</td>
-        <td id="azul" colspan="4">{{ p.PlanDiaSiguiente }}</td>
+        <td>Planificación del dia de hoy:</td>
+        <td colspan="4">{{ p.PlanDiaSiguiente }}</td>
     </tr>
     <tr>
         <td colspan="5" >  &nbsp;&nbsp;&nbsp;&nbsp; </td>

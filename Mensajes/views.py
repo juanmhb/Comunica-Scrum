@@ -453,7 +453,7 @@ def plantillaRefinamiento(request, id):
     return HttpResponse(pdf, content_type='application/pdf')
 
 # Plantilla para el mensaje de retroalimentacion del product backlok
-def plantillaRetroAlimentacionBL(request,id):
+def plantillaRetroAlimentacionBL(request,id): # id del mensaje de Retroalimentación
     # dato = MensajeRetroA.objects.filter(Receptor=request.user)
     dato = MensajeRetroA.objects.filter(pk=id)
     data = {
@@ -537,7 +537,7 @@ def plantillaPlaneacionSprint(request, id): #id del Mensaje
     return HttpResponse(pdf, content_type='application/pdf')
 
 # Plantilla para el mensaje de retroalimentacion del la planeacion del sprint
-def plantillaRetroAlimentacionPS(request,id):
+def plantillaRetroAlimentacionPS(request,id): # id del Mensaje de Retroalimentación
     # dato = MensajeRetroA.objects.filter(Receptor=request.user)
     dato = MensajeRetroA.objects.filter(pk=id)
     data = {
@@ -733,7 +733,7 @@ def mensajes_recibidosEmpleado(request):
     return render(request, 'Scrum/Empleado/refinamientoScrum.html', data)
 
 # Empleado
-def mensajes_recibidosRetroEmpleado(request, id):
+def mensajes_recibidosRetroEmpleado(request, id): # id del Mensaje
     # mensajes = Mensaje.objects.filter(Destinatario=request.user)
     usuario = request.user
     empleado = Empleado.objects.get(Usuario=usuario)
@@ -767,7 +767,7 @@ def lista_reunion_diariaEmpleado(request):
     return render(request, 'Scrum/Empleado/reunionDiaria.html', {'form': mensajes, 'form2':recibidos})
 
 # Empleado
-def enviar_mensajeRetroEmpleado(request, id):
+def enviar_mensajeRetroEmpleado(request, id): #id del Mensaje Receptor
     # emisor = User.objects.get(id=id)
     em = request.user.id
     emisor = request.user
@@ -829,9 +829,9 @@ def enviar_mensajeRetroEmpleado(request, id):
 
 
 # Mensaje de retroalimentacion Empleado en caso de seleccionar "Comprendido", correcto
-def actualizarRetroStatusCorrectoEmpleado(request, id):
+def actualizarRetroStatusCorrectoEmpleado(request, id): #id del Mensaje Receptor
     em = request.user.id
-    status = "2"
+    status = "2" # 2 = Mensaje Comprendido
     producto = get_object_or_404(MensajeReceptor, pk=id)
     producto.Status = status
     producto.save()
@@ -840,8 +840,8 @@ def actualizarRetroStatusCorrectoEmpleado(request, id):
     return redirect(to='Mensajes:recibirMensajeEmpleado')
 
 # Mensaje de retroalimentacion BL Empleado en caso de seleccionar "Comprendido"
-def actualizarRetroBLStatusCorrectoEmpleado(request, id):
-    status = "3"
+def actualizarRetroBLStatusCorrectoEmpleado(request, id): # id del Mensaje de retroalimentación
+    status = "3"  # 3 = "Aclarado y/o Comprendido"
     producto = get_object_or_404(MensajeRetroA, pk=id)
     producto.Status = status
     producto.save()
@@ -852,7 +852,7 @@ def actualizarRetroBLStatusCorrectoEmpleado(request, id):
     return redirect('Mensajes:retroAliEmpleadoBL', msm)
 
 # Listar asistentes por usuario y mensaje, Refinamiento, Scrum Master
-def lista_asistentes_por_usuarioRef_Empleado(request, id):
+def lista_asistentes_por_usuarioRef_Empleado(request, id): #id del Mensaje
     usuario = request.user
     empleado = Empleado.objects.get(Usuario=usuario)
     mensaje = Mensaje.objects.get(pk=id)
@@ -1493,9 +1493,10 @@ def enviar_mensaje_Planeacion(request, id, Accion):
             #ArchivosAdjuntos=""
 
             #Envío de correo
-            asunto = DescripcionEventoScrum +  'Reunión: ' +  str(FechaHoraReunion) #'Reunión de Planificación del Sprint'
+            FechaHoraFormateada = FechaHoraReunion.strftime('%d/%m/%Y %H:%M')
+            asunto = DescripcionEventoScrum +  ' ' +  str(FechaHoraFormateada) #'Reunión de Planificación del Sprint'
             Remitente = request.user.email
-            CuerpoMensaje = "Ceremonia: " + DescripcionEventoScrum + '\r\n Proyecto: ' + NombreProyecto + '\r\n' + 'Reunión: ' +  str(FechaHoraReunion) #'Reunión de Planifiación del Sprint
+            CuerpoMensaje = "Ceremonia: " + DescripcionEventoScrum + '\r\n Proyecto: ' + NombreProyecto + '\r\n' + 'Reunión: ' +  str(FechaHoraFormateada) #'Reunión de Planifiación del Sprint
             ListaDestinatarios = Destinatarios.split(",")
             email = EmailMessage(
                 subject=asunto,
@@ -1701,7 +1702,7 @@ def eliminar_AsistentePlaneacion(request, id):
     return redirect(to="Mensajes:listaPlaneacionSprint")
 
 # Plantilla para el mensaje de retroalimentacion de la revision del sprint
-def plantillaRetroAlimentacionRS(request,id):
+def plantillaRetroAlimentacionRS(request,id): # id del Mensaje de retroalimentación
     # dato = MensajeRetroA.objects.filter(Receptor=request.user)
     dato = MensajeRetroA.objects.filter(pk=id)
     data = {
@@ -1869,7 +1870,11 @@ def mensajes_PlaneacionRetroScrumMaster(request, id):
 def listaPlaneacionSprintEmpleado(request):
     usuario = request.user
     empleado = Empleado.objects.get(Usuario=usuario)
-    mensajes = MensajeReceptor.objects.filter(Q(Receptor=empleado) & Q(EventoScrum="3")) # 3=Reunion de Planeación del Sprint
+
+    # Obtener los proyectos en los que el empleado participa
+    proyectos = EmpleadoProyecto.objects.filter(Empleado=empleado).values_list('Proyecto', flat=True)
+
+    mensajes = MensajeReceptor.objects.filter(Q(Receptor=empleado) & Q(EventoScrum="3")& Q(Proyecto__in=proyectos)) # 3=Reunion de Planeación del Sprint
 
     data = {
         'form2':mensajes,
@@ -1878,7 +1883,7 @@ def listaPlaneacionSprintEmpleado(request):
     return render(request, 'Scrum/Empleado/listaPlaneacionSprint.html', data)
 
 # Mensaje de recibido Empleado en caso de seleccionar "Comprendido", correcto
-def actualizarRetroStatusCorrectoEmpleado2(request, id):
+def actualizarRetroStatusCorrectoEmpleado2(request, id): # id del Mensaje receptor
     status = "2"
     producto = get_object_or_404(MensajeReceptor, pk=id)
     producto.Status = status
@@ -1887,8 +1892,8 @@ def actualizarRetroStatusCorrectoEmpleado2(request, id):
     return redirect(to='Mensajes:mensajePlaneacionEmpleado')
 
 # Mensaje de retroalimentacion Empleado en caso de seleccionar "Comprendido"
-def actualizarRetroPSStatusCorrectoEmpleado2(request, id):
-    status = "3"
+def actualizarRetroPSStatusCorrectoEmpleado2(request, id): # id del Mensaje de Retroalimentación
+    status = "3" # Status=3 --> Aclarado y/o Comprendido
     producto = get_object_or_404(MensajeRetroA, pk=id)
     producto.Status = status
     producto.save()
@@ -1898,7 +1903,7 @@ def actualizarRetroPSStatusCorrectoEmpleado2(request, id):
     return redirect('Mensajes:retroAliEmpleadoPlaneacion', msm)
 
 # Mensaje de retroalimentacion Empleado en caso de seleccionar "No Comprendido" en la interfaz principal de Reunión de Planeación del Sprint
-def enviar_mensajeRetroPlaSprintEmpleado(request, id):
+def enviar_mensajeRetroPlaSprintEmpleado(request, id): # id del Mensaje Receptor
     # mensajes = Mensaje.objects.filter(pk=id) # usar este metodo en caso de que sea proveniente del modelo "Mensaje"
     mensajes = MensajeReceptor.objects.filter(pk=id)
 
@@ -1926,12 +1931,9 @@ def enviar_mensajeRetroPlaSprintEmpleado(request, id):
             mensajeid = dato.Mensaje
             receptorid = dato.Receptor
             descripcion = form.cleaned_data['Descripcion']
-            # sprint = dato.Sprint
-            # contenido = form.cleaned_data['Contestacion']
-            # status = form.cleaned_data['Status']
 
             mensaje = MensajeRetroA(Proyecto=proyecto, EventoScrum=eventoScrum, Mensaje=mensajeid, Receptor=receptorid,
-                                   Descripcion=descripcion, Status=5, Emisor=emisorid)
+                                   Descripcion=descripcion, Status=5, Emisor=emisorid) # Status=5 --> No Comprendido
 
             mensaje.save()
             return redirect(to='Mensajes:mensajePlaneacionEmpleado')  # Redirigir a la página de mensajes enviados
@@ -1939,25 +1941,19 @@ def enviar_mensajeRetroPlaSprintEmpleado(request, id):
         form = retroAlimentacion_Forms()
     return render(request, 'Scrum/Empleado/retroAlimentacionPS.html', {'form': form})
 
-def mensajes_PlaneacionRetroEmpleado(request, id):
-    # mensajes = Mensaje.objects.filter(Destinatario=request.user)
+def mensajes_PlaneacionRetroEmpleado(request, id): # id del Mensaje Original
     usuario = request.user
     empleado = Empleado.objects.get(Usuario=usuario)
-    # mensajes = Mensaje.objects.filter(Destinatario=empleado)
-    #recibidos = MensajeReceptor.objects.filter(Receptor=empleado)
-    #print(f"usuario: {usuario}, empleado: {empleado}, id_mensaje: {id}")
-    #usuario = request.user
 
-    #retroalimentacion = MensajeRetroA.objects.filter(Receptor=usuario)
     # (Receptor=empleado)
     mensaje = Mensaje.objects.get(pk=id) 
     #print(f"Mensaje: {mensaje}")
     retroalimentacion = MensajeRetroA.objects.filter(Q(Emisor=empleado) & Q(EventoScrum="3") & Q(Mensaje=mensaje))
-    msmEnviado = MensajeRetroA.objects.filter(Q(Emisor=empleado) & Q(Contestacion__isnull=True))
+    #msmEnviado = MensajeRetroA.objects.filter(Q(Emisor=empleado) & Q(Contestacion__isnull=True))
 
     data = {
         'mensajes':retroalimentacion,
-        'enviado':msmEnviado
+        #'enviado':msmEnviado
     }
 
     # mensajes = Mensaje.objects.all()
@@ -2021,7 +2017,7 @@ class ActualizarAsistenteScrumMasterPS(LoginRequiredMixin, UpdateView):
 
 
 # ------------------------------------- Comentarios y Asistentes - Planeacion Sprint -  Empleado -------------------------
-def crear_ComentarioEmpleadoPlaneacion(request,id):
+def crear_ComentarioEmpleadoPlaneacion(request,id): # id del Mensaje
     mensajes = Mensaje.objects.filter(pk=id) # Recibe el id del mensaje origen
     usuario = request.user
     empleado = Empleado.objects.get(Usuario=usuario)
@@ -2050,7 +2046,7 @@ def crear_ComentarioEmpleadoPlaneacion(request,id):
     return render(request, 'Scrum/Empleado/crear_Comentario.html', {'form': form})
 
 # BETA - Listar asistentes por usuario y mensaje, Planeacion, Empleado
-def lista_asistentes_por_usuarioPS_Empleado(request, id):
+def lista_asistentes_por_usuarioPS_Empleado(request, id): # id del Mensaje Original
     usuario = request.user
     empleado = Empleado.objects.get(Usuario=usuario)
     # Obtener el mensaje específico por su ID
@@ -2097,7 +2093,7 @@ def listaRevisionSprint(request):
 
         #asistentes = AsistentesEventosScrum.objects.all()
 
-        planeaciacionSprint = m_PlanificacionSprint.objects.all()
+        #planeaciacionSprint = m_PlanificacionSprint.objects.all()
 
         data = {
         'form2':mensajes,
@@ -2130,7 +2126,7 @@ def subListaRevisionSprint(request):
     # Obtener los proyectos en los que el empleado participa
     proyectos = EmpleadoProyecto.objects.filter(Empleado=empleado).values_list('Proyecto', flat=True)
 
-    # Filtrar los sprints de esos proyectos con el estatus 3, 4 o 5
+    # Filtrar los sprints de esos proyectos con el estatus 1 y 3
     sprint = Sprint.objects.filter(
         Proyecto__in=proyectos,
         Estatus__pk__in=[1, 3] # 1=Creado, 3=EN ejecución
@@ -2144,7 +2140,7 @@ def subListaRevisionSprint(request):
 
 # Crear revision del sprint heredando datos del modelo Sprint
 @transaction.atomic
-def crear_RevisionSprint(request, id):
+def crear_RevisionSprint(request, id): #id del Sprint
     usuario = request.user
     empleado = Empleado.objects.get(Usuario=usuario)
 
@@ -2202,7 +2198,7 @@ def eliminar_revision(request, id):
     return redirect(to="Mensajes:listaRevisionSprint")
 
 # Product Owner
-def enviar_mensaje_Revision(request, id):
+def enviar_mensaje_Revision(request, id, Accion):
 
     msm = Mensaje.objects.get(pk=id)
     usuario = request.user.id
@@ -2222,10 +2218,11 @@ def enviar_mensaje_Revision(request, id):
             FechaHoraReunion = msm.FechaHora
             NombreProyecto = msm.Proyecto.nombreproyecto
 
-            #Actualiza el status del mensaje enviado
-            msm.Status = 2 #Enviado
-            msm.FHUltimaMod = datetime.now()
-            msm.save() #Actualiza  la BD
+            if Accion == 2:
+                #Actualiza el status del mensaje enviado
+                msm.Status = 2 #Enviado
+                msm.FHUltimaMod = datetime.now()
+                msm.save() #Actualiza  la BD
 
             res = AsistentesEventosScrum.objects.filter(Mensaje=msm)
             Destinatarios = ""
@@ -2235,7 +2232,8 @@ def enviar_mensaje_Revision(request, id):
             for asistente in res:
                 mensaje = MensajeReceptor(Proyecto=proyecto, Mensaje=mensajeid, Receptor=asistente.Usuario, EventoScrum=eventoScrum, 
                                           Emisor=empleado ,FHCreacion=fecha,Status="1", archivo=archivo, Sprint=sprint)
-                mensaje.save() #Guarda la Información en la BD "Mensajes_mensajereceptor" por cada uno de los destinatarios
+                if Accion == 1:
+                    mensaje.save() #Guarda la Información en la BD "Mensajes_mensajereceptor" por cada uno de los destinatarios
                 Destinatarios = Destinatarios + str(asistente.Usuario.Usuario.email) + ', ' 
 
             Destinatarios = Destinatarios[:-2] #Elimina la última coma y espacio
@@ -2245,9 +2243,10 @@ def enviar_mensaje_Revision(request, id):
             #ArchivosAdjuntos=""
 
             #Envío de correo
-            asunto = DescripcionEventoScrum +  'Reunión: ' +  str(FechaHoraReunion) #'Reunión de Revisión del Sprint'
+            FechaHoraFormateada = FechaHoraReunion.strftime('%d/%m/%Y %H:%M')
+            asunto = DescripcionEventoScrum +  ' ' +  str(FechaHoraFormateada) #'Reunión de Revisión del Sprint'
             Remitente = request.user.email
-            CuerpoMensaje = "Ceremonia: " + DescripcionEventoScrum + '\r\n Proyecto: ' + NombreProyecto + '\r\n' + 'Reunión: ' +  str(FechaHoraReunion) #'Reunión de Revisión del Sprint
+            CuerpoMensaje = "Ceremonia: " + DescripcionEventoScrum + '\r\n Proyecto: ' + NombreProyecto + '\r\n' + 'Reunión: ' +  str(FechaHoraFormateada) #'Reunión de Revisión del Sprint
             ListaDestinatarios = Destinatarios.split(",")
             email = EmailMessage(
                 subject=asunto,
@@ -2261,8 +2260,8 @@ def enviar_mensaje_Revision(request, id):
 
                 # Adjuntar el archivo al correo con el nombre original del archivo
                 email.attach(arch.Archivo.name, archivo_binario.read(), 'application/pdf')
-   
-            email.send()
+            if Accion == 2:
+                email.send()
             #Fin Envío del correo
 
             time.sleep(2)
@@ -2284,7 +2283,7 @@ def enviar_mensaje_Revision(request, id):
     return render(request, 'Mensajes/ProductOwner/enviarMensajeRevision.html', {'form': form, 'form2':form2, 'form3':form3, 'archivos':archivos})
 
 # ------------- Retroalimentacion de la Reunion de Revisión del Sprint, Product Owner --------------
-def mensajes_RetroAlimentacionRevision(request, id):
+def mensajes_RetroAlimentacionRevision(request, id): #id del Mensaje
     if request.user.is_authenticated:
         usuario = request.user
         empleado = Empleado.objects.get(Usuario=usuario)
@@ -2309,44 +2308,18 @@ def mensajes_RetroAlimentacionRevision(request, id):
         return HttpResponseRedirect(reverse('Scrum:Logout'))
 
 # Retroalimentación de la Reunión de Revisión del Sprint, contestacion
-def enviar_mensajeRS(request, id):
-    retroalimentacion = MensajeRetroA.objects.filter(pk=id) # hera el id del mensaje recibido con los datos
+def enviar_mensajeRS(request, id): #id del Mensaje de Retroalimentación
+    mensaje_retroa = MensajeRetroA.objects.get(pk=id)
     usuario = request.user
     empleado = Empleado.objects.get(Usuario=usuario)
 
     if request.method == 'POST':
         form = retroAlimentacionBL_Forms(request.POST)
         if form.is_valid():
-
-            for retro in retroalimentacion:
-                Descripcion=retro.Descripcion
-                Proyecto=retro.Proyecto,
-                EventoScrum=retro.EventoScrum, 
-                Mensaje=retro.Mensaje, # hereda por defecto el id del mensaje
-                Receptor=retro.Emisor, # hereda el emisar del mensaje, NO el del request.user
-                Emisor=retro.Receptor
-                Status=retro.Status
-
-            proyecto = retro.Proyecto
-            eventoScrum = retro.EventoScrum
-            mensajeid = retro.Mensaje
-            #receptorid = retro.Receptor
-            #emisorRetro = retro.Emisor
-            descripcion = retro.Descripcion
-            contenido = form.cleaned_data['Contestacion']
-            # status = form.cleaned_data['Status']
-            status = retro.Status
-            
-            emisorid = retro.Emisor
-
-            idreceptor = retro.Emisor
-            idreceptore = retro.Emisor.Usuario.id
-
-            mensaje = MensajeRetroA(Proyecto=proyecto, EventoScrum=eventoScrum, Mensaje=mensajeid, Receptor=idreceptor,
-                                   Descripcion=descripcion, Contestacion=contenido, Status=status, Emisor=empleado)
-            MensajeRetroA.objects.filter(id=id).update(Contestacion=contenido)
-            #mensaje.save()
-            return redirect('Mensajes:retroRevisionSprint')  # Redirigir a la página de mensajes enviados
+            Respuesta = form.cleaned_data['Contestacion']
+            MensajeRetroA.objects.filter(id=id).update(Contestacion=  Respuesta )
+            mensaje_id = mensaje_retroa.Mensaje.id  # Obtienes el id del Mensaje relacionado
+            return redirect('Mensajes:retroRevisionSprint', id=mensaje_id)  # Redirigir a la página de mensajes enviados
     else:
         form = retroAlimentacionBL_Forms()
     return render(request, 'Mensajes/ProductOwner/retroContestacionBL.html', {'form': form})
@@ -2363,7 +2336,7 @@ def lista_asistentes_por_revision(request, id):
 
     return render(request, 'Mensajes/ProductOwner/listaAsistentesRevision.html', {'form': asistentes, 'clave':clave})
 
-def crear_Asistente_Revision(request,id):
+def crear_Asistente_Revision(request,id): #id del Mensaje
     mensajes = Mensaje.objects.filter(pk=id)
 
     if request.method == 'POST':
@@ -2401,7 +2374,7 @@ class ActualizarAsistenteRevision(LoginRequiredMixin, UpdateView):
     form_class = AsistentesForms
     success_url = reverse_lazy('Mensajes:listaRevisionSprint')
 
-def eliminar_asistente_revision(request, id):
+def eliminar_asistente_revision(request, id): # id del modelo AsistentesEventosScrum
     producto = get_object_or_404(AsistentesEventosScrum, id=id)
     producto.delete()
     return redirect(to="Mensajes:listaRevisionSprint")
@@ -2464,7 +2437,7 @@ def vistaRevisionSprint(request, id):
 
     return render(request, 'Mensajes/ProductOwner/plantillaRevisionSprint.html', data)
 
-def PlantillaRevisionSprint(request, id):
+def PlantillaRevisionSprint(request, id): #id del Mensaje
     #planeacion = Mensaje.objects.filter(pk=id)
     mensaje = Mensaje.objects.get(pk=id)
     id_Sprint = mensaje.Sprint.id
@@ -2482,25 +2455,12 @@ def PlantillaRevisionSprint(request, id):
     usuario = request.user
     empleado = Empleado.objects.filter(Usuario=usuario)
 
-    # Suma los valores de los objetos
-    # total_horas = sum(item.HorasEstimadas for item in historias)
-    # total_dias = total_horas / 8
-
-    # porcentaje = (total_horas * total_dias) / 100
-    # porcentaje = (total_horas + total_dias) / 2
-    #porcentaje = 20
-    # Total de horas de tareas
-    #tareas = Tarea.objects.all()
-
     # Filtra las tareas asociadas a las historias de usuario filtradas anteriormente
     tareas = Tarea.objects.filter(HistoriaUsuario__in=historias)
-    #total_tareas = sum(item.horasestimadas for item in tareas)
+
     total_horas_estimadas = sum(item.horasestimadas for item in tareas)
     total_dias_estimados = total_horas_estimadas/8
-    #tareas_dias = total_tareas / 8
 
-    #num = random.randint(1, 16)
-    #registros = TareaAvance.objects.all()
     # Filtra los registros de TareaAvance asociados a esas tareas
     registros = TareaAvance.objects.filter(tarea__in=tareas)
 
@@ -2538,37 +2498,20 @@ def PlantillaRevisionSprint(request, id):
     tareaAvance = TareaAvance.objects.raw(Query)
     if registros:
         total_horas_reales = registros.aggregate(total=models.Sum('horasDedicadas'))['total']
-        #diasReales = suma / 8
-        # Si la historia esta en progreso, se muestra el siguiente calculo
-        # (horas_reales * horas_estimadas) * 100
-        #enProgreso = (suma / total_tareas) * 100
     else:
         # Si no hay registros mostrara 0 por default
         total_horas_reales = 0
-        # suma = 0
-        # diasReales = 0
-        # enProgreso = 0
-    #enProgreso = 0
     total_dias_reales = total_horas_reales/8
     data = {
         'tareaAvance': tareaAvance,
         'mensaje': mensaje,
-        #'historias': historias,
         'asistentes': asistentes,
         'Empleado':empleado,
         'total_horas_estimadas': total_horas_estimadas,
         'total_horas_reales': total_horas_reales,
         'total_dias_estimados':total_dias_estimados,
         'total_dias_reales':total_dias_reales,
-        #'porcentaje':porcentaje,
         'comentarios':comentarios,
-        #'total_tareas':total_tareas,
-        #'dias_tareas':tareas_dias,
-        #'suma':suma,
-        #'registros': registros,
-        #'reales':diasReales,
-        #'progreso':enProgreso,
-
     }
 
     pdf = render_to_pdf('Mensajes/ProductOwner/plantillaRevisionSprint.html', data)
@@ -2726,17 +2669,17 @@ def listaRevisionSprintEmpleado(request):
 
 
     mensajes = MensajeReceptor.objects.filter(Q(Receptor=empleado) & Q(EventoScrum="5") & Q(Proyecto__in=proyectos)) 
-    asistentes = AsistentesEventosScrum.objects.all()
+    #asistentes = AsistentesEventosScrum.objects.all()
 
     data = {
         'form2':mensajes,
-        'form3':asistentes
+        #'form3':asistentes
     }
 
     return render(request, 'Scrum/Empleado/listaRevisionSprint.html', data)
 
 # Listar asistentes por usuario y mensaje, Revision, Scrum Master
-def lista_asistentes_revision_Empleado(request, id):
+def lista_asistentes_revision_Empleado(request, id): # id del Mensaje Original
     usuario = request.user
     empleado = Empleado.objects.get(Usuario=usuario)
     mensaje = Mensaje.objects.get(pk=id)
@@ -2755,7 +2698,7 @@ class ActualizarAsistenteRevisionEmpleado(LoginRequiredMixin, UpdateView):
     success_url = reverse_lazy('Mensajes:mensajeRevisionEmpleado')
 
 # Crear comentarios para Revision Sprint
-def crear_ComentarioEmpleadoRevision(request,id):
+def crear_ComentarioEmpleadoRevision(request,id): # id del Mensaje Original
     mensajes = Mensaje.objects.filter(pk=id) # Recibe el id del mensaje origen
     usuario = request.user
     empleado = Empleado.objects.get(Usuario=usuario)
@@ -2784,17 +2727,17 @@ def crear_ComentarioEmpleadoRevision(request,id):
     return render(request, 'Scrum/Empleado/crear_Comentario.html', {'form': form})
 
 # Mensaje de recibido Empleado en caso de seleccionar "Comprendido", correcto
-def actualizarRetroStatusCorrectoEmpleadoRevision(request, id):
-    status = "2"
+def actualizarRetroStatusCorrectoEmpleadoRevision(request, id): # id del Mensaje Receptor
+    status = "2" # Comprendido 
     producto = get_object_or_404(MensajeReceptor, pk=id)
     producto.Status = status
     producto.save()
     
-    return redirect(to='Mensajes:mensajeRevisionEmpleado')
+    return redirect('Mensajes:mensajeRevisionEmpleado')
 
 # Mensaje de retroalimentacion Empleado en caso de seleccionar "Comprendido"
-def actualizarRetroPSStatusCorrectoEmpleadoRevision(request, id):
-    status = "3"
+def actualizarRetroPSStatusCorrectoEmpleadoRevision(request, id): # id del Mensaje de Retroalimentación
+    status = "3" # Aclarado y/o Comprendido
     producto = get_object_or_404(MensajeRetroA, pk=id)
     producto.Status = status
     producto.save()
@@ -2804,7 +2747,7 @@ def actualizarRetroPSStatusCorrectoEmpleadoRevision(request, id):
     return redirect('Mensajes:retroAliEmpleadoRevision', msm)
 
 # Mensaje de retroalimentacion Empleado en caso de seleccionar "No Comprendido" en la interfaz principal de Reunión de Revisión del Sprint
-def enviar_mensajeRetroRevisionSprintEmpleado(request, id):
+def enviar_mensajeRetroRevisionSprintEmpleado(request, id): # id del Mensaje Receptor
     mensajes = MensajeReceptor.objects.filter(pk=id)
 
     if request.method == 'POST':
@@ -2832,7 +2775,7 @@ def enviar_mensajeRetroRevisionSprintEmpleado(request, id):
             descripcion = form.cleaned_data['Descripcion']
 
             mensaje = MensajeRetroA(Proyecto=proyecto, EventoScrum=eventoScrum, Mensaje=mensajeid, Receptor=receptorid,
-                                   Descripcion=descripcion, Status=5, Emisor=emisorid)
+                                   Descripcion=descripcion, Status=5, Emisor=emisorid) #  Status=5 --> No Comprendido
 
             mensaje.save()
             return redirect(to='Mensajes:mensajeRevisionEmpleado')  # Redirigir a la página de mensajes enviados
@@ -2840,19 +2783,19 @@ def enviar_mensajeRetroRevisionSprintEmpleado(request, id):
         form = retroAlimentacion_Forms()
     return render(request, 'Scrum/Empleado/retroAlimentacionPS.html', {'form': form})
 
-def mensajes_RevisionRetroEmpleado(request, id):
+def mensajes_RevisionRetroEmpleado(request, id): # id del Mensaje original
     usuario = request.user
     empleado = Empleado.objects.get(Usuario=usuario)
     recibidos = MensajeReceptor.objects.filter(Receptor=empleado)
     #print(f"usuario: {usuario}, empleado: {empleado.id}, id_mensaje:  {id}")
     mensaje = Mensaje.objects.get(pk=id)
     retroalimentacion = MensajeRetroA.objects.filter(Q(Emisor=empleado) & Q(EventoScrum="5") & Q(Mensaje=mensaje))
-    msmEnviado = MensajeRetroA.objects.filter(Q(Emisor=empleado) & Q(Contestacion__isnull=True))
+    #msmEnviado = MensajeRetroA.objects.filter(Q(Emisor=empleado) & Q(Contestacion__isnull=True))
     # print(f"retro: {retroalimentacion.count()}")
     # print(f"msmEnviado: {msmEnviado.count()}")
     data = {
         'mensajes':retroalimentacion,
-        'enviado':msmEnviado
+        #'enviado':msmEnviado
     }
 
     return render(request, 'Scrum/Empleado/retroAlimentacionRevision.html', data)
@@ -2879,7 +2822,7 @@ def vistaRetrospectivaSprint(request, id):
 
     return render(request, 'Mensajes/ProductOwner/plantillaRetrospectivaSprint.html', data)
 
-def plantillaRetrospectivaSprint(request, id):
+def plantillaRetrospectivaSprint(request, id): #id del Mensaje
     #print(f"plantillaRetrospectivaSprint id: {id} ")
     retrospectiva = Mensaje.objects.filter(pk=id)
     mensaje = Mensaje.objects.get(pk=id)
@@ -2900,8 +2843,8 @@ def plantillaRetrospectivaSprint(request, id):
     return HttpResponse(pdf, content_type='application/pdf')
 
 # Plantilla para el mensaje de retroalimentacion de la retrospectiva del sprint
-def plantillaRetroAlimentacionRestrospectiva(request,id):
-    # dato = MensajeRetroA.objects.filter(Receptor=request.user)
+def plantillaRetroAlimentacionRestrospectiva(request,id): # id del Mensaje de Retroalimentación
+
     dato = MensajeRetroA.objects.filter(pk=id)
     data = {
         'form': dato,
@@ -2919,12 +2862,12 @@ def listaRetrospectivaSprint(request):
         # Obtener los proyectos en los que el empleado participa
         proyectos = EmpleadoProyecto.objects.filter(Empleado=empleado).values_list('Proyecto', flat=True)
         mensajes = Mensaje.objects.filter(Q(Emisor=empleado) & Q(EventoScrum="6") & Q( Proyecto__in=proyectos,)) # Evento - Retrospectiva Sprint 
-        asistentes = AsistentesEventosScrum.objects.all()
+        #asistentes = AsistentesEventosScrum.objects.all()
         #asistentes = AsistentesEventosScrum.objects.filter(Mensaje=idSms)
 
         data = {
         'form2':mensajes,
-        'form3':asistentes
+        #'form3':asistentes
         }
 
         user = request.user
@@ -2932,7 +2875,8 @@ def listaRetrospectivaSprint(request):
         if user is not None:
             login(request, user)
             # Redirecciona al usuario dependiendo de su rol
-            if user.usuarioempleado.Roles.NombreRol == 'Product Owner':
+            #if user.usuarioempleado.Roles.NombreRol == 'Product Owner':
+            if user.usuarioempleado.Roles.NombreRol in ['Product Owner', 'Scrum Master']:
                 return render(request, 'Mensajes/ProductOwner/listaRetrospectivaSprint.html', data)
             else:
                 # si el usuario no es Scrum Master se mostrara el siguiente mensaje
@@ -2967,7 +2911,7 @@ def subListaRetrospectivaSprint(request):
 
 # Crear Retrospectiva del Sprint heredando datos del modelo Sprint
 @transaction.atomic
-def crear_RetrospectivaSprint(request, id):
+def crear_RetrospectivaSprint(request, id): #id del Sprint
     usuario = request.user
     empleado = Empleado.objects.get(Usuario=usuario)
 
@@ -3055,9 +2999,10 @@ def enviar_mensaje_Retrospectiva(request, id, Accion):
             #ArchivosAdjuntos=""
 
             #Envío de correo
-            asunto = DescripcionEventoScrum +  'Reunión: ' +  str(FechaHoraReunion) #'Reunión de Retrospectiva'
+            FechaHoraFormateada = FechaHoraReunion.strftime('%d/%m/%Y %H:%M')
+            asunto = DescripcionEventoScrum +  ' ' +  str(FechaHoraFormateada) #'Reunión de Retrospectiva'
             Remitente = request.user.email
-            CuerpoMensaje = "Ceremonia: " + DescripcionEventoScrum + '\r\n Proyecto: ' + NombreProyecto + '\r\n' + 'Reunión: ' +  str(FechaHoraReunion) #'Reunión de  Retrospectiva
+            CuerpoMensaje = "Ceremonia: " + DescripcionEventoScrum + '\r\n Proyecto: ' + NombreProyecto + '\r\n' + 'Reunión: ' +  str(FechaHoraFormateada) #'Reunión de  Retrospectiva
             ListaDestinatarios = Destinatarios.split(",")
             email = EmailMessage(
                 subject=asunto,
@@ -3096,7 +3041,7 @@ def enviar_mensaje_Retrospectiva(request, id, Accion):
     return render(request, 'Mensajes/ProductOwner/enviarMensajeRetrospectiva.html', {'form': form, 'form2':form2, 'form3':form3, 'archivos':archivos})
 
 # ------------- Retroalimentacion de la Reunion de Retrospectiva del Sprint, Product Owner --------------
-def mensajes_RetroAlimentacionRetrospectiva(request, id):
+def mensajes_RetroAlimentacionRetrospectiva(request, id): #id del Mensaje
     if request.user.is_authenticated:
         usuario = request.user
         empleado = Empleado.objects.get(Usuario=usuario)
@@ -3108,7 +3053,8 @@ def mensajes_RetroAlimentacionRetrospectiva(request, id):
         if user is not None:
             login(request, user)
             # Redirecciona al usuario dependiendo de su rol
-            if user.usuarioempleado.Roles.NombreRol == 'Product Owner':
+            #if user.usuarioempleado.Roles.NombreRol == 'Product Owner':
+            if user.usuarioempleado.Roles.NombreRol in ['Product Owner', 'Scrum Master']:
                 return render(request, 'Mensajes/ProductOwner/retroalimentacionRetrospectiva.html', {'mensajes':retroalimentacion})
             else:
                 # si el usuario no es Product Owner se mostrara el siguiente mensaje
@@ -3121,54 +3067,24 @@ def mensajes_RetroAlimentacionRetrospectiva(request, id):
         return HttpResponseRedirect(reverse('Scrum:Logout'))
 
 # Retroalimentación de la Reunión de Revisión del Sprint, contestacion
-def enviar_mensaje_RetroRetrospectiva(request, id):
-    #retroalimentacion = MensajeRetroA.objects.filter(Mensaje__id=id) # hera el id del mensaje recibido con los datos
-    retroalimentacion = MensajeRetroA.objects.get(Mensaje__id=id)
-    id_MensajeRetro = retroalimentacion.pk
+def enviar_mensaje_RetroRetrospectiva(request, id): #id del Mensaje de Retroalimentación
+    mensaje_retroa = MensajeRetroA.objects.get(pk=id)
     usuario = request.user
     empleado = Empleado.objects.get(Usuario=usuario)
     
     if request.method == 'POST':
         form = retroAlimentacionBL_Forms(request.POST)
         if form.is_valid():
-            Respuesta = form.cleaned_data['Contestacion']	
-            MensajeRetroA.objects.filter(id=id_MensajeRetro).update(Contestacion=  Respuesta )
-
-            # for retro in retroalimentacion:
-            #     Descripcion=retro.Descripcion
-            #     Proyecto=retro.Proyecto,
-            #     EventoScrum=retro.EventoScrum, 
-            #     Mensaje=retro.Mensaje, # hereda por defecto el id del mensaje
-            #     Receptor=retro.Emisor, # hereda el emisar del mensaje, NO el del request.user
-            #     Emisor=retro.Receptor
-            #     Status=retro.Status
-
-            # proyecto = retro.Proyecto
-            # eventoScrum = retro.EventoScrum
-            # mensajeid = retro.Mensaje
-            # #receptorid = retro.Receptor
-            # #emisorRetro = retro.Emisor
-            # descripcion = retro.Descripcion
-            # contenido = form.cleaned_data['Contestacion']
-            # # status = form.cleaned_data['Status']
-            # status = retro.Status
-            
-            # emisorid = retro.Emisor
-
-            # idreceptor = retro.Emisor
-            # idreceptore = retro.Emisor.Usuario.id
-
-            # mensaje = MensajeRetroA(Proyecto=proyecto, EventoScrum=eventoScrum, Mensaje=mensajeid, Receptor=idreceptor,
-            #                        Descripcion=descripcion, Contestacion=contenido, Status=status, Emisor=empleado)
-
-            # mensaje.save()
-            return redirect('Mensajes:retroRetrospectivaSprint', id=id)  # Redirigir a la página de mensajes enviados
+            Respuesta = form.cleaned_data['Contestacion']
+            MensajeRetroA.objects.filter(id=id).update(Contestacion=  Respuesta )
+            mensaje_id = mensaje_retroa.Mensaje.id  # Obtienes el id del Mensaje relacionado
+            return redirect('Mensajes:retroRetrospectivaSprint', id=mensaje_id)  # Redirigir a la página de mensajes enviados
     else:
         form = retroAlimentacionBL_Forms()
     return render(request, 'Mensajes/ProductOwner/retroContestacionBL.html', {'form': form})
 
 # ------------------------------- Asistentes - Retrospectiva Sprint ---------------------------------------------
-def lista_asistentes_por_retrospectiva(request, id):
+def lista_asistentes_por_retrospectiva(request, id): # id del Mensaje
     # Obtener el mensaje específico por su ID
     mensaje = Mensaje.objects.get(pk=id)
 
@@ -3414,31 +3330,31 @@ def listaRetrospectivaSprintEmpleado(request):
         proyectos = EmpleadoProyecto.objects.filter(Empleado=empleado).values_list('Proyecto', flat=True)
 
         mensajes = MensajeReceptor.objects.filter(Q(Receptor=empleado) & Q(EventoScrum="6") & Q(Proyecto__in=proyectos)) # Evento - Retrospectiva Sprint
-        asistentes = AsistentesEventosScrum.objects.all()
+        #asistentes = AsistentesEventosScrum.objects.all()
 
         data = {
             'form2':mensajes,
-            'form3':asistentes
+            #'form3':asistentes
         }
+    return render(request, 'Scrum/Empleado/listaRetrospectivaSprint.html', data)
+    #     user = request.user
 
-        user = request.user
+    #     if user is not None:
+    #         login(request, user)
+    #         # Redirecciona al usuario dependiendo de su rol
+    #         if user.usuarioempleado.Roles.NombreRol == 'Developers':
+    #             return render(request, 'Scrum/Empleado/listaRetrospectivaSprint.html', data)
+    #         else:
+    #             # si el usuario no es Developers se mostrara el siguiente mensaje
+    #             return HttpResponse("No eres Developer")
+    #     else:
+    #     # Usuario o contraseña incorrectos
+    #         return render(request, 'login.html', {'error_message': 'Usuario o contraseña incorrectos'})
 
-        if user is not None:
-            login(request, user)
-            # Redirecciona al usuario dependiendo de su rol
-            if user.usuarioempleado.Roles.NombreRol == 'Developers':
-                return render(request, 'Scrum/Empleado/listaRetrospectivaSprint.html', data)
-            else:
-                # si el usuario no es Developers se mostrara el siguiente mensaje
-                return HttpResponse("No eres Developer")
-        else:
-        # Usuario o contraseña incorrectos
-            return render(request, 'login.html', {'error_message': 'Usuario o contraseña incorrectos'})
-
-    else: 
-        return HttpResponseRedirect(reverse('Scrum:Logout'))
+    # else: 
+    #     return HttpResponseRedirect(reverse('Scrum:Logout'))
     
-def archivosRecibidosRetrospectivaEmpleado(request, id):
+def archivosRecibidosRetrospectivaEmpleado(request, id): # id del Mensaje Original
     mensaje = Mensaje.objects.get(pk=id)
     dato = m_Archivos.objects.filter(Mensaje=mensaje)
 
@@ -3449,8 +3365,8 @@ def archivosRecibidosRetrospectivaEmpleado(request, id):
     return render(request, 'Scrum/Empleado/archivosRetrospectiva.html', data)
 
 # Mensaje de retroalimentacion Empleado en caso de seleccionar "Comprendido"
-def actualizarRetroRetrospectivaStatusCorrectoEmpleado(request, id):
-    status = "3"
+def actualizarRetroRetrospectivaStatusCorrectoEmpleado(request, id): # id del Mensaje de Retroalimentación
+    status = "3"  # Aclarado y/o Comprendido
     producto = get_object_or_404(MensajeRetroA, pk=id)
     producto.Status = status
     producto.save()
@@ -3460,7 +3376,7 @@ def actualizarRetroRetrospectivaStatusCorrectoEmpleado(request, id):
     return redirect('Mensajes:retroAliEmpleadoRetrospectiva', msm)
 
 # Listar asistentes por usuario y mensaje, Retrospectiva, Empleado
-def lista_asistentes_retrospectiva_Empleado(request, id):
+def lista_asistentes_retrospectiva_Empleado(request, id): # id del Mensaje original
     usuario = request.user
     empleado = Empleado.objects.get(Usuario=usuario)
     mensaje = Mensaje.objects.get(pk=id)
@@ -3479,7 +3395,7 @@ class ActualizarAsistenteRetrospectivaEmpleado(LoginRequiredMixin, UpdateView):
     success_url = reverse_lazy('Mensajes:mensajeRetrospectivaEmpleado')
 
 # Crear comentarios para Retrospectiva Sprint
-def crear_Comentarios_Retrospectiva_Empleado(request,id):
+def crear_Comentarios_Retrospectiva_Empleado(request,id): # id del Mensaje original
     mensajes = Mensaje.objects.filter(pk=id) # Recibe el id del mensaje origen
     usuario = request.user
     empleado = Empleado.objects.get(Usuario=usuario)
@@ -3512,7 +3428,7 @@ def crear_Comentarios_Retrospectiva_Empleado(request,id):
 
 # Mensaje de recibido Empleado en caso de seleccionar "Comprendido"
 def statusCorrectoRetrospectivaEmpleado(request, id):
-    status = "2"
+    status = "2" # Comprendido
     producto = get_object_or_404(MensajeReceptor, pk=id)
     producto.Status = status
     producto.save()
@@ -3520,7 +3436,7 @@ def statusCorrectoRetrospectivaEmpleado(request, id):
     return redirect(to='Mensajes:mensajeRetrospectivaEmpleado')
 
 # Mensaje de retroalimentacion Empleado en caso de seleccionar "No Comprendido" en la interfaz principal de Reunión de Retrospectiva del Sprint
-def enviar_mensajeRetrospectivaEmpleado(request, id):
+def enviar_mensajeRetrospectivaEmpleado(request, id): # id del Mensaje Receptor
     mensajes = MensajeReceptor.objects.filter(pk=id)
 
     if request.method == 'POST':
@@ -3548,7 +3464,7 @@ def enviar_mensajeRetrospectivaEmpleado(request, id):
             descripcion = form.cleaned_data['Descripcion']
 
             mensaje = MensajeRetroA(Proyecto=proyecto, EventoScrum=eventoScrum, Mensaje=mensajeid, Receptor=receptorid,
-                                   Descripcion=descripcion, Status=5, Emisor=emisorid)
+                                   Descripcion=descripcion, Status=5, Emisor=emisorid) # Status=5 --> No Comprendido
 
             mensaje.save()
             return redirect(to='Mensajes:mensajeRetrospectivaEmpleado')  # Redirigir a la página de mensajes enviados
@@ -3556,19 +3472,14 @@ def enviar_mensajeRetrospectivaEmpleado(request, id):
         form = retroAlimentacion_Forms()
     return render(request, 'Scrum/Empleado/retroAlimentacion.html', {'form': form})
 
-def mensajes_RetrospectivaRetroEmpleado(request, id):
+def mensajes_RetrospectivaRetroEmpleado(request, id): # id del Mensaje Original
     usuario = request.user
     empleado = Empleado.objects.get(Usuario=usuario)
-    #print(f"empleado: {empleado}, empleado_id: {empleado.id},  usuario: {usuario}, usuario_id: {usuario.id}, id: {id}")
-    recibidos = MensajeReceptor.objects.filter(Receptor=empleado)
-
     mensaje = Mensaje.objects.get(pk=id)
     retroalimentacion = MensajeRetroA.objects.filter(Q(Emisor=empleado) & Q(EventoScrum="6") & Q(Mensaje=mensaje))
-    msmEnviado = MensajeRetroA.objects.filter(Q(Emisor=empleado) & Q(Contestacion__isnull=True))
 
     data = {
         'mensajes':retroalimentacion,
-        'enviado':msmEnviado
     }
 
     return render(request, 'Scrum/Empleado/retroAlimentacionRetrospectiva.html', data)
@@ -3581,12 +3492,17 @@ def listaReunionDiaria(request):
     if request.user.is_authenticated:
         usuario = request.user
         empleado = Empleado.objects.get(Usuario=usuario)
-        mensajes = Mensaje.objects.filter(Q(Emisor=empleado) & Q(EventoScrum="4")) # Evento - Reunion Diaira
-        asistentes = AsistentesEventosScrum.objects.all()
+
+        # Obtener los proyectos en los que el empleado participa
+        proyectos = EmpleadoProyecto.objects.filter(Empleado=empleado).values_list('Proyecto', flat=True)
+
+        #Filtra los mensajes de las ceremonias de Cierre del Sprint, relacionados a un proyecto determinado
+        mensajes = Mensaje.objects.filter(Q(Emisor=empleado) & Q(EventoScrum="4") & Q(Proyecto__in=proyectos)) # 4= Reunión Diaria
+       #asistentes = AsistentesEventosScrum.objects.all()
 
         data = {
         'form2':mensajes,
-        'form3':asistentes
+        #'form3':asistentes
         }
 
         user = request.user
@@ -3594,7 +3510,8 @@ def listaReunionDiaria(request):
         if user is not None:
             login(request, user)
             # Redirecciona al usuario dependiendo de su rol
-            if user.usuarioempleado.Roles.NombreRol == 'Product Owner':
+            #if user.usuarioempleado.Roles.NombreRol == 'Product Owner':
+            if user.usuarioempleado.Roles.NombreRol in ['Product Owner', 'Scrum Master']:
                 return render(request, 'Mensajes/ProductOwner/listaReunionDiaria.html', data)
             else:
                 # si el usuario no es Product Owner se mostrara el siguiente mensaje
@@ -3629,7 +3546,7 @@ def subListaReunionDiaria(request):
 
 # Crear Reunion Diaria heredando datos del modelo Sprint
 @transaction.atomic
-def crear_Reunion_Diaria(request, id):
+def crear_Reunion_Diaria(request, id): # id del Sprint
     usuario = request.user
     empleado = Empleado.objects.get(Usuario=usuario)
 
@@ -3671,7 +3588,7 @@ class ActualizarReunionDiaria(LoginRequiredMixin, UpdateView):
     form_class = UpdateMensajePDF_Forms
     success_url = reverse_lazy('Mensajes:listaReunionDiaria')
 
-def eliminar_reunion_diaria(request, id):
+def eliminar_reunion_diaria(request, id): # id del Mensaje
     producto = get_object_or_404(Mensaje, id=id)
     producto.delete()
     return redirect(to="Mensajes:listaReunionDiaria")
@@ -3721,9 +3638,10 @@ def enviar_mensaje_Reunion_Diaria(request, id, Accion):
             #ArchivosAdjuntos=""
 
             #Envío de correo
-            asunto = DescripcionEventoScrum +  'Reunión: ' +  str(FechaHoraReunion) #'Reunión Diaria'
+            FechaHoraFormateada = FechaHoraReunion.strftime('%d/%m/%Y %H:%M')
+            asunto = DescripcionEventoScrum +  ' ' +  str(FechaHoraFormateada) #'Reunión Diaria'
             Remitente = request.user.email
-            CuerpoMensaje = "Ceremonia: " + DescripcionEventoScrum + '\r\n Proyecto: ' + NombreProyecto + '\r\n' + 'Reunión: ' +  str(FechaHoraReunion) #'Reunión diaria
+            CuerpoMensaje = "Ceremonia: " + DescripcionEventoScrum + '\r\n Proyecto: ' + NombreProyecto + '\r\n' + 'Reunión: ' +  str(FechaHoraFormateada) #'Reunión diaria
             ListaDestinatarios = Destinatarios.split(",")
             email = EmailMessage(
                 subject=asunto,
@@ -3764,7 +3682,7 @@ def enviar_mensaje_Reunion_Diaria(request, id, Accion):
     return render(request, 'Mensajes/ProductOwner/enviarMensajeReunionDiaria.html', {'form': form,  'form2':form2, 'form3':form3, 'archivos':archivos})
 
 # ------------- Retroalimentacion de la Reunion Diaria, Product Owner --------------
-def mensajes_RetroAlimentacionReunionDiaria(request, id):
+def mensajes_RetroAlimentacionReunionDiaria(request, id): # id del Mensaje original
     if request.user.is_authenticated:
         usuario = request.user
         empleado = Empleado.objects.get(Usuario=usuario)
@@ -3776,7 +3694,8 @@ def mensajes_RetroAlimentacionReunionDiaria(request, id):
         if user is not None:
             login(request, user)
             # Redirecciona al usuario dependiendo de su rol
-            if user.usuarioempleado.Roles.NombreRol == 'Product Owner':
+            #if user.usuarioempleado.Roles.NombreRol == 'Product Owner':
+            if user.usuarioempleado.Roles.NombreRol in ['Product Owner', 'Scrum Master']:
                 return render(request, 'Mensajes/ProductOwner/retroalimentacionReunionDiaria.html', {'mensajes':retroalimentacion})
             else:
                 # si el usuario no es Product Owner se mostrara el siguiente mensaje
@@ -3789,50 +3708,28 @@ def mensajes_RetroAlimentacionReunionDiaria(request, id):
         return HttpResponseRedirect(reverse('Scrum:Logout'))
 
 # Retroalimentación de la Reunión Diaria, contestacion
-def enviar_Retro_Reunion_Diaria(request, id):
-    retroalimentacion = MensajeRetroA.objects.filter(pk=id) # hera el id del mensaje recibido con los datos
+def enviar_Retro_Reunion_Diaria(request, id): # id del Mensaje de retroalimentación
+    retroalimentacion = MensajeRetroA.objects.filter(pk=id) # era el id del mensaje recibido con los datos
     usuario = request.user
     empleado = Empleado.objects.get(Usuario=usuario)
 
     if request.method == 'POST':
         form = retroAlimentacionBL_Forms(request.POST)
         if form.is_valid():
-
-            for retro in retroalimentacion:
-                Descripcion=retro.Descripcion
-                Proyecto=retro.Proyecto,
-                EventoScrum=retro.EventoScrum, 
-                Mensaje=retro.Mensaje, # hereda por defecto el id del mensaje
-                Receptor=retro.Emisor, # hereda el emisar del mensaje, NO el del request.user
-                Emisor=retro.Receptor
-                Status=retro.Status
-
-            proyecto = retro.Proyecto
-            eventoScrum = retro.EventoScrum
-            mensajeid = retro.Mensaje
-            #receptorid = retro.Receptor
-            #emisorRetro = retro.Emisor
-            descripcion = retro.Descripcion
-            contenido = form.cleaned_data['Contestacion']
-            # status = form.cleaned_data['Status']
-            status = retro.Status
-            
-            emisorid = retro.Emisor
-
-            idreceptor = retro.Emisor
-            idreceptore = retro.Emisor.Usuario.id
-
-            mensaje = MensajeRetroA(Proyecto=proyecto, EventoScrum=eventoScrum, Mensaje=mensajeid, Receptor=idreceptor,
-                                   Descripcion=descripcion, Contestacion=contenido, Status=status, Emisor=empleado)
-
-            mensaje.save()
-            return redirect('Mensajes:retroReunionDiaria')  # Redirigir a la página de mensajes enviados
+            Respuesta = form.cleaned_data['Contestacion']
+            MensajeRetroA.objects.filter(id=id).update(Contestacion=  Respuesta )
+            #--
+            mensaje_retroa = MensajeRetroA.objects.get(pk=id)
+            mensaje_id = mensaje_retroa.Mensaje.id  # Obtienes el id del Mensaje relacionado
+            # 
+            #--
+            return redirect('Mensajes:retroReunionDiaria', id=mensaje_id )  # Redirigir a la página de mensajes enviados
     else:
         form = retroAlimentacionBL_Forms()
     return render(request, 'Mensajes/ProductOwner/retroContestacionBL.html', {'form': form})
 
 # Plantilla para el mensaje de retroalimentacion de la retrospectiva del sprint
-def plantillaRetroAlimentacionReunionDiaria(request,id):
+def plantillaRetroAlimentacionReunionDiaria(request,id): # id del Mensaje de Retroalimentación
     # dato = MensajeRetroA.objects.filter(Receptor=request.user)
     dato = MensajeRetroA.objects.filter(pk=id)
     data = {
@@ -3843,7 +3740,7 @@ def plantillaRetroAlimentacionReunionDiaria(request,id):
     return HttpResponse(pdf, content_type='application/pdf')
 
 # ----------- Asistentes Evento Scrum - Reunion Diaria -------------------------------
-def lista_asistentes_por_reunion_diaria(request, id):
+def lista_asistentes_por_reunion_diaria(request, id): # id del Mensaje
     # Obtener el mensaje específico por su ID
     mensaje = Mensaje.objects.get(pk=id)
 
@@ -3854,7 +3751,7 @@ def lista_asistentes_por_reunion_diaria(request, id):
 
     return render(request, 'Mensajes/ProductOwner/listaAsistentesReunionDiaria.html', {'form': asistentes, 'clave':clave})
 
-def crear_Asistente_Reunion_Diaria(request,id):
+def crear_Asistente_Reunion_Diaria(request,id): # id del Mensaje
     mensajes = Mensaje.objects.filter(pk=id)
 
     if request.method == 'POST':
@@ -3886,11 +3783,18 @@ def crear_Asistente_Reunion_Diaria(request,id):
         form = AsistentesForms()
     return render(request, 'Mensajes/ProductOwner/crearAsistentes.html', {'form': form})
 
-class ActualizarAsistenteReunionDiaria(LoginRequiredMixin, UpdateView):
+class ActualizarAsistenteReunionDiariaPO(LoginRequiredMixin, UpdateView):
     model = AsistentesEventosScrum
     template_name = 'Mensajes/ProductOwner/editarAsistente.html'
     form_class = AsistentesForms
     success_url = reverse_lazy('Mensajes:listaReunionDiaria')
+    # def get_success_url(self):
+    #     # Extraer el id desde self.kwargs
+    #     mensaje_id = self.kwargs['pk']
+    #     # Usar el id para generar la URL
+    #     print(f"mensaje_id: {mensaje_id}")
+    #     return reverse_lazy('Mensajes:listaAsistentesReunionDiaria', kwargs={'id': mensaje_id})
+    #success_url = reverse_lazy('Mensajes:listaAsistentesReunionDiaria')
 
 def eliminar_asistente_reunion_Diaria(request, id):
     producto = get_object_or_404(AsistentesEventosScrum, id=id)
@@ -3919,6 +3823,7 @@ def vistaReunionDiaria(request, id):
 def plantillaReunionDiaria(request, id):
     reunionDiaria = Mensaje.objects.filter(pk=id)
     mensaje = Mensaje.objects.get(pk=id)
+    sprint_id = mensaje.Sprint.id
     asistentes = AsistentesEventosScrum.objects.filter(Mensaje=mensaje)
     comentarios = m_ReunionDiaria.objects.filter(Mensaje=mensaje)
 
@@ -3929,7 +3834,8 @@ def plantillaReunionDiaria(request, id):
         'form': reunionDiaria,
         'form2': asistentes,
         'idiomaPais':idiomaPais,
-        'comentarios':comentarios
+        'comentarios':comentarios,
+        'sprint_id': sprint_id,
     }
 
     pdf = render_to_pdf('Mensajes/ProductOwner/plantillaReuniondDiaria.html', data)
@@ -3990,7 +3896,7 @@ def lista_asistentes_reunion_diaria_SM(request, id):
 
     return render(request, 'Mensajes/ScrumMaster/listaAsistentesReunionDiaria.html', data)
 
-class ActualizarAsistenteReunionDiaria(LoginRequiredMixin, UpdateView):
+class ActualizarAsistenteReunionDiariaSM(LoginRequiredMixin, UpdateView):
     model = AsistentesEventosScrum
     template_name = 'Mensajes/ScrumMaster/editarAsistentePS.html'
     form_class = AsistentesPlaneacion_Forms
@@ -4109,12 +4015,14 @@ def listaReunionDiariaEmpleado(request):
     if request.user.is_authenticated:
         usuario = request.user
         empleado = Empleado.objects.get(Usuario=usuario)
-        mensajes = MensajeReceptor.objects.filter(Q(Receptor=empleado) & Q(EventoScrum="4")) # Evento - Reunion diaria
-        asistentes = AsistentesEventosScrum.objects.all()
+
+        # Obtener los proyectos en los que el empleado participa
+        proyectos = EmpleadoProyecto.objects.filter(Empleado=empleado).values_list('Proyecto', flat=True)
+
+        mensajes = MensajeReceptor.objects.filter(Q(Receptor=empleado) & Q(EventoScrum="4")& Q(Proyecto__in=proyectos)) # Evento - Reunion diaria
 
         data = {
             'form2':mensajes,
-            'form3':asistentes
         }
 
         user = request.user
@@ -4122,7 +4030,8 @@ def listaReunionDiariaEmpleado(request):
         if user is not None:
             login(request, user)
             # Redirecciona al usuario dependiendo de su rol
-            if user.usuarioempleado.Roles.NombreRol == 'Developers':
+            # if user.usuarioempleado.Roles.NombreRol == 'Developers':
+            if user.usuarioempleado.Roles.NombreRol in ['Developers','Scrum Master']:
                 return render(request, 'Scrum/Empleado/listaReunionDiaria.html', data)
             else:
                 # si el usuario no es Developers se mostrara el siguiente mensaje
@@ -4134,7 +4043,7 @@ def listaReunionDiariaEmpleado(request):
     else: 
         return HttpResponseRedirect(reverse('Scrum:Logout'))
     
-def archivosReunionDiariaEmpleado(request, id):
+def archivosReunionDiariaEmpleado(request, id): # id del Mensaje original
     mensaje = Mensaje.objects.get(pk=id)
     dato = m_Archivos.objects.filter(Mensaje=mensaje)
 
@@ -4142,11 +4051,11 @@ def archivosReunionDiariaEmpleado(request, id):
         'form': dato
     }
 
-    return render(request, 'Scrum/Empleado/archivosRetrospectiva.html', data)
+    return render(request, 'Scrum/Empleado/archivosReunionDiaria.html', data)
 
 # Mensaje de retroalimentacion Scrum Master en caso de seleccionar "Comprendido"
-def actualizarRetroReunionDiariaStatusCorrectoEmpleado(request, id):
-    status = "3"
+def actualizarRetroReunionDiariaStatusCorrectoEmpleado(request, id): # id del Mensaje de retroalimentación
+    status = "3" #Aclarado y/o Comprendido
     producto = get_object_or_404(MensajeRetroA, pk=id)
     producto.Status = status
     producto.save()
@@ -4156,7 +4065,7 @@ def actualizarRetroReunionDiariaStatusCorrectoEmpleado(request, id):
     return redirect('Mensajes:retroAliReunionDiariaEmpleado', msm)
 
 # Listar asistentes por usuario y mensaje, Retrospectiva, Scrum Master
-def lista_asistentes_reunion_diaria_Empleado(request, id):
+def lista_asistentes_reunion_diaria_Empleado(request, id): # id del Mensaje Original
     usuario = request.user
     empleado = Empleado.objects.get(Usuario=usuario)
     mensaje = Mensaje.objects.get(pk=id)
@@ -4175,7 +4084,7 @@ class ActualizarAsistenteReunionDiariaEmpleado(LoginRequiredMixin, UpdateView):
     success_url = reverse_lazy('Mensajes:mensajesReunionDiariaEmpleado')
 
 # Crear comentarios para Reunion Diaria
-def crear_Comentarios_Reunion_Diaria_Empleado(request,id):
+def crear_Comentarios_Reunion_Diaria_Empleado(request,id): # id del Mensaje original
     mensajes = Mensaje.objects.filter(pk=id) # Recibe el id del mensaje origen
     usuario = request.user
     empleado = Empleado.objects.get(Usuario=usuario)
@@ -4208,8 +4117,8 @@ def crear_Comentarios_Reunion_Diaria_Empleado(request,id):
     return render(request, 'Scrum/Empleado/crear_Comentario.html', {'form': form})
 
 # Mensaje de recibido Scrum Master en caso de seleccionar "Comprendido"
-def statusCorrectoReunionDiariaEmpleado(request, id):
-    status = "2"
+def statusCorrectoReunionDiariaEmpleado(request, id): #id del Mensaje Receptor
+    status = "2" #Comprendido
     producto = get_object_or_404(MensajeReceptor, pk=id)
     producto.Status = status
     producto.save()
@@ -4217,7 +4126,7 @@ def statusCorrectoReunionDiariaEmpleado(request, id):
     return redirect(to='Mensajes:mensajesReunionDiariaEmpleado')
 
 # Mensaje de retroalimentacion Empleado en caso de seleccionar "No Comprendido" en la interfaz principal de Reunión de Retrospectiva del Sprint
-def enviar_mensajeReunionDiariaEmpleado(request, id):
+def enviar_mensajeReunionDiariaEmpleado(request, id): # id del Mensaje del Receptor
     mensajes = MensajeReceptor.objects.filter(pk=id)
 
     if request.method == 'POST':
@@ -4245,7 +4154,7 @@ def enviar_mensajeReunionDiariaEmpleado(request, id):
             descripcion = form.cleaned_data['Descripcion']
 
             mensaje = MensajeRetroA(Proyecto=proyecto, EventoScrum=eventoScrum, Mensaje=mensajeid, Receptor=receptorid,
-                                   Descripcion=descripcion, Status=5, Emisor=emisorid)
+                                   Descripcion=descripcion, Status=5, Emisor=emisorid) # Status=5 --> No Comprendido
 
             mensaje.save()
             return redirect(to='Mensajes:mensajesReunionDiariaEmpleado')  # Redirigir a la página de mensajes enviados
@@ -4253,18 +4162,15 @@ def enviar_mensajeReunionDiariaEmpleado(request, id):
         form = retroAlimentacion_Forms()
     return render(request, 'Scrum/Empleado/retroAlimentacion.html', {'form': form})
 
-def mensajes_Retro_Reunion_Diaria_Empleado(request, id):
+def mensajes_Retro_Reunion_Diaria_Empleado(request, id): # id del Mensaje original
     usuario = request.user
     empleado = Empleado.objects.get(Usuario=usuario)
-    recibidos = MensajeReceptor.objects.filter(Receptor=empleado)
-
     mensaje = Mensaje.objects.get(pk=id)
-    retroalimentacion = MensajeRetroA.objects.filter(Q(Receptor=empleado) & Q(EventoScrum="4") & Q(Mensaje=mensaje))
-    msmEnviado = MensajeRetroA.objects.filter(Q(Emisor=empleado) & Q(Contestacion__isnull=True))
+    #print(f"usuario: {usuario}, empleado: {empleado}, mensaje_id: {id}, ")
+    retroalimentacion = MensajeRetroA.objects.filter(Q(Emisor=empleado) & Q(EventoScrum="4") & Q(Mensaje=mensaje))
 
     data = {
         'mensajes':retroalimentacion,
-        'enviado':msmEnviado
     }
 
     return render(request, 'Scrum/Empleado/retroAlimentacionReunioDiaria.html', data)
@@ -4360,7 +4266,7 @@ def archivosRecibidosRefinamientoEmpleado(request, id):
     return render(request, 'Scrum/Empleado/archivosRefinamiento.html', data)
 
 # Lista de archivos disponibles para Planeacion del sprint - Empleado
-def archivosRecibidosPlaneacionEmpleado(request, id):
+def archivosRecibidosPlaneacionEmpleado(request, id): # id del Mensaje
     mensaje = Mensaje.objects.get(pk=id)
     dato = m_Archivos.objects.filter(Mensaje=mensaje)
 
@@ -4371,7 +4277,7 @@ def archivosRecibidosPlaneacionEmpleado(request, id):
     return render(request, 'Scrum/Empleado/archivosPlaneacion.html', data)
 
 # Lista de archivos disponibles para Revision del sprint - Empleado
-def archivosRecibidosRevisionEmpleado(request, id):
+def archivosRecibidosRevisionEmpleado(request, id): # id del Mensaje
     mensaje = Mensaje.objects.get(pk=id)
     dato = m_Archivos.objects.filter(Mensaje=mensaje)
 
@@ -4537,6 +4443,7 @@ def vistaEjecucionSprintID(request, id_ReunionDiaria):
             'mes':mes,
             'fechas':fechas,
             'matriz_avance':matriz_avance,
+            'id_Sprint': id_Sprint,
             # 'dia':diaDedicado
             # 'sprintbl': sprintbacklog
     }
@@ -4544,7 +4451,7 @@ def vistaEjecucionSprintID(request, id_ReunionDiaria):
     return render(request, 'Mensajes/ProductOwner/plantillaEjecucion2.html', data)
 
 # Product Owner, original
-def enviar_mensaje2(request, id):
+def enviar_mensaje2(request, id, Accion):
     # mensaje = Mensaje.objects.filter(pk=id) 
     idSms = Mensaje.objects.get(pk=id)
     #IdProyecto = idSms.Proyecto
@@ -4574,18 +4481,19 @@ def enviar_mensaje2(request, id):
             FechaHoraReunion = m_RefinamientoProductBL.objects.get(Mensaje=id).FechaHora #contenido.m_RefinamientoProductBL.FechaHora
             NombreProyecto = contenido.Proyecto.nombreproyecto
 
-
-            #Actualiza el status del mensaje enviado
-            mensaje.Status = 2 #Enviado
-            mensaje.FHUltimaMod = datetime.now()
-            mensaje.save() #Actualiza  la BD
+            if Accion == 2:
+                #Actualiza el status del mensaje enviado
+                mensaje.Status = 2 #Enviado
+                mensaje.FHUltimaMod = datetime.now()
+                mensaje.save() #Actualiza  la BD
 
             res = AsistentesEventosScrum.objects.filter(Mensaje=idSms)
             Destinatarios = ""
             for asistente in res:
                 mensajeRecep = MensajeReceptor(Proyecto=proyecto, Mensaje=mensajeid, Receptor=asistente.Usuario, EventoScrum=eventoScrum, 
                                           Emisor=empleado ,FHCreacion=fecha,Status="1", archivo=archivo)
-                mensajeRecep.save()
+                if Accion == 1:
+                    mensajeRecep.save()
                 #messages.success(request,"Mensaje enviado con exito")
                 Destinatarios = Destinatarios + str(asistente.Usuario.Usuario.email) + ', ' #"\"" + str(asistente.Usuario.Usuario.email) +  "\""+ ', '
                 
@@ -4597,11 +4505,12 @@ def enviar_mensaje2(request, id):
             #ArchivosAdjuntos=""
 
             #Envío de correo
-            asunto = DescripcionEventoScrum +  'Reunión: ' +  str(FechaHoraReunion) #'Reunión de Refinamiento del Product Backlog' #form.cleaned_data['asunto']
+            FechaHoraFormateada = FechaHoraReunion.strftime('%d/%m/%Y %H:%M')
+            asunto = DescripcionEventoScrum +  ' ' +  str(FechaHoraFormateada) #'Reunión de Refinamiento del Product Backlog' #form.cleaned_data['asunto']
             Remitente = request.user.email
             #print(f"Remitente: {Remitente}")
             #destinatario = form.cleaned_data['destinatario']
-            CuerpoMensaje = "Ceremonia: " + DescripcionEventoScrum + '\r\n Proyecto: ' + NombreProyecto + '\r\n' + 'Reunión: ' +  str(FechaHoraReunion) #'Reunión de Refinamiento del Product Backlog' #form.cleaned_data['mensaje']
+            CuerpoMensaje = "Ceremonia: " + DescripcionEventoScrum + '\r\n Proyecto: ' + NombreProyecto + '\r\n' + 'Reunión: ' +  str(FechaHoraFormateada) #'Reunión de Refinamiento del Product Backlog' #form.cleaned_data['mensaje']
             CuerpoMensaje += '\r\nDescripción: ' +  mensaje.Descripcion
             
             #archivo = request.FILES.get('archivo', None)
@@ -4628,7 +4537,8 @@ def enviar_mensaje2(request, id):
             #print(f"archivos adjuntos: {ArchivosAdjuntos}")
 
             #email.attach_file(ArchivosAdjuntos)
-            email.send()
+            if Accion == 2:
+                email.send()
             #messages.success(request,"Mensaje enviado con éxito")
             #Fin Envío del correo
             time.sleep(2)
