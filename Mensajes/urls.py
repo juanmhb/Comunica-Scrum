@@ -122,7 +122,7 @@ urlpatterns = [
     path('eliminarAsistenteRevision/<id>', login_required(eliminar_asistente_revision), name='eliminarAsistenteRevision'),
 
     # Enviar mensaje de Revision del Sprint, Product Owner
-    path('enviarMensajeRevision/<id>', login_required(enviar_mensaje_Revision), name='enviarMensajeRevision'),
+    path('enviarMensajeRevision/<id>/<int:Accion>/', login_required(enviar_mensaje_Revision), name='enviarMensajeRevision'),
     path('enviarRetroRevision/<id>/', login_required(enviar_mensajeRS), name='enviarRetroRevision'), # Contestacion
 
     # Recibir mensaje de retralimentacion de revisión del sprint, product owner
@@ -212,7 +212,7 @@ urlpatterns = [
     # Asistentes Reunion Diaria, Product owner
     path('crearAsistenteReunionDiaria/<id>', login_required(crear_Asistente_Reunion_Diaria), name='crearAsistenteReunionDiaria'),
     path('listaAsistentesReunionDiaria/<id>', login_required(lista_asistentes_por_reunion_diaria), name='listaAsistentesReunionDiaria'),
-    path('editarAsistenteReunionDiaria/<int:pk>', ActualizarAsistenteReunionDiaria.as_view(), name='editarAsistenteReunionDiaria'),
+    path('editarAsistenteReunionDiariaPO/<int:pk>', ActualizarAsistenteReunionDiariaPO.as_view(), name='editarAsistenteReunionDiariaPO'),
     path('eliminarAsistenteReunionDiaria/<id>', login_required(eliminar_asistente_reunion_Diaria), name='eliminarAsistenteReunionDiaria'),
 
     # Enviar mensaje de Reunion Diaria, Product Owner
@@ -226,7 +226,7 @@ urlpatterns = [
     path('vistaReunionDiaria/<id>/', login_required(vistaReunionDiaria), name='vistaReunionDiaria'),
     path('plantillaReunionDiaria/<id>/', login_required(plantillaReunionDiaria), name='plantillaReunionDiaria'),
     path('reunionDiariaScrumMaster/', login_required(lista_reunion_diariaScrumMaster), name='reunionDiariaScrumMaster'), # Obsoleto
-    path('reunionDiariaEmpleado/', login_required(lista_reunion_diariaEmpleado), name='reunionDiariaEmpleado'), # Obsoleto
+    #path('reunionDiariaEmpleado/', login_required(lista_reunion_diariaEmpleado), name='reunionDiariaEmpleado'), # Obsoleto
 
      # Recibir mensajes Reunion Diaria del sprint, Scrum Master
     path('mensajeReunionDiaria/', login_required(listaReunionDiariaSM), name='mensajeReunionDiaria'), # Scrum Master
@@ -313,7 +313,7 @@ urlpatterns = [
     path('borrarArchivoRD/<id>/',login_required(eliminar_archivo_reunion_diaria), name='borrarArchivoRD'), # Revisión del Sprint
 
     # -------------------------------------- ALGORITMOS BETA (No borrar) ---------------------------------
-    path('enviarMensajes/<id>', login_required(enviar_mensaje2), name='enviarMensajes'), # original
+    path('enviarMensajes/<id>/<int:Accion>/', login_required(enviar_mensaje2), name='enviarMensajes'), # original
     path('test/', views.testPais, name='test'),
     # path('crearReunionDiaria/<id>/', views.crearReunionDiaria, name='crearReunionDiaria'),
     path('ejecucionSprint/<int:id_ReunionDiaria>', login_required(vistaEjecucionSprintID), name='ejecucionSprint'), # Vista de la ejecucion del sprint
@@ -335,7 +335,7 @@ urlpatterns = [
     path('editarAsistenteRetrospectivaSM/<int:pk>', ActualizarAsistenteRetrospectivaSM.as_view(), name='editarAsistenteRetrospectivaSM'),
     # Editar asistente por mensaje, Scrum Master, Reunion Diaria
     path('asistente_Reunion_Diaria/<id>', login_required(lista_asistentes_reunion_diaria_SM), name='asistente_Reunion_Diaria'),
-    path('editarAsistenteReunionDiariaSM/<int:pk>', ActualizarAsistenteReunionDiaria.as_view(), name='editarAsistenteReunionDiariaSM'),
+    path('editarAsistenteReunionDiariaSM/<int:pk>', ActualizarAsistenteReunionDiariaSM.as_view(), name='editarAsistenteReunionDiariaSM'),
     # Editar asistente por mensaje, Empleado, Refinamiento 
     path('asistente_RefinamientoEmpleado/<id>', login_required(lista_asistentes_por_usuarioRef_Empleado), name='asistente_RefinamientoEmpleado'),
     path('editarAsistenteEmpleadoRef/<int:pk>', ActualizarAsistenteEmpleadoRef.as_view(), name='editarAsistenteEmpleadoRef'),

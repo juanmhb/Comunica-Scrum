@@ -48,11 +48,13 @@ def index(request):
                 if user is not None:
                     login(request, user)
                     # Redirecciona al usuario dependiendo de su rol
-                    if user.usuarioempleado.Roles.NombreRol == 'Product Owner':
+                    if user.usuarioempleado.Roles.NombreRol == 'Product Owner' :
+                    #if user.usuarioempleado.Roles.NombreRol in ['Product Owner','Scrum Master']:
                         return render(request, 'Mensajes/ProductOwner/base.html')
-                    elif user.usuarioempleado.Roles.NombreRol == 'Scrum Master':
-                        return render(request, 'Mensajes/ScrumMaster/base.html')
-                    elif user.usuarioempleado.Roles.NombreRol == 'Developers':
+                    # elif user.usuarioempleado.Roles.NombreRol == 'Scrum Master':
+                    #     return render(request, 'Mensajes/ScrumMaster/base.html')
+                    # elif user.usuarioempleado.Roles.NombreRol == 'Developers':
+                    elif user.usuarioempleado.Roles.NombreRol  in ['Developers','Scrum Master']:
                         return render(request, 'Scrum/Empleado/base.html')
                     else:
                         return render(request, 'login.html', {'error_message': 'Usuario o contraseña incorrectos'})
@@ -258,7 +260,6 @@ class EliminarHistoriaUsuario(LoginRequiredMixin, DeleteView):
     def get_success_url(self):
          return reverse('Scrum:productbacklog', kwargs={'pk': self.object.Proyecto.pk})
 
-
 class ActualizarHistoriaUsuario(LoginRequiredMixin, UpdateView):
     model = HistoriaUsuario
     template_name = 'Scrum/detalle_historiausuario.html'
@@ -288,7 +289,7 @@ class ActualizarHistoriaUsuarioSprint(LoginRequiredMixin, UpdateView):
     
     def get_success_url(self):
         sprint_id = self.kwargs.get('pk', None)
-        print(f"sprint_id : {sprint_id }")
+        #print(f"sprint_id : {sprint_id }")
         #return reverse('Scrum:listar_sprint_Historias', kwargs={'pk': self.object.Sprint.pk})
         return reverse('Scrum:listar_sprint_Historias', kwargs={'pk': sprint_id})
     
@@ -324,7 +325,7 @@ class EliminarHistoriaUsuarioSprint(LoginRequiredMixin, DeleteView):
 
 # ------------------------------------------------------------------CRUD Sprint----------------------------------------------------------------------
 
-def ListadoSprint(request, pk):
+def ListadoSprint(request, pk): #pk del proyecto
     Sprints = Sprint.objects.filter(Proyecto__pk=pk)
     # pkBacklog= ProductBacklog.objects.get(Proyecto__pk=pk)
     return render(request,'Scrum/gestion_sprint.html', {'Sprints': Sprints,'pk':pk})
@@ -334,7 +335,7 @@ def ListadoSprintEmpleados(request, pk):
     # pkBacklog= ProductBacklog.objects.get(Proyecto__pk=pk)
     return render(request,'Scrum/Empleado/gestion_sprint.html', {'Sprints': list(set(Sprints)),'pk':pk})
 
-def ListadoSprintHistorias(request, pk):
+def ListadoSprintHistorias(request, pk): #pk es el id del Sprint
     # sprint = get_object_or_404(Sprint, pk=pk)
     # HistoriasProductBacklog = HistoriaUsuario.objects.filter(Sprint__pk=pk)
     # pkProyecto = sprint.Proyecto.pk
@@ -437,7 +438,7 @@ def AsignarHistoriasSprint(request, pk):
 
 # ------------------------------------------------------------------CRUD Tarea----------------------------------------------------------------------
 
-def ListadoTareas(request, pk):
+def ListadoTareas(request, pk): #pk de la HU
     try:
         
         historia_usuario = HistoriaUsuario.objects.get(pk=pk)
@@ -458,7 +459,7 @@ def ListadoTareas(request, pk):
 
 
 @login_required
-def ListadoTareasSprint(request, pk): #Listado de las tareas de una HU específica
+def ListadoTareasSprint(request, pk): #pk --> id de la HU, Listado de las tareas de una HU específica
     try:
         historia_usuario = HistoriaUsuario.objects.get(pk=pk)
         tareas = Tarea.objects.filter(HistoriaUsuario__pk=pk)
@@ -712,7 +713,7 @@ class CrearTareaSprint(LoginRequiredMixin, CreateView):
             tarea.save()  # Guardar la tarea con toda la información
 
             # Imprimir el contenido de cleaned_data para depuración
-            print("Cleaned Data:", form.cleaned_data)
+            #print("Cleaned Data:", form.cleaned_data)
 
             return super().form_valid(form)
         except HistoriaUsuario.DoesNotExist:

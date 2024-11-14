@@ -52,9 +52,9 @@
               <div class="card-header">
 
                 {% if Sprint%}
-                <h1>Historias de Usuarios Sprint {{ Sprint.nombresprint }}</h1>
+                  <h1>Historias de Usuarios Sprint {{ Sprint.nombresprint }}</h1>
                 {% else %}
-                <h1>ProductBacklog del {{ proyecto.nombreproyecto }}</h1>
+                  <h1>ProductBacklog del {{ proyecto.nombreproyecto }}</h1>
                 {% endif %}
 
                 <title>Proyectos</title>
@@ -113,11 +113,14 @@
                                 <path fill-rule="evenodd" d="M5 11.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zM3.854 2.146a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708 0l-.5-.5a.5.5 0 1 1 .708-.708L2 3.293l1.146-1.147a.5.5 0 0 1 .708 0zm0 4a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708 0l-.5-.5a.5.5 0 1 1 .708-.708L2 7.293l1.146-1.147a.5.5 0 0 1 .708 0zm0 4a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708 0l-.5-.5a.5.5 0 0 1 .708-.708l.146.147 1.146-1.147a.5.5 0 0 1 .708 0z"/>
                               </svg>
                             </a>
-                            <a data-bs-toggle="tooltip" data-bs-placement="top" title="Tablero Kanban" href="{% url 'Scrum:tablero_kanban' Historia.id %}" class="btn btn-outline-info">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-grid" viewBox="0 0 16 16">
-                                <path d="M0 0h16v16H0V0zM1 1v14h14V1H1zm4 1v4H2V2h3zm5 0v4H7V2h4zm5 0v4h-3V2h3zm-5 5v4H7V7h4zm5 0v4h-3V7h3zM7 12v4H2v-4h5zm5 0v4H7v-4h5z"/>
-                              </svg>
-                            </a>
+                            <!-- Se debe revisar TODO lo relacionado al tablero Kanban. jmhb 12/nov/2024 -->
+                            {% if user.usuarioempleado.Roles.NombreRol != 'Developers' %}
+                              <a data-bs-toggle="tooltip" data-bs-placement="top" title="Tablero Kanban" href="{% url 'Scrum:tablero_kanban' Historia.id %}" class="btn btn-outline-info">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-grid" viewBox="0 0 16 16">
+                                  <path d="M0 0h16v16H0V0zM1 1v14h14V1H1zm4 1v4H2V2h3zm5 0v4H7V2h4zm5 0v4h-3V2h3zm-5 5v4H7V7h4zm5 0v4h-3V7h3zM7 12v4H2v-4h5zm5 0v4H7v-4h5z"/>
+                                </svg>
+                              </a>
+                            {% endif %}
                             {% if Historia.sprint_backlog_id %}
                             <a data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar HU" href="{% url 'Scrum:eliminar_historiausuario_sprint' Historia.sprint_backlog_id %}" class="btn btn-outline-danger">
                               <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
@@ -165,6 +168,13 @@
               </div>
             </div>
           </div>
+          {% if messages %}
+            {% for message in messages %}
+              <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}">
+                {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
 
           <div class="modal fade" id="edicion" role="dialog">
 

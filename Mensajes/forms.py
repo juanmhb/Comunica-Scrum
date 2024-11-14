@@ -282,11 +282,12 @@ class retroAlimentacion_Forms(forms.ModelForm):
 class reunionDiaria_Forms(forms.ModelForm):
     class Meta:
         model = m_ReunionDiaria
-        fields=['ObstaculosPresentados','PlanDiaSiguiente','TrabajoRealizadoDiaAnterior']
+        fields=['ObstaculosPresentados', 'TrabajoRealizadoDiaAnterior', 'PlanDiaSiguiente']
         labels={
-            'ObstaculosPresentados':'Obstaculos presentados',
-            'PlanDiaSiguiente':'Planificación del siguiente día',
-            'TrabajoRealizadoDiaAnterior':'Trabajo realizado el día anterior'
+            'ObstaculosPresentados':'Obstaculos presentados día anterior',
+            'TrabajoRealizadoDiaAnterior':'Trabajo realizado el día anterior',
+            'PlanDiaSiguiente':'Planificación del día de hoy',
+            
         }
 
         widgets={
@@ -305,7 +306,7 @@ class reunionDiaria_Forms(forms.ModelForm):
           'PlanDiaSiguiente': forms.Textarea(
                 attrs = {
                     'class':'form-control',
-                    'placeholder': 'Es la descripción de lo que va hacer el desarrollador el siguiente día de trabajo'
+                    'placeholder': 'Es la descripción de lo que va hacer el desarrollador el día de hoy de trabajo'
                 }
           ),
         }

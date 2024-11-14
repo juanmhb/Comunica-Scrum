@@ -78,24 +78,8 @@
         <th scope="row"> &nbsp; </th>
         <td>{{ p.Usuario.Usuario }}</td>
         <td>{{ p.Rol }}</td>
-        <td>
-          {% if p.Status == '1' %}
-          Obligatorio
-          {% elif p.Status == '2' %}
-          Opcional
-          {% else %}
-          Dato invalido
-          {% endif %}
-        </td>
-        <td>
-          {% if p.TipoAsistencia == 'S' %}
-          Sincrona
-          {% elif p.TipoAsistencia == 'A' %}
-          Asincrona
-          {% else %}
-          Dato invalido
-          {% endif %}
-        </td>
+        <td> {{p.get_Status_display}} </td>
+        <td> {{p.get_TipoAsistencia_display}} </td>
         <td colspan="3"  > &nbsp; </td>
       </tr>
     </tbody>
@@ -105,7 +89,7 @@
     <td id="gris" align="center">HU</td>
     <td id="gris" align="center">Nombre</td>
     <td id="gris" align="center">Status</td>
-    <td id="gris" align="center">Criterio Aceptación</td>
+    <td id="gris" align="center">Aceptada por PO</td>
     <td id="gris" align="center">Avance</td>
     <td id="gris" align="center">Estimado</td>
     <td id="gris" align="center">Real</td>
@@ -117,7 +101,7 @@
       <td>{{p.numero_hu}}</td>
       <td> {{ p.nombre_hu | capfirst }} </td>
       <td>{{ p.estatus_id }}</td>
-      <td align="center">
+      <td align="center"> 
           {% if p.huaceptada == '1' %}
             SI
           {% else%}
@@ -125,33 +109,30 @@
           {% endif %}
       </td>
       <td align="right">
-        {{ p.progreso|floatformat:2 }}%
+        {{ p.progreso|floatformat:2 }}%  &nbsp;
        
       </td>
-      <td align="right">{{ p.horasestimadas }}</td>
-      <td align="right">{{ p.horasreales }}</td>
+      <td align="right">{{ p.horasestimadas }}  &nbsp;</td>
+      <td align="right">{{ p.horasreales }}  &nbsp;</td>
     </tr>
   </tbody>
   {% endfor %}
   <tr style="height: 20px; vertical-align: bottom;">
     <td colspan="5" id="azul" >  &nbsp; </td>
-    <td>Horas: </td>
-    <td align="right">{{ total_horas_estimadas }}</td>
-    <td align="right">{{ total_horas_reales }}</td>
+    <td id="azul" align="right" >Horas: &nbsp; </td>
+    <td id="azul" align="right">{{ total_horas_estimadas }}  &nbsp;</td>
+    <td id="azul" align="right">{{ total_horas_reales }}  &nbsp;</td>
    </tr>
    <tr style="height: 20px; vertical-align: bottom;">
     <td colspan="5"  >  &nbsp; </td>
-    <td id="azul">Dias: </td>
-    <td id="azul" align="right">{{ total_dias_estimados |floatformat:2 }}</td>
-    <td id="azul" align="right">{{ total_dias_reales |floatformat:2 }}</td>
-   </tr>
-   <tr>
-    <td colspan="8"  >  &nbsp; </td>
+    <td align="right" >Dias: &nbsp; </td>
+    <td align="right">{{ total_dias_estimados |floatformat:2 }}  &nbsp;</td>
+    <td align="right">{{ total_dias_reales |floatformat:2 }}  &nbsp;</td>
    </tr>
   
    <tr style="vertical-align: bottom;">
     <td id="azul" align="center">Objetivo de la Reunión</td>
-    <td id="azul" colspan="7" align="center">{{ mensaje.Descripcion }}</td>
+    <td id="azul" colspan="7" > &nbsp; {{ mensaje.Descripcion }}</td>
    </tr>
 
    
@@ -166,7 +147,7 @@
     {% for p in comentarios %}
    <tr>
     <td id="azul" align="center">Comentario de {{ p.Emisor.Usuario }}: </td>
-    <td id="azul" align="center" colspan="7">{{ p.Comentarios }}</td>
+    <td id="azul" colspan="7">&nbsp;{{ p.Comentarios }}</td>
    </tr>
    {% endfor %}
 
