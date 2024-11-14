@@ -23,8 +23,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 #SECRET_KEY = os.getenv('SECRET_KEY')
-#SECRET_KEY = "dccddf0b4fa6ebda0c8c12428a57a712"
-SECRET_KEY = 'django-insecure-#96g7n=k%!if-)0d4fwd(#uk5oa7hj#vpo&a#%!9+h28_pc+#i'
+SECRET_KEY = "dccddf0b4fa6ebda0c8c12428a57a712"
+#SECRET_KEY = 'django-insecure-#96g7n=k%!if-)0d4fwd(#uk5oa7hj#vpo&a#%!9+h28_pc+#i'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -110,7 +110,7 @@ DATABASES = {
 }
 
 #Acceso a render.com
-#DATABASES["default"] = dj_database_url.parse("postgresql://dbcomunica_scrum_user:JQQc7Af7o0Gm9IozynPGim8ZUGiiUNKD@dpg-cs8uqt8gph6c73btkeg0-a.oregon-postgres.render.com/dbcomunica_scrum")
+DATABASES["default"] = dj_database_url.parse("postgresql://dbcomunica_scrum_user:JQQc7Af7o0Gm9IozynPGim8ZUGiiUNKD@dpg-cs8uqt8gph6c73btkeg0-a.oregon-postgres.render.com/dbcomunica_scrum")
 
 
 # DATABASES = {
