@@ -134,14 +134,8 @@
                     data-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
                         <h6 class="collapse-header">Vista</h6>
-                        
-                        <!--<a class="collapse-item" href="">Retroalimentación de la <br>Reunión de Revisión del <br>Sprint</a>-->
-                        
                         <a class="collapse-item" href="{% url 'Mensajes:recibirMensajeEmpleado' %}">Reunión de refinamiento <br>del Product Backlog</a>
-
                         <a class="collapse-item" href="{% url 'Mensajes:mensajePlaneacionEmpleado' %}">Reunión de Planeación <br>del Sprint</a>
-                        <!--<a class="collapse-item" href="">Reunión de Planeación <br>del Sprint, HU Divididas</a>-->
-                        <!--<a class="collapse-item" href="">Retroalimentación de la <br>Reunión de Planeación <br>del Sprint</a>-->
                         <a class="collapse-item" href="{% url 'Mensajes:mensajeRevisionEmpleado' %}">Reunión de Revisión del <br>Sprint</a>
                         {% if user.usuarioempleado.Roles.NombreRol == 'Developers' %}
                             <a class="collapse-item" href="{% url 'Mensajes:mensajeRetrospectivaEmpleado' %}">Reunión de Retrospectiva <br>del Sprint</a>
