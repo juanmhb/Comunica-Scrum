@@ -75,25 +75,28 @@
               </tr>
             {% endfor %}
             <tr>
-              <td colspan="{{ fechas|length|add:5 }}" id="azul"> &nbsp; </td>
+              <td colspan="{{ fechas|length|add:5 }}" > &nbsp; </td>
             </tr>
-            <tr>
+            <tr id="azul">
               <td>HU</td>
               <td>Nombre</td>
               <td></td>
               <td></td>
               <td></td>
+              {% for mes, dias in meses.items %}
+                  <td colspan="{{dias}}" align="center">{{ mes }}</td>
+              {% endfor %}
             </tr>
 
             {% for historia in form %}
-              <tr>
-                <td align="center" id="gris">{{ historia.NumeroHU }}</td>
-                <td align="center" id="gris">{{ historia.nombre }}</td>
-                <td id="gris">Developer</td>
-                <td id="gris">Horas Estimadas</td>
-                <td id="gris">Horas Reales</td>
+              <tr id="gris">
+                <td align="center" >{{ historia.NumeroHU }}</td>
+                <td align="center" >{{ historia.nombre }}</td>
+                <td >Developer</td>
+                <td >Horas Estimadas</td>
+                <td >Horas Reales</td>
                 {% for fecha in fechas %}
-                <td align="center" id="gris">{{fecha.day}}</td>
+                <td align="center" >{{fecha.day}}</td>
                 {% endfor%}
               </tr>
               {% for tarea in historia.HistoriaTareas.all %}
