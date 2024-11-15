@@ -25,6 +25,8 @@ from django.core.mail import send_mail
 from django.contrib import messages
 from django.shortcuts import get_object_or_404
 from io import BytesIO
+import calendar
+import locale
 
 # ----------------------------------------------------------------------------------------------------------------------------
 # ---------------------------------------- Reunión de Refinamiento del Product Backlog ---------------------------------------
@@ -4407,6 +4409,24 @@ def vistaEjecucionSprintID(request, id_ReunionDiaria):
     fechas = [dSprint.fechainiciosprint + timedelta(days=i) for i in range(diferencia_dias + 1)]
     #print (f"fechas: {fechas}")
 
+    # Crear un diccionario para agrupar días por mes
+    meses = {}
+
+    # Configurar el idioma en español
+    locale.setlocale(locale.LC_TIME, 'es_ES')  # Para sistemas Windows o macOS
+
+    for fecha in fechas:
+        nombre_mes = fecha.strftime('%B')  # Obtener el nombre del mes en español
+        if nombre_mes not in meses:
+            meses[nombre_mes] = 0
+        meses[nombre_mes] += 1  # Contar los días en ese mes
+
+    # # Imprimir resultados
+    # for mes, cantidad in meses.items():
+    #     print(f"Mes: {mes}, Días: {cantidad}")
+    # print(f"mes: {meses}")
+        
+
     # Lista para almacenar la matriz
     matriz_avance = []
 
@@ -4444,6 +4464,7 @@ def vistaEjecucionSprintID(request, id_ReunionDiaria):
             'fechas':fechas,
             'matriz_avance':matriz_avance,
             'id_Sprint': id_Sprint,
+            'meses':meses, 
             # 'dia':diaDedicado
             # 'sprintbl': sprintbacklog
     }
