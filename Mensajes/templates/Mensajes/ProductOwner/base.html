@@ -135,17 +135,19 @@
                     <div class="bg-white py-2 collapse-inner rounded">
                         <h6 class="collapse-header">Vista</h6>
                         
-                        <!--<a class="collapse-item" href="">Retroalimentación de la <br>Reunión de Revisión del <br>Sprint</a>-->
-                        
-                        <a class="collapse-item" href="{% url 'Mensajes:listaRefinamiento' %}">Reunión de refinamiento <br>del Product Backlog</a>
-
-                        <a class="collapse-item" href="{% url 'Mensajes:listaPlaneacionSprint' %}">Reunión de Planeación <br>del Sprint</a>
-                        
-                        <!--<a class="collapse-item" href="">Retroalimentación de la <br>Reunión de Planeación <br>del Sprint</a>-->
-
-                        <a class="collapse-item" href="{% url 'Mensajes:listaRevisionSprint' %}">Reunión de Revisión del <br>Sprint</a>
+                        {% if  user.usuarioempleado.Roles.NombreRol == 'Scrum Master' %}
+                            <a class="collapse-item" href="{% url 'Mensajes:recibirMensajeEmpleado' %}">Reunión de refinamiento <br>del Product Backlog</a>
+                            <a class="collapse-item" href="{% url 'Mensajes:mensajePlaneacionEmpleado' %}">Reunión de Planeación <br>del Sprint</a>
+                            <a class="collapse-item" href="{% url 'Mensajes:mensajeRevisionEmpleado' %}">Reunión de Revisión del <br>Sprint</a>
+                        {% elif  user.usuarioempleado.Roles.NombreRol == 'Product Owner' %} 
+                            <a class="collapse-item" href="{% url 'Mensajes:listaRefinamiento' %}">Reunión de refinamiento <br>del Product Backlog</a>
+                            <a class="collapse-item" href="{% url 'Mensajes:listaPlaneacionSprint' %}">Reunión de Planeación <br>del Sprint</a>
+                            <a class="collapse-item" href="{% url 'Mensajes:listaRevisionSprint' %}">Reunión de Revisión del <br>Sprint</a>
+                        {% endif %}
+                        <!-- en estás dos ceremonias el Scrum Master tiene las mismas opciones que el Product Owner -->
                         <a class="collapse-item" href="{% url 'Mensajes:listaRetrospectivaSprint' %}">Reunión de Retrospectiva <br>del Sprint</a>
                         <a class="collapse-item" href="{% url 'Mensajes:listaReunionDiaria' %}">Reunión Diaria</a>
+
                         <div class="collapse-divider"></div>
                         <!-- <h6 class="collapse-header">Other Pages:</h6> --> 
                         <!-- <a class="collapse-item" href="404.html">404 Page</a> -->
