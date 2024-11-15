@@ -26,7 +26,7 @@ from django.contrib import messages
 from django.shortcuts import get_object_or_404
 from io import BytesIO
 import calendar
-import locale
+
 
 # ----------------------------------------------------------------------------------------------------------------------------
 # ---------------------------------------- Reunión de Refinamiento del Product Backlog ---------------------------------------
@@ -4408,15 +4408,20 @@ def vistaEjecucionSprintID(request, id_ReunionDiaria):
     # sprintbacklog = sprint_Backlog.objects.all()
     fechas = [dSprint.fechainiciosprint + timedelta(days=i) for i in range(diferencia_dias + 1)]
     #print (f"fechas: {fechas}")
+    traduccion_meses = {
+        "January": "Enero", "February": "Febrero", "March": "Marzo",
+        "April": "Abril", "May": "Mayo", "June": "Junio",
+        "July": "Julio", "August": "Agosto", "September": "Septiembre",
+        "October": "Octubre", "November": "Noviembre", "December": "Diciembre"
+    }
 
     # Crear un diccionario para agrupar días por mes
     meses = {}
 
-    # Configurar el idioma en español
-    locale.setlocale(locale.LC_TIME, 'es_ES')  # Para sistemas Windows o macOS
 
     for fecha in fechas:
-        nombre_mes = fecha.strftime('%B')  # Obtener el nombre del mes en español
+        #nombre_mes = fecha.strftime('%B')  # Obtener el nombre del mes en español
+        nombre_mes = traduccion_meses[fecha.strftime('%B')]
         if nombre_mes not in meses:
             meses[nombre_mes] = 0
         meses[nombre_mes] += 1  # Contar los días en ese mes
