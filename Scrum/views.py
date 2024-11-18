@@ -1008,7 +1008,13 @@ class ActualizarReunionDiaria(LoginRequiredMixin, UpdateView):
     model = ReunionDiaria
     template_name = 'Scrum/detalle_reuniondiaria.html'
     form_class = ReunionDiariaForm
- 
+
+    def get_form_kwargs(self):
+        # Obtener los kwargs del formulario y agregar el usuario autenticado
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+    
     def get_success_url(self):
          return reverse('Scrum:listar_reuniones', kwargs={'pk': self.object.Sprint.pk})
 

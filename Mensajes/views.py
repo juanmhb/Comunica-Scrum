@@ -70,7 +70,7 @@ def crear_Refinamiento(request):
     empleado = Empleado.objects.get(Usuario=usuario)
 
     if request.method == 'POST':
-        form = MensajeForms(request.POST)
+        form = MensajeForms(request.POST, user=request.user)
         if form.is_valid():
 
             # Obtener datos del formulario o de donde sea necesario
@@ -101,7 +101,7 @@ def crear_Refinamiento(request):
         # Redirigir a alguna página de éxito o hacer lo que necesites
         return redirect('Mensajes:listaRefinamiento')
     else:
-        form = MensajeForms()
+        form = MensajeForms(user=request.user)
     return render(request, 'Mensajes/ProductOwner/crearRefinamientoBL.html', {'form': form})
 
 class ActualizarMensaje(LoginRequiredMixin, UpdateView):
@@ -109,7 +109,12 @@ class ActualizarMensaje(LoginRequiredMixin, UpdateView):
     template_name = 'Mensajes/ProductOwner/editarMensaje.html'
     form_class = UpdateMensajePDF_Forms
     success_url = reverse_lazy('Mensajes:listaRefinamiento')
-
+    def get_form_kwargs(self):
+        # Obtener los kwargs del formulario y agregar el usuario autenticado
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+    
 def eliminar_Mensaje(request, id):
     producto = get_object_or_404(Mensaje, id=id)
     producto.delete()
@@ -1344,10 +1349,12 @@ def crear_PlaneacionSprint6(request, id):
 
             # Obtener datos del formulario o de donde sea necesario
             fecha_hora = form.cleaned_data['FechaHora']
+            # Convertimos la fecha a formato día/mes/año hh:mm
+            FechaHoraFormateada = fecha_hora.strftime('%d/%m/%Y %H:%M')
             ref = m_EventoScrum.objects.get(pk=3)
 
             producto = get_object_or_404(Sprint, pk=id)
-            descripcion = producto.objetivosprint
+            descripcion = f"{FechaHoraFormateada},  Planeación Sprint. {producto.objetivosprint}"
             proyecto = producto.Proyecto
             # sprint = producto.nombresprint
 
@@ -2152,10 +2159,12 @@ def crear_RevisionSprint(request, id): #id del Sprint
 
             # Obtener datos del formulario o de donde sea necesario
             fecha_hora = form.cleaned_data['FechaHora']
+            FechaHoraFormateada = fecha_hora.strftime('%d/%m/%Y %H:%M')
             ref = m_EventoScrum.objects.get(pk=5) # Cierre del sprint 
 
             producto = get_object_or_404(Sprint, pk=id)
-            descripcion = producto.objetivosprint
+            descripcion = f"{FechaHoraFormateada},  Revisión Sprint. {producto.objetivosprint}"
+            #descripcion = producto.objetivosprint
             proyecto = producto.Proyecto
             # sprint = producto.nombresprint
 
@@ -2193,6 +2202,12 @@ class ActualizarRevision(LoginRequiredMixin, UpdateView):
     template_name = 'Mensajes/ProductOwner/editarRevisionSprint.html'
     form_class = UpdateMensajePDF_Forms
     success_url = reverse_lazy('Mensajes:listaRevisionSprint')
+
+    def get_form_kwargs(self):
+        # Obtener los kwargs del formulario y agregar el usuario autenticado
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
 
 def eliminar_revision(request, id):
     producto = get_object_or_404(Mensaje, id=id)
@@ -2923,10 +2938,12 @@ def crear_RetrospectivaSprint(request, id): #id del Sprint
 
             # Obtener datos del formulario o de donde sea necesario
             fecha_hora = form.cleaned_data['FechaHora']
+            FechaHoraFormateada = fecha_hora.strftime('%d/%m/%Y %H:%M')
             ref = m_EventoScrum.objects.get(pk=6) # Evento - Retrospectiva Sprint 
 
             producto = get_object_or_404(Sprint, pk=id)
-            descripcion = producto.objetivosprint
+            descripcion = f"{FechaHoraFormateada},  Retrospectiva Sprint. {producto.objetivosprint}"
+            #descripcion = producto.objetivosprint
             proyecto = producto.Proyecto
             # sprint = producto.nombresprint
 
@@ -2954,6 +2971,12 @@ class ActualizarRetrospectiva(LoginRequiredMixin, UpdateView):
     template_name = 'Mensajes/ProductOwner/editarRetrospectiva.html'
     form_class = UpdateMensajePDF_Forms
     success_url = reverse_lazy('Mensajes:listaRetrospectivaSprint')
+
+    def get_form_kwargs(self):
+        # Obtener los kwargs del formulario y agregar el usuario autenticado
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
 
 def eliminar_retrospectiva(request, id):
     producto = get_object_or_404(Mensaje, id=id)
@@ -3558,10 +3581,12 @@ def crear_Reunion_Diaria(request, id): # id del Sprint
 
             # Obtener datos del formulario o de donde sea necesario
             fecha_hora = form.cleaned_data['FechaHora']
+            FechaHoraFormateada = fecha_hora.strftime('%d/%m/%Y %H:%M')
             ref = m_EventoScrum.objects.get(pk=4) # Evento - Reunion Diaria
 
             producto = get_object_or_404(Sprint, pk=id)
-            descripcion = producto.objetivosprint
+            #descripcion = producto.objetivosprint
+            descripcion = f"{FechaHoraFormateada},  Reunión Diaria. {producto.objetivosprint}"
             proyecto = producto.Proyecto
             # sprint = producto.nombresprint
 
@@ -3589,6 +3614,13 @@ class ActualizarReunionDiaria(LoginRequiredMixin, UpdateView):
     template_name = 'Mensajes/ProductOwner/editarReunionDiaria.html'
     form_class = UpdateMensajePDF_Forms
     success_url = reverse_lazy('Mensajes:listaReunionDiaria')
+    
+    def get_form_kwargs(self):
+        # Obtener los kwargs del formulario y agregar el usuario autenticado
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+    
 
 def eliminar_reunion_diaria(request, id): # id del Mensaje
     producto = get_object_or_404(Mensaje, id=id)

@@ -43,6 +43,23 @@ class MensajeForms(forms.ModelForm):
                 }
             ),
         }
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)  # Recibe el usuario autenticado
+        super().__init__(*args, **kwargs)
+        
+        if user:
+            # Obtener el empleado relacionado con el usuario autenticado
+            empleado = Empleado.objects.filter(Usuario=user).first()
+
+            if empleado:
+                # Filtrar proyectos donde el empleado participa
+                proyectos = Proyecto.objects.filter(
+                    DetalleProyecto__Empleado=empleado
+                )
+                self.fields['Proyecto'].queryset = proyectos
+            else:
+                # Si no hay empleado, no mostrar ningún proyecto
+                self.fields['Proyecto'].queryset = Proyecto.objects.none()
 
 class UpdateMensajePDF_Forms(forms.ModelForm):
     class Meta:
@@ -82,7 +99,22 @@ class UpdateMensajePDF_Forms(forms.ModelForm):
                 }
             ),
         }
+    def __init__(self, *args, **kwargs):
+            user = kwargs.pop('user', None)  # Recibir el usuario autenticado
+            super().__init__(*args, **kwargs)
 
+            if user:
+                # Obtener al empleado relacionado con el usuario autenticado
+                empleado = Empleado.objects.filter(Usuario=user).first()
+
+                if empleado:
+                    # Filtrar proyectos donde el empleado participa
+                    proyectos = Proyecto.objects.filter(DetalleProyecto__Empleado=empleado).distinct()
+                    self.fields['Proyecto'].queryset = proyectos
+                else:
+                    # Si no hay empleado asociado, mostrar un queryset vacío
+                    self.fields['Proyecto'].queryset = Proyecto.objects.none()
+                    
 class RefinamientoForms(forms.ModelForm):
     class Meta:
         model = Mensaje
