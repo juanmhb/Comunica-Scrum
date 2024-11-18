@@ -104,7 +104,15 @@ class JefeProyecto(models.Model):
     def __str__(self):
         return self.Usuario.first_name +' '+ self.Usuario.last_name
 
+class Empresa(models.Model):
+    numero_empresa = models.IntegerField(null=True, blank=True)
+    nombre_empresa = models.CharField(max_length=200,null=True, unique=True)
+    class Meta:
+        ordering = ['pk']
 
+    def __str__(self):
+        return self.nombre_empresa 
+    
 class Proyecto(models.Model):
     JefeProyecto = models.ForeignKey(JefeProyecto,on_delete=models.CASCADE,related_name='JefeProyectoProyectos')
     nombreproyecto = models.CharField(max_length=200,null=False, unique=True)
@@ -113,6 +121,7 @@ class Proyecto(models.Model):
     objetivo = models.CharField(max_length=1000,null=True,blank=True)
     impacto = models.CharField(max_length=1000,null=True,blank=True)
     homologacionvision = models.CharField(max_length=1000,null=True,blank=True)
+    Empresa = models.ForeignKey(Empresa,on_delete=models.CASCADE,default=1, null=True, related_name='Empresa_Proyecto')
 
 
     class Meta:

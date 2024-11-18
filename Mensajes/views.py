@@ -3614,7 +3614,7 @@ class ActualizarReunionDiaria(LoginRequiredMixin, UpdateView):
     template_name = 'Mensajes/ProductOwner/editarReunionDiaria.html'
     form_class = UpdateMensajePDF_Forms
     success_url = reverse_lazy('Mensajes:listaReunionDiaria')
-    
+
     def get_form_kwargs(self):
         # Obtener los kwargs del formulario y agregar el usuario autenticado
         kwargs = super().get_form_kwargs()
@@ -4386,6 +4386,7 @@ def vistaEjecucionSprintID(request, id_ReunionDiaria):
     #dato = HistoriaUsuario.objects.filter(Estatus=4) # En Sprint (son las mismas que estan dentro del modelo sprint_backlog)
     #modelo ReunionDiaria ?
     id_Sprint = Mensaje.objects.get(id=id_ReunionDiaria).Sprint.id
+    
 
     HU = HistoriaUsuario.objects.filter(Q(Sprint_id=id_Sprint) & Q(Estatus__in=[4, 5, 6])) # 4=En Sprint, 5=Divididas, 6=EN progreso (son las mismas que estan dentro del modelo sprint_backlog)
 
@@ -4500,7 +4501,7 @@ def vistaEjecucionSprintID(request, id_ReunionDiaria):
             'mes':mes,
             'fechas':fechas,
             'matriz_avance':matriz_avance,
-            'id_Sprint': id_Sprint,
+            'Sprint': dSprint,
             'meses':meses, 
             # 'dia':diaDedicado
             # 'sprintbl': sprintbacklog
