@@ -38,13 +38,16 @@ def listaRefinamientoProductBL(request):
         # Obtener los proyectos en los que el empleado participa
         proyectos = EmpleadoProyecto.objects.filter(Empleado=empleado).values_list('Proyecto', flat=True)
 
-        mensajes = Mensaje.objects.filter(Q(Emisor=empleado) & Q(EventoScrum="2") & Q(Proyecto__in=proyectos))
-        mensajes2 = m_RefinamientoProductBL.objects.filter(Q(Emisor=empleado) & Q(Proyecto__in=proyectos))
-        asistentes = AsistentesEventosScrum.objects.all()
+        if request.user.usuarioempleado.Roles.NombreRol == 'Product Owner':
+            #mensajes = Mensaje.objects.filter(Q(Emisor=empleado) & Q(EventoScrum="2") & Q(Proyecto__in=proyectos))
+            mensajes = Mensaje.objects.filter(Q(EventoScrum="2") & Q(Proyecto__in=proyectos))
+
+        #mensajes2 = m_RefinamientoProductBL.objects.filter(Q(Emisor=empleado) & Q(Proyecto__in=proyectos))
+        #asistentes = AsistentesEventosScrum.objects.all()
         data = {
-            'form':mensajes2,
+            #'form':mensajes2,
             'form2':mensajes,
-            'form3':asistentes
+            #'form3':asistentes
         }
 
         user = request.user
@@ -1191,7 +1194,9 @@ def listaPlaneacionSprint(request):
 
         # Obtener los proyectos en los que el empleado participa
         proyectos = EmpleadoProyecto.objects.filter(Empleado=empleado).values_list('Proyecto', flat=True)
-        mensajes = Mensaje.objects.filter(Q(Emisor=empleado) & Q(EventoScrum="3") & Q(Proyecto__in=proyectos)) # Reunión de Planeación del Sprint
+        if usuario.usuarioempleado.Roles.NombreRol == 'Product Owner' :
+            #mensajes = Mensaje.objects.filter(Q(Emisor=empleado) & Q(EventoScrum="3") & Q(Proyecto__in=proyectos)) # Reunión de Planeación del Sprint
+            mensajes = Mensaje.objects.filter(Q(EventoScrum="3") & Q(Proyecto__in=proyectos)) # Reunión de Planeación del Sprint
         #asistentes = AsistentesEventosScrum.objects.all()
         #planeaciacionSprint = m_PlanificacionSprint.objects.all()
 
@@ -2097,7 +2102,9 @@ def listaRevisionSprint(request):
         proyectos = EmpleadoProyecto.objects.filter(Empleado=empleado).values_list('Proyecto', flat=True)
 
         #Filtra los mensajes de las ceremonias de Cierre del Sprint, relacionados a un proyecto determinado
-        mensajes = Mensaje.objects.filter(Q(Emisor=empleado) & Q(EventoScrum="5") & Q(Proyecto__in=proyectos)) # 5= Reunión del Cierre del Sprint
+        if usuario.usuarioempleado.Roles.NombreRol == 'Product Owner' :
+            #mensajes = Mensaje.objects.filter(Q(Emisor=empleado) & Q(EventoScrum="5") & Q(Proyecto__in=proyectos)) # 5= Reunión del Cierre del Sprint
+            mensajes = Mensaje.objects.filter(Q(EventoScrum="5") & Q(Proyecto__in=proyectos)) # 5= Reunión del Cierre del Sprint
 
 
         #asistentes = AsistentesEventosScrum.objects.all()
@@ -2878,7 +2885,9 @@ def listaRetrospectivaSprint(request):
 
         # Obtener los proyectos en los que el empleado participa
         proyectos = EmpleadoProyecto.objects.filter(Empleado=empleado).values_list('Proyecto', flat=True)
-        mensajes = Mensaje.objects.filter(Q(Emisor=empleado) & Q(EventoScrum="6") & Q( Proyecto__in=proyectos,)) # Evento - Retrospectiva Sprint 
+        if usuario.usuarioempleado.Roles.NombreRol in ['Product Owner', 'Scrum Master']:
+            #mensajes = Mensaje.objects.filter(Q(Emisor=empleado) & Q(EventoScrum="6") & Q( Proyecto__in=proyectos,)) # Evento - Retrospectiva Sprint 
+            mensajes = Mensaje.objects.filter( Q(EventoScrum="6") & Q( Proyecto__in=proyectos,)) # Evento - Retrospectiva Sprint 
         #asistentes = AsistentesEventosScrum.objects.all()
         #asistentes = AsistentesEventosScrum.objects.filter(Mensaje=idSms)
 
@@ -3520,9 +3529,11 @@ def listaReunionDiaria(request):
 
         # Obtener los proyectos en los que el empleado participa
         proyectos = EmpleadoProyecto.objects.filter(Empleado=empleado).values_list('Proyecto', flat=True)
-
+        
         #Filtra los mensajes de las ceremonias de Cierre del Sprint, relacionados a un proyecto determinado
-        mensajes = Mensaje.objects.filter(Q(Emisor=empleado) & Q(EventoScrum="4") & Q(Proyecto__in=proyectos)) # 4= Reunión Diaria
+        if usuario.usuarioempleado.Roles.NombreRol in ['Product Owner', 'Scrum Master']:
+            #mensajes = Mensaje.objects.filter(Q(Emisor=empleado) & Q(EventoScrum="4") & Q(Proyecto__in=proyectos)) # 4= Reunión Diaria
+            mensajes = Mensaje.objects.filter(Q(EventoScrum="4") & Q(Proyecto__in=proyectos)) # 4= Reunión Diaria
        #asistentes = AsistentesEventosScrum.objects.all()
 
         data = {
