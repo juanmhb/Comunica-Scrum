@@ -121,7 +121,7 @@
   {% endfor %}
   <tr style="height: 20px; vertical-align: bottom;">
     <td colspan="5" id="azul" >  &nbsp; </td>
-    <td id="azul" align="right" >{{avance_sprint|floatformat:2}} &nbsp; </td>
+    <td id="azul" align="right" >{{avance_sprint|floatformat:2}}% &nbsp; </td>
     <td colspan="3" id="azul" >  &nbsp; </td>
    </tr>
   <tr style="height: 20px; vertical-align: bottom;">
@@ -155,8 +155,8 @@
 
     {% for p in comentarios %}
    <tr>
-    <td id="azul" align="center">Comentario de {{ p.Emisor.Usuario }}: </td>
-    <td id="azul" colspan="8">&nbsp;{{ p.Comentarios }}</td>
+    <td align="center">Comentario de {{ p.Emisor.Usuario }}: </td>
+    <td colspan="8">&nbsp;{{ p.Comentarios }}</td>
    </tr>
    {% endfor %}
 
