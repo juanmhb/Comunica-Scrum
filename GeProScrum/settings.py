@@ -125,7 +125,7 @@ DATABASES["default"] = dj_database_url.parse("postgresql://dbcomunica_scrum_user
 #dj_database_url.parse("postgres://postgres:AG3a818hPDz7cbN@sisgepro-scrum-db.flycast:5432")
 
 
-DATABASE_URL = "postgresql://dbcomunica_scrum_user:JQQc7Af7o0Gm9IozynPGim8ZUGiiUNKD@dpg-cs8uqt8gph6c73btkeg0-a.oregon-postgres.render.com/dbcomunica_scrum"
+#DATABASE_URL = "postgresql://dbcomunica_scrum_user:JQQc7Af7o0Gm9IozynPGim8ZUGiiUNKD@dpg-cs8uqt8gph6c73btkeg0-a.oregon-postgres.render.com/dbcomunica_scrum"
 
 # DATABASE_URL = os.getenv('DATABASE_URL')
 # DATABASES = {
