@@ -13,7 +13,7 @@
                   background-color:rgb(194, 194, 194);
               }
       table tr, th, td {
-        height: 20px;
+
         vertical-align: bottom;
       }
       </style>
@@ -24,10 +24,10 @@
 
 <div>
   <table border="0.1">
-   <tr>
+   <tr style="height: 20px;">
     <td colspan="4" align="center" id="gris">Historias de usuario dividida en tareas</td>
    </tr>
-   <tr>
+   <tr style="height: 20px;">
     <td id="gris" align="center">HU</td>
     <td id="gris" align="center">Nombre</td>
     <td id="gris">Estimación (hrs)</td>
@@ -44,7 +44,7 @@
 
    {% for tarea in historia.HistoriaTareas.all %}
 
-    <tr>
+    <tr style="height: 20px;">
       <!--{{ p.tereasasignadas }}-->
       <td> &nbsp; </td>
       <td align="center">{{ tarea.nombre }}</td>

@@ -2465,13 +2465,15 @@ def PlantillaRevisionSprint(request, id): #id del Mensaje
     #planeacion = Mensaje.objects.filter(pk=id)
     mensaje = Mensaje.objects.get(pk=id)
     id_Sprint = mensaje.Sprint.id
+    id_Proyecto = mensaje.Proyecto.id
     # Status de las HU
     # 4	"En Sprint"
     # 5	"Dividida en Tareas"
     # 6	"En Progreso"
     # 7	"Completada"
     # 8	"Aceptada"
-    historias = HistoriaUsuario.objects.filter(Q(Sprint = mensaje.Sprint) & Q(Estatus__in=[4, 5, 6, 7, 8]))
+    #historias = HistoriaUsuario.objects.filter(Q(Sprint = mensaje.Sprint) & Q(Estatus__in=[4, 5, 6, 7, 8]))
+    historias = HistoriaUsuario.objects.filter(Q(Sprint = mensaje.Sprint) & Q(Proyecto=mensaje.Proyecto))
    
     asistentes = AsistentesEventosScrum.objects.filter(Mensaje=mensaje)
     comentarios = m_Comentarios.objects.filter(Mensaje=mensaje)
@@ -2488,7 +2490,7 @@ def PlantillaRevisionSprint(request, id): #id del Mensaje
     # Filtra los registros de TareaAvance asociados a esas tareas
     registros = TareaAvance.objects.filter(tarea__in=tareas)
 
-    Query = """select id, numero_hu, nombre_hu, horasestimadas, horasreales, horasrestantes, estatus_id, huaceptada,
+    Query = f"""select id, numero_hu, nombre_hu, horasestimadas, horasreales, horasrestantes, estatus_id, huaceptada,
         case
             when
                 HorasReales = 0 and  HorasRestantes = 0 Then 0.0
@@ -2514,18 +2516,31 @@ def PlantillaRevisionSprint(request, id): #id del Mensaje
             hu.\"Estatus_id\" = eh.id
         )
         where
-        sp.id =  %s  and
-        hu.\"Estatus_id\" in (4,5,6,7,8)
-        group by hu.id, hu.\"NumeroHU\", hu.nombre, eh.\"estatus\", hu.\"HUAceptada\"
-        ) as temp""" % id_Sprint
-    
+        sp.id =  {id_Sprint}  and
+        hu.\"Proyecto_id\" = {id_Proyecto} 
+        group by hu.id, hu.\"NumeroHU\", hu.nombre, eh.\"estatus\", hu.\"HUAceptada\" 
+        order by numero_hu 
+        ) as temp""" 
+        #    hu.\"Estatus_id\" in (4,5,6,7,8)
+        #%id_Sprint %id_Proyecto
     tareaAvance = TareaAvance.objects.raw(Query)
     if registros:
         total_horas_reales = registros.aggregate(total=models.Sum('horasDedicadas'))['total']
+        #total_horas_restantes = registros.aggregate(total=models.Sum('horasRestantes'))['total']
+        total_horas_restantes = registros.filter(horasDedicadas=0).aggregate(total=Sum('horasRestantes'))['total']
     else:
         # Si no hay registros mostrara 0 por default
         total_horas_reales = 0
+        total_horas_restantes = 0
     total_dias_reales = total_horas_reales/8
+    total_dias_restantes = total_horas_restantes/8
+    
+    if total_horas_reales == 0 and total_horas_restantes == 0:
+        avance_sprint = 0
+    elif total_horas_reales != 0 and  total_horas_restantes == 0:  
+        avance_sprint = 100.0
+    else:
+        avance_sprint = ((total_horas_estimadas - total_horas_restantes) / total_horas_estimadas) * 100
     data = {
         'tareaAvance': tareaAvance,
         'mensaje': mensaje,
@@ -2533,8 +2548,11 @@ def PlantillaRevisionSprint(request, id): #id del Mensaje
         'Empleado':empleado,
         'total_horas_estimadas': total_horas_estimadas,
         'total_horas_reales': total_horas_reales,
+        'total_horas_restantes':total_horas_restantes,
         'total_dias_estimados':total_dias_estimados,
         'total_dias_reales':total_dias_reales,
+        'total_dias_restantes':total_dias_restantes,
+        'avance_sprint':avance_sprint,
         'comentarios':comentarios,
     }
 
@@ -4397,23 +4415,24 @@ def vistaEjecucionSprintID(request, id_ReunionDiaria):
     #dato = HistoriaUsuario.objects.filter(Estatus=4) # En Sprint (son las mismas que estan dentro del modelo sprint_backlog)
     #modelo ReunionDiaria ?
     id_Sprint = Mensaje.objects.get(id=id_ReunionDiaria).Sprint.id
-    
+    id_Proyecto = Mensaje.objects.get(id=id_ReunionDiaria).Proyecto.id
 
-    HU = HistoriaUsuario.objects.filter(Q(Sprint_id=id_Sprint) & Q(Estatus__in=[4, 5, 6])) # 4=En Sprint, 5=Divididas, 6=EN progreso (son las mismas que estan dentro del modelo sprint_backlog)
+    #HU = HistoriaUsuario.objects.filter(Q(Sprint_id=id_Sprint) & Q(Estatus__in=[4, 5, 6])) # 4=En Sprint, 5=Divididas, 6=EN progreso (son las mismas que estan dentro del modelo sprint_backlog)
+    HU = HistoriaUsuario.objects.filter(Q(Sprint_id=id_Sprint) & Q(Proyecto_id = id_Proyecto)) # 4=En Sprint, 5=Divididas, 6=EN progreso (son las mismas que estan dentro del modelo sprint_backlog)
 
     #dato = HistoriaUsuario.objects.filter(Estatus=4) # En Sprint (son las mismas que estan dentro del modelo sprint_backlog)
-    Query = """SELECT t.* 
+    Query = f"""SELECT t.* 
             FROM public.\"Scrum_tarea\" as t inner join public.\"Scrum_historiausuario\" as hu on
-            (t.\"HistoriaUsuario_id\" = hu.id and
-            hu.\"Estatus_id\" in (4,5,6)
+            (t.\"HistoriaUsuario_id\" = hu.id 
             ) inner join public.\"Scrum_sprint\" as sp on (
                 hu.\"Sprint_id\" = sp.id
             )
             where
-            sp.id = %s""" % id_Sprint
+            sp.id = {id_Sprint} and sp.\"Proyecto_id\" = {id_Proyecto}""" 
+    #and             hu.\"Estatus_id\" in (4,5,6)
     tarea = Tarea.objects.raw(Query)
     
-    Query = """SELECT hu.id AS historia_id, hu.\"NumeroHU\" AS numero_hu, hu.nombre AS nombre_hu, t.id, t.nombre AS nombre_tarea, t.horasestimadas,
+    Query = f"""SELECT hu.id AS historia_id, hu.\"NumeroHU\" AS numero_hu, hu.nombre AS nombre_hu, t.id, t.nombre AS nombre_tarea, t.horasestimadas,
             ta.id AS id_tarea_avance, ta.\"horasDedicadas\", ta.\"horasRestantes\", ta.\"horasReales\", sp.\"numerosprint\", hu.\"Estatus_id\",
             ta.dia_1, ta.dia_2, ta.dia_3, ta.dia_4, ta.dia_5, ta.dia_6, ta.dia_7, ta.dia_8, ta.dia_9, ta.dia_10,
             ta.dia_11, ta.dia_12, ta.dia_13, ta.dia_14, ta.dia_15, ta.dia_16, ta.dia_17, ta.dia_18, ta.dia_19, ta.dia_20,
@@ -4429,8 +4448,10 @@ def vistaEjecucionSprintID(request, id_ReunionDiaria):
                 hu.\"Sprint_id\" = sp.id
             )
             where
-            sp.id = %s and
-            hu.\"Estatus_id\" in (4,5,6)""" % id_Sprint
+            sp.id = {id_Sprint} and
+            sp.\"Proyecto_id\" = {id_Proyecto}"""
+    
+            #hu.\"Estatus_id\" in (4,5,6)""" % 
 
     tareaAvance = TareaAvance.objects.raw(Query)
     #print(f"Registro de tareasavance: {len(list(tareaAvance))}, {list(tareaAvance)}")
