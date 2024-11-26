@@ -215,16 +215,73 @@ class EditarHistoriaUsuarioBL_Forms(forms.ModelForm):
             'tereasasignadas':'Tareas asignadas',
             'Sprint':'Sprint'
         }
-
         widgets={
-            'ultimaactualizacion': forms.DateInput(
+            'nombre': forms.TextInput(
+            attrs = {
+                'class':'form-control',
+                'placeholder':'Ingrese nombre'
+            }
+            ),
+            'fechacreacion': forms.DateInput(
                 format="%Y-%m-%d",
                 attrs = {
-                    # 'class':'form-control',
-                    'type': 'date',
-                    'placeholder': 'Ejemplo: 2024-01-17 17:30'
+                    'class':'form-control',
+                    'placeholder':'Ingrese fecha de creación'
                 }
             ),
+                'ultimaactualizacion': forms.DateInput(
+                    format="%Y-%m-%d",
+                attrs = {
+                    'class':'form-control',
+                    'placeholder':'Ingrese ultima fecha de actualización'
+                }
+            ),
+            'descripcion': forms.Textarea(
+                attrs = {
+                    'class':'form-control',
+                    'rows':'3',
+                    'placeholder': 'Ingrese una descripción'
+                }
+            ),
+            'HorasEstimadas': forms.NumberInput(
+                attrs = {
+                    'class':'form-control',
+                    'placeholder': 'Ingrese las horas estimadas'
+                }
+            ),
+            # 'Prioridad': forms.NumberInput(
+            #     attrs = {
+            #         'class':'form-control',
+            #         'placeholder': 'Ingrese la Prioridad (1-5)'
+            #     }
+            # ),
+            'CriteriosAceptacion': forms.Textarea(
+                attrs = {
+                    'class':'form-control',
+                    'rows':'8',
+                    'placeholder': 'Ingrese los Criterios de Aceptación'
+                }
+
+            ),
+            'Sprint': forms.Select(
+                attrs = {
+                    'class':'form-control',
+                    'placeholder':'Seleccionar Sprint',
+                    #'disabled': 'disabled',
+                    'readonly': 'readonly',
+                }
+            ),
+    
+
+        # widgets={
+        #     'ultimaactualizacion': forms.DateInput(
+        #         format="%Y-%m-%d",
+        #         attrs = {
+        #             # 'class':'form-control',
+        #             'type': 'date',
+        #             'placeholder': 'Ejemplo: 2024-01-17 17:30'
+        #         }
+        #     ),
         }
 
 # Formulario general

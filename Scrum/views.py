@@ -288,9 +288,15 @@ class ActualizarHistoriaUsuarioSprint(LoginRequiredMixin, UpdateView):
     #     return super().form_valid(form)
     
     def get_success_url(self):
-        sprint_id = self.kwargs.get('pk', None)
-        #print(f"sprint_id : {sprint_id }")
+        # sprint_id = self.kwargs.get('pk', None)
+        
         #return reverse('Scrum:listar_sprint_Historias', kwargs={'pk': self.object.Sprint.pk})
+                # Obtener la Historia de Usuario actual
+        historia_usuario = self.get_object()
+
+        # Obtener el Sprint asociado
+        sprint_id = historia_usuario.Sprint.id
+        #print(f"ActualizarHistoriaUsuarioSprint, sprint_id : {sprint_id }")
         return reverse('Scrum:listar_sprint_Historias', kwargs={'pk': sprint_id})
     
 class EliminarHistoriaUsuarioSprint(LoginRequiredMixin, DeleteView):
@@ -345,6 +351,7 @@ def ListadoSprintHistorias(request, pk): #pk es el id del Sprint
     #     'pk': pkProyecto,
     #     'Sprint': sprint
     # })
+    print(f"ListadoSprintHistorias, pk: {pk}")
     sprint = get_object_or_404(Sprint, pk=pk)
     pkProyecto = sprint.Proyecto.pk
 
