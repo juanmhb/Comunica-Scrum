@@ -520,6 +520,8 @@ def plantillaPlaneacionSprint(request, id): #id del Mensaje
 
 
     planeacion = Mensaje.objects.filter(pk=id)
+    sprint =  Mensaje.objects.get(pk=id).Sprint
+    objetivo_sprint = sprint.objetivosprint
     historias = HistoriaUsuario.objects.filter(Q(Proyecto__in=proyectos) & Q(Estatus__in=[4, 5, 6, 7, 8])) # 4= HU en Sprint 5=HU Divididas
     mensaje = Mensaje.objects.get(pk=id)
     asistentes = AsistentesEventosScrum.objects.filter(Mensaje=mensaje)
@@ -539,7 +541,8 @@ def plantillaPlaneacionSprint(request, id): #id del Mensaje
         'idiomaPais':idiomaPais,
         'horas':total_horas,
         'dias':total_dias,
-        'comentarios':comentarios
+        'comentarios':comentarios,
+        'objetivo_sprint': objetivo_sprint,
     }
 
     # return render(request, 'Mensajes/ProductOwner/plantillaPlaneacionSprint.html', data)
