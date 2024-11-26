@@ -1027,9 +1027,10 @@ def cargar_documento_OLD(request):
         form = Archivos_forms()
     return render(request, 'Mensajes/ProductOwner/guardarArchivo.html', {'form': form})
 
-def cargar_documento(request):
+def cargar_documento(request, evento_scrum): 
     if request.method == 'POST':
-        form = Archivos_forms(request.POST, request.FILES)
+        form = Archivos_forms(request.POST, request.FILES, evento_scrum=evento_scrum, user=request.user)
+        #form = Archivos_forms(request.POST, request.FILES)
         if form.is_valid():
             archivo_pdf = request.FILES['Archivo']  # Aquí obtenemos el archivo PDF subido
             
@@ -1043,7 +1044,8 @@ def cargar_documento(request):
 
             return redirect('Scrum:index')  # Cambia esto a donde quieras redirigir
     else:
-        form = Archivos_forms()
+        form = Archivos_forms(evento_scrum=evento_scrum, user=request.user)
+        #form = Archivos_forms()
     return render(request, 'Mensajes/ProductOwner/guardarArchivo.html', {'form': form})
 
 def cargar_documentoConID(request, id):
