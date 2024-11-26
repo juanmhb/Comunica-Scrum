@@ -245,7 +245,27 @@ class Archivos_forms(forms.ModelForm):
                 }
             ),
         }
+    def __init__(self, *args, **kwargs):
+        # Capturar `evento_scrum` y `user` del contexto
+        evento_scrum = kwargs.pop('evento_scrum', None)
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
 
+        if evento_scrum and user:
+            # Filtrar la lista de Mensajes por evento_scrum y usuario autenticado
+            self.fields['Mensaje'].queryset = Mensaje.objects.filter(
+                EventoScrum=evento_scrum,
+                Emisor__Usuario=user
+            )
+
+            # Filtrar la lista de Proyectos por usuario autenticado
+            empleado = Empleado.objects.filter(Usuario=user).first()
+            if empleado:
+                self.fields['Proyecto'].queryset = Proyecto.objects.filter(
+                    DetalleProyecto__Empleado=empleado
+                )
+            else:
+                self.fields['Proyecto'].queryset = Proyecto.objects.none()
 # Formulario con id, herendando 2 atributos
 class ArchivosID_forms(forms.ModelForm):
     class Meta:

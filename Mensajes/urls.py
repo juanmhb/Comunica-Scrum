@@ -298,7 +298,7 @@ urlpatterns = [
     # -------------------------------------- Sección de archivos ----------------------------------------
     # Archivos
     path('descargar_archivo/<int:id>/',login_required(descargar_archivo), name='descargar_archivo'),
-    path('guardarArchivo/',login_required(cargar_documento), name='guardarArchivo'),
+    path('guardarArchivo/<int:evento_scrum>/',login_required(cargar_documento), name='guardarArchivo'),
     path('guardarArchivoID/<id>/',login_required(cargar_documentoConID), name='guardarArchivoID'), # Refinamiento BL
     path('guardarArchivoIDPS/<id>/',login_required(cargar_documentoConIDPS), name='guardarArchivoIDPS'), # Plneacion del Sprint
     path('guardarArchivoIDRS/<id>/',login_required(cargar_documentoConIDRS), name='guardarArchivoIDRS'), # Revision del Sprint
