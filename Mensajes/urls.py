@@ -25,8 +25,8 @@ urlpatterns = [
     path('listaHistoriasBL/<id_Mensaje>', login_required(listaHistoriaUsuariosBL), name='listaHistoriasBL'), # Refinamiento BL
     path('editarHistoriaBL/<int:pk>', ActualizarHistoriaUsuarioBL.as_view(), name='editarHistoriaBL'), # Refinamiento BL
     path('refinarHistoriaBL/<int:id>/<int:id_Mensaje>/', login_required(historiasRefinada), name='refinarHistoriaBL'), # Refinar historia BL
-    path('cancelarHistoriaBL/<id>/', login_required(cancelarHistoria), name='cancelarHistoriaBL'), # Cancelar historia general
-    path('cancelarHistoriaRef/<id>/', login_required(cancelarHistoriaBL), name='cancelarHistoriaRef'), # Cancelar historia refinadada BL
+    path('cancelarHistoriaBL/<int:id>/<int:id_Mensaje>/', login_required(cancelarHistoria), name='cancelarHistoriaBL'), # Cancelar historia general
+    path('cancelarHistoriaRef/<int:id>/<int:id_Mensaje>/', login_required(cancelarHistoriaBL), name='cancelarHistoriaRef'), # Cancelar historia refinadada BL
     # Planeacion Sprint
     path('listaHistoriasPlaneacionSprint/<id>/', login_required(listaHistoriaUsuariosPlaneacionSprint), name='listaHistoriasPlaneacionSprint'), # Planeacion Sprint
     path('agregarHistoriaPS/<id>/', login_required(historiasEnSprint), name='agregarHistoriaPS'), # En sprint
