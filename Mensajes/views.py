@@ -287,24 +287,24 @@ def historiasRefinada(request, id, id_Mensaje):
     # return render(request, 'Mensajes/ProductOwner/listaHistoriasUsuariosBL.html')
     return redirect(to="Mensajes:listaHistoriasBL", id_Mensaje=id_Mensaje)
 
-def cancelarHistoria(request, id):
+def cancelarHistoria(request, id, id_Mensaje):
     ref = EstatusHistoria.objects.get(pk=2) # 2--> HU Cancelada
     producto = get_object_or_404(HistoriaUsuario, pk=id)
     producto.Estatus = ref
     producto.save()
     
     # return render(request, 'Mensajes/ProductOwner/listaHistoriasUsuariosBL.html')
-    return redirect(to="Mensajes:listaHistoriasBL")
+    return redirect(to="Mensajes:listaHistoriasBL", id_Mensaje=id_Mensaje)
 
 # Cancelara la historia si el usuario cambia de opinion
-def cancelarHistoriaBL(request, id):
+def cancelarHistoriaBL(request, id, id_Mensaje):
     ref = EstatusHistoria.objects.get(pk=1)
     producto = get_object_or_404(HistoriaUsuario, pk=id)
     producto.Estatus = ref
     producto.save()
     
     # return render(request, 'Mensajes/ProductOwner/listaHistoriasUsuariosBL.html')
-    return redirect(to="Mensajes:listaHistoriasBL")
+    return redirect(to="Mensajes:listaHistoriasBL", id_Mensaje=id_Mensaje)
 
 
 class ActualizarHistoriaUsuarioBL(LoginRequiredMixin, UpdateView):
@@ -522,7 +522,7 @@ def plantillaPlaneacionSprint(request, id): #id del Mensaje
     planeacion = Mensaje.objects.filter(pk=id)
     sprint =  Mensaje.objects.get(pk=id).Sprint
     objetivo_sprint = sprint.objetivosprint
-    historias = HistoriaUsuario.objects.filter(Q(Proyecto__in=proyectos) & Q(Estatus__in=[4, 5, 6, 7, 8])) # 4= HU en Sprint 5=HU Divididas
+    historias = HistoriaUsuario.objects.filter(Q(Proyecto__in=proyectos) & Q(Estatus__in=[4, 5, 6, 7, 8]) & Q(Sprint=sprint)) # 4= HU en Sprint 5=HU Divididas
     mensaje = Mensaje.objects.get(pk=id)
     asistentes = AsistentesEventosScrum.objects.filter(Mensaje=mensaje)
     comentarios = m_Comentarios.objects.filter(Mensaje=mensaje)
