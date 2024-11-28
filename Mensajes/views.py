@@ -2505,7 +2505,15 @@ def PlantillaRevisionSprint(request, id): #id del Mensaje
     # Filtra los registros de TareaAvance asociados a esas tareas
     registros = TareaAvance.objects.filter(tarea__in=tareas)
 
-    Query = f"""select id, numero_hu, nombre_hu, horasestimadas, horasreales, horasrestantes, estatus_id, huaceptada,
+    Query = f"""select id, numero_hu, nombre_hu, horasestimadas, horasreales, estatus_id, huaceptada,
+        case 
+            when horasrestantes = 0 and horasrestantescaptura = 0 and  horasreales = 0 Then horasestimadas
+            else horasrestantes
+        end as horasrestantes,
+        case 
+            when horasrestantes = 0 and horasrestantescaptura = 0 and  horasreales = 0 Then horasestimadas
+            else horasrestantescaptura
+        end as horasrestantescaptura,
         case
             when
                 HorasReales = 0 and  HorasRestantes = 0 Then 0.0
@@ -2513,11 +2521,20 @@ def PlantillaRevisionSprint(request, id): #id del Mensaje
                 HorasReales <> 0 and  HorasRestantes = 0 Then 100.0
             else
                 ((HorasEstimadas - HorasRestantes) / HorasEstimadas ::float) * 100
-        end AS progreso
+        end AS progreso,
+		case
+            when
+                HorasReales = 0 and  HorasRestantesCaptura = 0 Then 0.0
+            when 
+                HorasReales <> 0 and  HorasRestantesCaptura = 0 Then 100.0
+            else
+                ((HorasEstimadas - HorasRestantesCaptura) / HorasEstimadas ::float) * 100
+        end AS progreso_captura
         from (SELECT hu.id, hu.\"NumeroHU\" AS numero_hu, hu.nombre AS nombre_hu, eh.\"estatus\" AS Estatus_id,  hu.\"HUAceptada\" AS HUAceptada,
             COALESCE(sum(t.\"horasestimadas\"), 0) AS HorasEstimadas,
             COALESCE(sum(ta.\"horasReales\"), 0) AS HorasReales,
-            COALESCE(sum(ta.\"horasRestantes\"), 0) AS HorasRestantes
+            COALESCE(sum(ta.\"horasRestantes\"), 0) AS HorasRestantes,
+			COALESCE(sum(ta."horasRestantesCaptura"), 0) AS HorasRestantesCaptura
         FROM public.\"Scrum_historiausuario\" as hu left join public.\"Scrum_tarea\" as t on
         (
             hu.id = t.\"HistoriaUsuario_id\"
@@ -2539,16 +2556,27 @@ def PlantillaRevisionSprint(request, id): #id del Mensaje
         #    hu.\"Estatus_id\" in (4,5,6,7,8)
         #%id_Sprint %id_Proyecto
     tareaAvance = TareaAvance.objects.raw(Query)
+
+    # Inicializamos una variable para acumular el total
+    total_horas_restantes_captura = 0
+    total_horas_restantes = 0
+
+    # Iteramos sobre los resultados del queryset
+    for tarea in tareaAvance:
+        total_horas_restantes_captura += tarea.horasrestantescaptura 
+        total_horas_restantes += tarea.horasrestantes
+
     if registros:
         total_horas_reales = registros.aggregate(total=models.Sum('horasDedicadas'))['total']
         #total_horas_restantes = registros.aggregate(total=models.Sum('horasRestantes'))['total']
-        total_horas_restantes = registros.filter(horasDedicadas=0).aggregate(total=Sum('horasRestantes'))['total']
+        #total_horas_restantes = registros.filter(horasDedicadas=0).aggregate(total=Sum('horasRestantes'))['total']
     else:
         # Si no hay registros mostrara 0 por default
         total_horas_reales = 0
-        total_horas_restantes = 0
+        #total_horas_restantes = 0
     total_dias_reales = total_horas_reales/8
     total_dias_restantes = total_horas_restantes/8
+    total_dias_restantes_captura = total_horas_restantes_captura/8
     
     if total_horas_reales == 0 and total_horas_restantes == 0:
         avance_sprint = 0
@@ -2556,6 +2584,14 @@ def PlantillaRevisionSprint(request, id): #id del Mensaje
         avance_sprint = 100.0
     else:
         avance_sprint = ((total_horas_estimadas - total_horas_restantes) / total_horas_estimadas) * 100
+
+    if total_horas_reales == 0 and total_horas_restantes_captura == 0:
+        avance_sprint_captura = 0
+    elif total_horas_reales != 0 and  total_horas_restantes_captura == 0:  
+        avance_sprint_captura = 100.0
+    else:
+        avance_sprint_captura = ((total_horas_estimadas - total_horas_restantes_captura) / total_horas_estimadas) * 100
+    
     data = {
         'tareaAvance': tareaAvance,
         'mensaje': mensaje,
@@ -2564,10 +2600,13 @@ def PlantillaRevisionSprint(request, id): #id del Mensaje
         'total_horas_estimadas': total_horas_estimadas,
         'total_horas_reales': total_horas_reales,
         'total_horas_restantes':total_horas_restantes,
+        'total_horas_restantes_captura':total_horas_restantes_captura,
         'total_dias_estimados':total_dias_estimados,
         'total_dias_reales':total_dias_reales,
         'total_dias_restantes':total_dias_restantes,
+        'total_dias_restantes_captura':total_dias_restantes_captura,
         'avance_sprint':avance_sprint,
+        'avance_sprint_captura':avance_sprint_captura,
         'comentarios':comentarios,
     }
 
