@@ -247,6 +247,7 @@ class TareaAvance(models.Model):
     fechaAvance= models.DateField(null=False)
     horasDedicadas = models.IntegerField(null=False)
     horasRestantes = models.IntegerField(blank=True, null=True)
+    horasRestantesCaptura = models.IntegerField(blank=True, null=True)
     horasReales = models.IntegerField(null=False, default=0)
     tarea = models.ForeignKey(Tarea, on_delete=models.CASCADE, related_name='tareaAvance', null=True, blank=True)
     dia_1 = models.CharField(max_length=5, blank=True, default='0/0')

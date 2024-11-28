@@ -12,10 +12,15 @@
               #gris{
                   background-color:rgb(150, 150, 150);
               }
-      /* table tr, th, td {
-        height: 20px;
-        vertical-align: bottom;
-      } */
+      .col-nombre-hu {
+          width: 30%; /* Asigna un ancho mayor para esta columna */
+          word-wrap: break-word; /* Ajusta el contenido si es más largo */
+          white-space: normal; /* Permite el salto de línea si el texto es muy largo */
+      }
+
+      table td {
+          width: auto; /* Deja que las demás columnas se ajusten automáticamente */
+      }
       </style>
       <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
   </head>
@@ -42,26 +47,26 @@
   
    <tr style="height: 20px; vertical-align: bottom;">
     <td id="azul" align="center">Proyecto</td>
-    <td colspan="8" align="center" id="azul">{{ mensaje.Proyecto }}</td>
+    <td colspan="10" align="center" id="azul">{{ mensaje.Proyecto }}</td>
    </tr>
    <tr style="height: 20px; vertical-align: bottom;">
     <td align="center">Fecha y hora</td>
-    <td  colspan="8">{{ mensaje.FechaHora }}</td>
+    <td  colspan="10">{{ mensaje.FechaHora }}</td>
    </tr>
    <tr style="height: 20px; vertical-align: bottom;">
-    <td colspan="9" align="center" style="color: rgb(0, 113, 157);">Revisión del {{ mensaje.Sprint }}</td>
+    <td colspan="11" align="center" style="color: rgb(0, 113, 157);">Revisión del {{ mensaje.Sprint }}</td>
    </tr>
  
    {% for p in Empleado %}
    <tr style="height: 20px; vertical-align: bottom;">
     <td id="azul" align="center">Idioma</td>
     <td id="azul" align="center">{{ p.Idioma}}</td>
-    <td colspan="7" id="azul"></td>
+    <td colspan="9" id="azul"></td>
    </tr>
    <tr style="height: 20px; vertical-align: bottom;">
     <td align="center">País</td>
     <td align="center">{{ p.Pais }}</td>
-    <td  colspan="7"  ><!-- Vacio --></td>
+    <td  colspan="9"  ><!-- Vacio --></td>
    </tr>
    {% endfor %}
    <tr style="height: 20px; vertical-align: bottom;" >
@@ -70,17 +75,17 @@
     <td id="azul" align="center">Rol</td>
     <td id="azul" align="center">Status</td>
     <td id="azul" align="center">Tipo de Asistencia</td>
-    <td  colspan="4" id="azul"><!-- Vacio --></td>
+    <td  colspan="6" id="azul"><!-- Vacio --></td>
    </tr style="height: 20px; vertical-align: bottom;">
     {% for p in asistentes %}
     <tbody>
       <tr style="height: 20px; vertical-align: bottom;">
         <th scope="row"> &nbsp; </th>
-        <td>{{ p.Usuario.Usuario }}</td>
+        <td >{{ p.Usuario.Usuario }}</td>
         <td>{{ p.Rol }}</td>
         <td> {{p.get_Status_display}} </td>
         <td> {{p.get_TipoAsistencia_display}} </td>
-        <td colspan="4"  > &nbsp; </td>
+        <td colspan="6"  > &nbsp; </td>
       </tr>
     </tbody>
   {% endfor %}
@@ -91,16 +96,18 @@
     <td id="gris" align="center">Status</td>
     <td id="gris" align="center">Aceptada por PO</td>
     <td id="gris" align="center">Avance</td>
+    <td id="gris" align="center">Av Captura</td>
     <td id="gris" align="center">Estimado</td>
     <td id="gris" align="center">Real</td>
     <td id="gris" align="center">Restante</td>
+    <td id="gris" align="center">Rest Captura</td>
    </tr>
    {% for p in tareaAvance %}
    <tbody>
     <tr style="vertical-align: bottom;">
       <th scope="row"></th>
       <td>{{p.numero_hu}}</td>
-      <td> {{ p.nombre_hu | capfirst }} </td>
+      <td  class="col-nombre-hu"> {{ p.nombre_hu | capfirst }} </td>
       <td>{{ p.estatus_id }}</td>
       <td align="center"> 
           {% if p.huaceptada == '1' %}
@@ -111,43 +118,49 @@
       </td>
       <td align="right">
         {{ p.progreso|floatformat:2 }}%  &nbsp;
-       
+      </td>
+      <td align="right">
+        {{ p.progreso_captura|floatformat:2 }}%  &nbsp;
       </td>
       <td align="right">{{ p.horasestimadas }}  &nbsp;</td>
       <td align="right">{{ p.horasreales }}  &nbsp;</td>
       <td align="right">{{ p.horasrestantes }}  &nbsp;</td>
+      <td align="right">{{ p.horasrestantescaptura }}  &nbsp;</td>
     </tr>
   </tbody>
   {% endfor %}
   <tr style="height: 20px; vertical-align: bottom;">
     <td colspan="5" id="azul" >  &nbsp; </td>
     <td id="azul" align="right" >{{avance_sprint|floatformat:2}}% &nbsp; </td>
-    <td colspan="3" id="azul" >  &nbsp; </td>
+    <td id="azul" align="right" >{{avance_sprint_captura|floatformat:2}}% &nbsp; </td>
+    <td colspan="4" id="azul" >  &nbsp; </td>
    </tr>
   <tr style="height: 20px; vertical-align: bottom;">
-    <td colspan="5">  &nbsp; </td>
+    <td colspan="6">  &nbsp; </td>
     <td align="right" >Horas: &nbsp; </td>
     <td  align="right">{{ total_horas_estimadas }}  &nbsp;</td>
     <td  align="right">{{ total_horas_reales }}  &nbsp;</td>
     <td  align="right">{{ total_horas_restantes }}  &nbsp;</td>
+    <td  align="right">{{ total_horas_restantes_captura }}  &nbsp;</td>
    </tr>
    <tr style="height: 20px; vertical-align: bottom;" id="azul" >
-    <td colspan="5"  >  &nbsp; </td>
+    <td colspan="6"  >  &nbsp; </td>
     <td align="right" >Dias: &nbsp; </td>
     <td align="right">{{ total_dias_estimados |floatformat:2 }}  &nbsp;</td>
     <td align="right">{{ total_dias_reales |floatformat:2 }}  &nbsp;</td>
     <td align="right">{{ total_dias_restantes |floatformat:2 }}  &nbsp;</td>
+    <td align="right">{{ total_dias_restantes_captura |floatformat:2 }}  &nbsp;</td>
    </tr>
   
    <tr style="vertical-align: bottom;">
     <td id="azul" align="center">Objetivo de la Reunión</td>
-    <td id="azul" colspan="8" > &nbsp; {{ mensaje.Descripcion }}</td>
+    <td id="azul" colspan="10" > &nbsp; {{ mensaje.Descripcion }}</td>
    </tr>
 
    
    <tbody>
     <tr>
-      <td colspan="9" align="center"> &nbsp; </td>
+      <td colspan="11" align="center"> &nbsp; </td>
      </tr>
    </tbody>
    
@@ -156,7 +169,7 @@
     {% for p in comentarios %}
    <tr>
     <td align="center">Comentario de {{ p.Emisor.Usuario }}: </td>
-    <td colspan="8">&nbsp;{{ p.Comentarios }}</td>
+    <td colspan="10">&nbsp;{{ p.Comentarios }}</td>
    </tr>
    {% endfor %}
 

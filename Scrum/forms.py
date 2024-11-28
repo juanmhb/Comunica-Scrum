@@ -387,6 +387,12 @@ class TareaAvanceForm(forms.ModelForm):
         cleaned_data = super().clean()
         horas_dedicadas = 0
         horas_reales = 0
+        #---------------------------
+        #tarea_avance = TareaAvance.objects.get(id=cleaned_data.id)  # Obtenemos una instancia de TareaAvance
+        tarea_avance = self.instance  # Obtener la instancia del formulario actual
+        horas_restantes_captura = tarea_avance.horasRestantes
+        print (f"horas_restantes_definitivas: {horas_restantes_captura},  id_tarea: {tarea_avance.tarea.id},  id_tarea_avance: {tarea_avance.id}")
+        #---------------------------
         for i, dia in enumerate(self.dias_habiles, start=1):
             if dia.weekday() < 5:  # Solo procesar días laborales
                 field_name = f'dia_{dia.day}'
@@ -395,7 +401,11 @@ class TareaAvanceForm(forms.ModelForm):
                     try:
                         horas_dedicadas_dia, horas_restantes = map(int, valor.split('/'))
                         horas_reales += horas_dedicadas_dia
-                        
+                        if horas_dedicadas_dia != 0 and horas_restantes == 0:
+                            horas_restantes_captura = 0
+                        elif horas_restantes != 0:
+                            horas_restantes_captura = horas_restantes
+                        print (f"field_name: {field_name}, valor: {valor},  horas_restantes_definitivas: {horas_restantes_captura}")
                        # horas_dedicadas += horas_dedicadas_dia
                     except ValueError:
                         self.add_error(field_name, "Formato de valor no válido. Debe ser 'n/m'.")
@@ -404,6 +414,8 @@ class TareaAvanceForm(forms.ModelForm):
         cleaned_data['horasReales'] = horas_reales
         cleaned_data['horasDedicadas'] = cleaned_data.get('horasDedicadas', 0)
         cleaned_data['lista_dias_horas'] = self.lista_dias_horas
+        cleaned_data['horasRestantesCaptura'] = horas_restantes_captura
+        # cleaned_data['horas_restantes_definitivas'] = horas_restantes_definitivas
 
         return cleaned_data
 
@@ -431,7 +443,7 @@ class TareaAvanceForm(forms.ModelForm):
             #print(f"2.6 horas_reales: {horas_reales}")
             #instance.horasRestantes = max(horas_restantes - horas_reales, 0)
             instance.horasRestantes = max(horas_estimadas - horas_reales, 0)
-
+            instance.horasRestantesCaptura = self.cleaned_data.get('horasRestantesCaptura', 0)
             #print(f"2.7 instance.horas_restantes: {instance.horasRestantes}")
             # Actualiza los campos de los días
             for i in range(1, len(self.dias_habiles) + 1):
