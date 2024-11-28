@@ -395,6 +395,7 @@ class TareaAvanceForm(forms.ModelForm):
                     try:
                         horas_dedicadas_dia, horas_restantes = map(int, valor.split('/'))
                         horas_reales += horas_dedicadas_dia
+                        
                        # horas_dedicadas += horas_dedicadas_dia
                     except ValueError:
                         self.add_error(field_name, "Formato de valor no válido. Debe ser 'n/m'.")

@@ -291,6 +291,7 @@ def cancelarHistoria(request, id, id_Mensaje):
     ref = EstatusHistoria.objects.get(pk=2) # 2--> HU Cancelada
     producto = get_object_or_404(HistoriaUsuario, pk=id)
     producto.Estatus = ref
+    producto.MensajeRPBL = None
     producto.save()
     
     # return render(request, 'Mensajes/ProductOwner/listaHistoriasUsuariosBL.html')
@@ -298,9 +299,10 @@ def cancelarHistoria(request, id, id_Mensaje):
 
 # Cancelara la historia si el usuario cambia de opinion
 def cancelarHistoriaBL(request, id, id_Mensaje):
-    ref = EstatusHistoria.objects.get(pk=1)
+    ref = EstatusHistoria.objects.get(pk=1) #Queda con status = Capturada
     producto = get_object_or_404(HistoriaUsuario, pk=id)
     producto.Estatus = ref
+    producto.MensajeRPBL = None
     producto.save()
     
     # return render(request, 'Mensajes/ProductOwner/listaHistoriasUsuariosBL.html')
@@ -375,9 +377,10 @@ def cancelarHistoriaPS(request, id):
     ref = EstatusHistoria.objects.get(pk=1) # Estatus "Capturada"
     historia = get_object_or_404(HistoriaUsuario, pk=id_historia)
     historia.Estatus = ref
+    #historia.MensajeRPBL = None
     historia.save()
 
-    return redirect(to="Mensajes:listaHistoriasPlaneacionSprint", id=historia.sprint.id)
+    return redirect(to="Mensajes:listaHistoriasPlaneacionSprint", id=historia.Sprint.id)
 
 class ActualizarHistoriaUsuarioPlaneacionSprint(LoginRequiredMixin, UpdateView):
     model = HistoriaUsuario
@@ -390,7 +393,13 @@ class ActualizarHistoriaUsuarioPlaneacionSprint(LoginRequiredMixin, UpdateView):
     
 #  Historias de usuario divididas
 def listaHUdivididas(request,id): #id del Sprint
-    dato = HistoriaUsuario.objects.filter(Q(Estatus=5) & Q(Sprint=id)) # solo seran llamadas las de estatus 5="Dividida en Tareas"
+    # Obtener el Empleado relacionado con el usuario actual
+    empleado = request.user.usuarioempleado
+
+    # Obtener los proyectos en los que el empleado participa
+    proyectos = EmpleadoProyecto.objects.filter(Empleado=empleado).values_list('Proyecto', flat=True)
+
+    dato = HistoriaUsuario.objects.filter(Q(Estatus=5) & Q(Sprint=id) & Q(Proyecto__in=proyectos)) # solo seran llamadas las de estatus 5="Dividida en Tareas"
 
     data = {
         'form': dato,
@@ -441,7 +450,7 @@ def vistaRefinamiento(request, id):
     return render(request, 'Mensajes/ProductOwner/plantillaRefinamiento.html', data)
 
 # Renderizar refinamientoBL a PDF
-def plantillaRefinamiento(request, id):
+def plantillaRefinamiento(request, id): #id del Mensaje original
     # datos = AsistentesEventosScrum.objects.all()
     #historiasBL = HistoriaUsuario.objects.filter(Q(Estatus=3) & Q(MensajeRPBL=id)) # 3=Refinadas
     historiasBL = HistoriaUsuario.objects.filter( Q(MensajeRPBL=id))
@@ -522,7 +531,8 @@ def plantillaPlaneacionSprint(request, id): #id del Mensaje
     planeacion = Mensaje.objects.filter(pk=id)
     sprint =  Mensaje.objects.get(pk=id).Sprint
     objetivo_sprint = sprint.objetivosprint
-    historias = HistoriaUsuario.objects.filter(Q(Proyecto__in=proyectos) & Q(Estatus__in=[4, 5, 6, 7, 8]) & Q(Sprint=sprint)) # 4= HU en Sprint 5=HU Divididas
+    #historias = HistoriaUsuario.objects.filter(Q(Proyecto__in=proyectos) & Q(Estatus__in=[4, 5, 6, 7, 8]) & Q(Sprint=sprint)) # 4= HU en Sprint 5=HU Divididas
+    historias = HistoriaUsuario.objects.filter(Q(Proyecto__in=proyectos)  & Q(Sprint=sprint)) 
     mensaje = Mensaje.objects.get(pk=id)
     asistentes = AsistentesEventosScrum.objects.filter(Mensaje=mensaje)
     comentarios = m_Comentarios.objects.filter(Mensaje=mensaje)
@@ -3888,7 +3898,7 @@ def vistaReunionDiaria(request, id):
 
     return render(request, 'Mensajes/ProductOwner/plantillaReuniondDiaria.html', data)
 
-def plantillaReunionDiaria(request, id):
+def plantillaReunionDiaria(request, id): #id del Mensaje original
     reunionDiaria = Mensaje.objects.filter(pk=id)
     mensaje = Mensaje.objects.get(pk=id)
     sprint_id = mensaje.Sprint.id
