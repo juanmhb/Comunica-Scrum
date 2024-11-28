@@ -274,28 +274,28 @@ class ActualizarHistoriaUsuarioSprint(LoginRequiredMixin, UpdateView):
     model = HistoriaUsuario
     template_name = 'Scrum/detalle_historiausuario_sprint.html'
     form_class = HistoriaUsuarioForm
-
+    
+    # dispatch siempre se ejecuta antes de cualquier otro método.
+    def dispatch(self, request, *args, **kwargs):
+        # Asegurarse de que self.object está definido
+        self.object = self.get_object()
+        # Guardar el Sprint original antes de procesar cualquier acción
+        self.original_sprint = self.object.Sprint
+        return super().dispatch(request, *args, **kwargs)
+    
     #El campo Sprint en el formulario HistoriaUsuarioForm como un campo deshabilitado ('disabled': 'disabled'). 
     #En HTML, los campos deshabilitados no se envían al servidor cuando se realiza el formulario, lo que significa que Django 
     #recibe un valor None para ese campo y lo almacena como NULL en la base de datos.
     # def form_valid(self, form):
-    #     sprint_id = self.kwargs.get('pk', None)
-    #     print(f"sprint_id : {sprint_id }")
-    #     # Asignar el valor de Sprint de la instancia original antes de guardar
-        
+    #     # Si el campo Sprint se pone en nulo, conservar el valor original
     #     if not form.cleaned_data.get('Sprint'):
-    #         form.instance.Sprint = self.object.Sprint
+    #         form.instance.Sprint = self.original_sprint
+    #         print(f"Recuperando Sprint original: {self.original_sprint}")
     #     return super().form_valid(form)
     
     def get_success_url(self):
-        # sprint_id = self.kwargs.get('pk', None)
-        
-        #return reverse('Scrum:listar_sprint_Historias', kwargs={'pk': self.object.Sprint.pk})
-                # Obtener la Historia de Usuario actual
-        historia_usuario = self.get_object()
-
         # Obtener el Sprint asociado
-        sprint_id = historia_usuario.Sprint.id
+        sprint_id = self.original_sprint.id if self.original_sprint else None
         #print(f"ActualizarHistoriaUsuarioSprint, sprint_id : {sprint_id }")
         return reverse('Scrum:listar_sprint_Historias', kwargs={'pk': sprint_id})
     
