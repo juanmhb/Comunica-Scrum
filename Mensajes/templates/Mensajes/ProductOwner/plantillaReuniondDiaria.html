@@ -13,7 +13,7 @@
                   background-color:rgba(194,194,194);
               }
       table tr, th, td {
-          height: 20px;
+          /* height: 20px; */
           vertical-align: bottom;
       }
     </style>
@@ -41,22 +41,22 @@
 
   <table border="0.1" class="table">
    {% for p in form %}
-   <tr>
+   <tr style="height: 20px;">
     <td style="vertical-align: bottom; text-align: center; " id="gris">Proyecto</td>
     <td style="vertical-align: bottom;" colspan="4" align="center" id="gris">{{ p.Proyecto }}</td>
    </tr>
    
-   <tr >
+   <tr style="height: 20px;" >
     <td id="azul" align="center">Fecha</td>
     <td colspan="4" id="azul" >{{ p.FechaHora }} </td>
    </tr>
    
-   <tr>
+   <tr style="height: 20px;">
     <td colspan="5" align="center" style="color: rgb(0, 113, 157);">Reunión Diaria, &nbsp; Sprint {{sprint_id}}</td>
    </tr>
    {% endfor %}
    {% for p in idiomaPais %}
-   <tr>
+   <tr style="height: 20px;">
     <td id="azul" align="center">País</td>
     <td id="azul" align="center">{{ p.Pais }}</td>
     <td id="azul"><!-- Vacio --></td>
@@ -64,7 +64,7 @@
     <td id="azul"><!-- Vacio --></td>
    </tr>
    
-   <tr>
+   <tr style="height: 20px;">
     <td align="center">Idioma</td>
     <td align="center">{{ p.Idioma }}</td>
     <td><!-- Vacio --></td>
@@ -76,7 +76,7 @@
     <td colspan="5" id="azul">&nbsp;&nbsp;&nbsp;&nbsp;</td>
    </tr>
 
-   <tr>
+   <tr style="height: 20px;">
     <td id="gris" align="center">Asistentes:</td>
     <td id="gris" align="center">Nombre</td>
     <td id="gris" align="center">Rol</td>
@@ -86,7 +86,7 @@
 
    {% for p in form2 %}
    <tbody>
-    <tr>
+    <tr style="height: 20px;">
       <th scope="row"> &nbsp; </th>
       <td>{{ p.Usuario.Usuario }}</td>
       <td>{{ p.Rol }}</td>
@@ -118,7 +118,7 @@
 
     {% for p in comentarios %}
     <tbody>
-    <tr>
+    <tr style="height: 20px;">
         <td colspan="5" align="center" id="gris">{{ p.Emisor.Usuario.first_name }}&nbsp;{{ p.Emisor.Usuario.last_name }}</td>
     </tr>
     <tr>
