@@ -3940,7 +3940,7 @@ def vistaReunionDiaria(request, id):
 def plantillaReunionDiaria(request, id): #id del Mensaje original
     reunionDiaria = Mensaje.objects.filter(pk=id)
     mensaje = Mensaje.objects.get(pk=id)
-    sprint_id = mensaje.Sprint.id
+    sprint_numero = mensaje.Sprint.numerosprint
     asistentes = AsistentesEventosScrum.objects.filter(Mensaje=mensaje)
     comentarios = m_ReunionDiaria.objects.filter(Mensaje=mensaje)
 
@@ -3952,7 +3952,7 @@ def plantillaReunionDiaria(request, id): #id del Mensaje original
         'form2': asistentes,
         'idiomaPais':idiomaPais,
         'comentarios':comentarios,
-        'sprint_id': sprint_id,
+        'sprint_numero': sprint_numero,
     }
 
     pdf = render_to_pdf('Mensajes/ProductOwner/plantillaReuniondDiaria.html', data)
