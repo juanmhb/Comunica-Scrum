@@ -1,0 +1,44 @@
+{% extends "Scrum/Empleado/base2.html" %}
+
+{% load static %}
+{% load crispy_forms_tags %}
+<title>ScrumMaster</title>
+
+{% block content %}
+<h1 align="center">Listado de Comentarios de la Reunión Diaria {{fecha_hora|date:"d-m-Y"}}</h1>
+
+{% if reuniones %}
+
+<div class="table-stats order-table ov-h">
+    <div class="table table-striped table-bordered">
+      <div>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Emisor</th>
+                    <th>Obstáculos Presentados</th>
+                    <th>Plan del Día Siguiente</th>
+                    <th>Trabajo Realizado el Día Anterior</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for reunion in reuniones %}
+                <tr>
+                    <td>{{ reunion.Emisor }}</td>
+                    <td>{{ reunion.ObstaculosPresentados }}</td>
+                    <td>{{ reunion.PlanDiaSiguiente }}</td>
+                    <td>{{ reunion.TrabajoRealizadoDiaAnterior }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+  </div>
+</div>
+{% else %}
+  <h1>No hay comentarios de la Reunión Diaria</h1>  
+{% endif %}
+
+
+
+{% endblock %}

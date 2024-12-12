@@ -245,6 +245,7 @@ urlpatterns = [
 
     # Comentarios/reflexiones - reunion diaria - Empleado
     path('reunionDiariaEmpleado/<id>/', login_required(crear_Comentarios_Reunion_Diaria_Empleado), name='reunionDiariaEmpleado'),
+    path('listado_comentarios_reunion_diaria/<id>/', login_required(listado_comentarios_reunion_diaria), name='listado_comentarios_reunion_diaria'),
 
     # Mensajes de Retroalimentacion, reunion diaria, Empleado
     path('retroAReunionDiariaEmpleado/<id>', login_required(enviar_mensajeReunionDiariaEmpleado), name='retroAReunionDiariaEmpleado'),

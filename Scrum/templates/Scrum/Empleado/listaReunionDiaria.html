@@ -33,7 +33,8 @@
                 <th scope="row">{{ forloop.counter }}</th>
                 <td>{{ p.Proyecto }}</td>
 
-                <td>{{ p.FHCreacion }}</td>
+                <!-- <td>{{ p.FHCreacion }}</td> -->
+                <td>{{ p.mensaje_fecha_hora }}</td>
                 <td>{{ p.Emisor.Usuario }}</td>
                 
                 <td>{{ p.Mensaje }}</td>
@@ -84,6 +85,12 @@
                     <path d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4.414a1 1 0 0 0-.707.293L.854 15.146A.5.5 0 0 1 0 14.793zm3.5 1a.5.5 0 0 0 0 1h9a.5.5 0 0 0 0-1zm0 2.5a.5.5 0 0 0 0 1h9a.5.5 0 0 0 0-1zm0 2.5a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1z"/>
                   </svg>
                   </a>
+                  <a href="{% url 'Mensajes:listado_comentarios_reunion_diaria' p.Mensaje.id %}" class="btn btn-outline-primary"
+                    data-bs-toggle="tooltip" data-bs-placement="top" title="Mensajes de Todos">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-ruled" viewBox="0 0 16 16">
+                      <path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v4h10V2a1 1 0 0 0-1-1zm9 6H6v2h7zm0 3H6v2h7zm0 3H6v2h6a1 1 0 0 0 1-1zm-8 2v-2H3v1a1 1 0 0 0 1 1zm-2-3h2v-2H3zm0-3h2V7H3z"/>
+                    </svg>
+                  </a>                  
                 </td>
                 {% elif p.Status == "2" %} <!--Comprendido-->
                 <td>
@@ -93,6 +100,12 @@
                     <path d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4.414a1 1 0 0 0-.707.293L.854 15.146A.5.5 0 0 1 0 14.793zm3.5 1a.5.5 0 0 0 0 1h9a.5.5 0 0 0 0-1zm0 2.5a.5.5 0 0 0 0 1h9a.5.5 0 0 0 0-1zm0 2.5a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1z"/>
                   </svg>
                   </a>
+                  <a href="{% url 'Mensajes:listado_comentarios_reunion_diaria' p.Mensaje.id %}" class="btn btn-outline-primary"
+                    data-bs-toggle="tooltip" data-bs-placement="top" title="Mensajes de Todos">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-ruled" viewBox="0 0 16 16">
+                      <path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v4h10V2a1 1 0 0 0-1-1zm9 6H6v2h7zm0 3H6v2h7zm0 3H6v2h6a1 1 0 0 0 1-1zm-8 2v-2H3v1a1 1 0 0 0 1 1zm-2-3h2v-2H3zm0-3h2V7H3z"/>
+                    </svg>
+                  </a>                        
                 </td>
                 {% else %}
                 <!--No Comprendido-->
@@ -127,6 +140,12 @@
                         <path d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4.414a1 1 0 0 0-.707.293L.854 15.146A.5.5 0 0 1 0 14.793zm3.5 1a.5.5 0 0 0 0 1h9a.5.5 0 0 0 0-1zm0 2.5a.5.5 0 0 0 0 1h9a.5.5 0 0 0 0-1zm0 2.5a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1z"/>
                       </svg>
                     </a>
+                    <a href="{% url 'Mensajes:listado_comentarios_reunion_diaria' p.Mensaje.id %}" class="btn btn-outline-primary"
+                    data-bs-toggle="tooltip" data-bs-placement="top" title="Mensajes de Todos">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-ruled" viewBox="0 0 16 16">
+                      <path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v4h10V2a1 1 0 0 0-1-1zm9 6H6v2h7zm0 3H6v2h7zm0 3H6v2h6a1 1 0 0 0 1-1zm-8 2v-2H3v1a1 1 0 0 0 1 1zm-2-3h2v-2H3zm0-3h2V7H3z"/>
+                    </svg>
+                  </a>                      
                 </td>
                 {% endif %}
 

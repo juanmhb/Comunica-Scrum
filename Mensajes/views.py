@@ -13,7 +13,7 @@ from Scrum.models import *
 
 from .utils import render_to_pdf
 from django.http import HttpResponse, HttpResponseRedirect
-from django.db.models import Q
+from django.db.models import Q, F
 from django.db import transaction
 from django.contrib import messages
 import time
@@ -747,7 +747,14 @@ def mensajes_recibidosEmpleado(request):
 
     # mensajes = Mensaje.objects.filter(Destinatario=empleado)
     # recibidos = MensajeReceptor.objects.filter(Receptor=empleado)
-    recibidos = MensajeReceptor.objects.filter(Q(Receptor=empleado) & Q(EventoScrum="2") & Q(Proyecto__in=proyectos))
+    #recibidos = MensajeReceptor.objects.filter(Q(Receptor=empleado) & Q(EventoScrum="2") & Q(Proyecto__in=proyectos))
+    recibidos = MensajeReceptor.objects.filter(
+        Q(Receptor=empleado) & 
+        Q(EventoScrum="2") & 
+        Q(Proyecto__in=proyectos)
+    ).annotate(
+        mensaje_fecha_hora=F('Mensaje__FechaHora')  # Relación con el modelo Mensaje
+    )
 
     data = {
         'form2':recibidos
@@ -1903,8 +1910,14 @@ def listaPlaneacionSprintEmpleado(request):
     # Obtener los proyectos en los que el empleado participa
     proyectos = EmpleadoProyecto.objects.filter(Empleado=empleado).values_list('Proyecto', flat=True)
 
-    mensajes = MensajeReceptor.objects.filter(Q(Receptor=empleado) & Q(EventoScrum="3")& Q(Proyecto__in=proyectos)) # 3=Reunion de Planeación del Sprint
-
+    #mensajes = MensajeReceptor.objects.filter(Q(Receptor=empleado) & Q(EventoScrum="3")& Q(Proyecto__in=proyectos)) # 3=Reunion de Planeación del Sprint
+    mensajes = MensajeReceptor.objects.filter(
+        Q(Receptor=empleado) & 
+        Q(EventoScrum="3") &  # 3=Reunion de Planeación del Sprint
+        Q(Proyecto__in=proyectos)
+    ).annotate(
+        mensaje_fecha_hora=F('Mensaje__FechaHora')  # Relación con el modelo Mensaje
+    )
     data = {
         'form2':mensajes,
     }
@@ -2046,32 +2059,66 @@ class ActualizarAsistenteScrumMasterPS(LoginRequiredMixin, UpdateView):
 
 
 # ------------------------------------- Comentarios y Asistentes - Planeacion Sprint -  Empleado -------------------------
-def crear_ComentarioEmpleadoPlaneacion(request,id): # id del Mensaje
-    mensajes = Mensaje.objects.filter(pk=id) # Recibe el id del mensaje origen
+# def crear_ComentarioEmpleadoPlaneacion_Old(request,id): # id del Mensaje
+#     mensajes = Mensaje.objects.filter(pk=id) # Recibe el id del mensaje origen
+#     usuario = request.user
+#     empleado = Empleado.objects.get(Usuario=usuario)
+
+#     if request.method == 'POST':
+#         form = comentarios_Forms(request.POST)
+#         if form.is_valid():
+            
+#             for mensaje in mensajes:
+#                 # Crear un comentario con los datos del mensaje
+#                 comentario = m_Comentarios(
+#                     EventoScrum=mensaje.EventoScrum,
+#                     Mensaje=mensaje,
+#                 )
+                
+#             comentarios = form.cleaned_data['Comentarios']
+#             mensaje_id = comentario.Mensaje
+#             evento = comentario.EventoScrum
+            
+#             mensaje = m_Comentarios(Comentarios=comentarios, Mensaje=mensaje_id, Emisor=empleado, EventoScrum=evento)
+#             mensaje.save()
+#             # asistente.save()
+#             return redirect('Mensajes:mensajePlaneacionEmpleado')  # Redirigir a la página de mensajes enviados
+#     else:
+#         form = comentarios_Forms()
+#     return render(request, 'Scrum/Empleado/crear_Comentario.html', {'form': form})
+# ------------------------------------- Comentarios y Asistentes - Planeacion Sprint -  Empleado -------------------------
+def crear_ComentarioEmpleadoPlaneacion(request, id):  # id del Mensaje
+    mensajes = Mensaje.objects.filter(pk=id)  # Recibe el id del mensaje origen
     usuario = request.user
     empleado = Empleado.objects.get(Usuario=usuario)
 
+    # Obtener el comentario existente asociado al mensaje (si existe)
+    comentario_existente = None
+    if mensajes.exists():
+        comentario_existente = m_Comentarios.objects.filter(Mensaje=mensajes.first(), Emisor=empleado).first()
+
     if request.method == 'POST':
-        form = comentarios_Forms(request.POST)
+        # Si existe un comentario, se edita; de lo contrario, se crea uno nuevo
+        if comentario_existente:
+            form = comentarios_Forms(request.POST, instance=comentario_existente)
+        else:
+            form = comentarios_Forms(request.POST)
+
         if form.is_valid():
-            
-            for mensaje in mensajes:
-                # Crear un comentario con los datos del mensaje
-                comentario = m_Comentarios(
-                    EventoScrum=mensaje.EventoScrum,
-                    Mensaje=mensaje,
-                )
-                
-            comentarios = form.cleaned_data['Comentarios']
-            mensaje_id = comentario.Mensaje
-            evento = comentario.EventoScrum
-            
-            mensaje = m_Comentarios(Comentarios=comentarios, Mensaje=mensaje_id, Emisor=empleado, EventoScrum=evento)
-            mensaje.save()
-            # asistente.save()
-            return redirect('Mensajes:mensajePlaneacionEmpleado')  # Redirigir a la página de mensajes enviados
+            comentario = form.save(commit=False)  # No guarda todavía
+            if not comentario_existente:  # Solo añade estos datos si es un nuevo comentario
+                comentario.Mensaje = mensajes.first()
+                comentario.EventoScrum = mensajes.first().EventoScrum
+                comentario.Emisor = empleado
+            comentario.save()  # Guarda el comentario
+            return redirect('Mensajes:mensajePlaneacionEmpleado')  # Redirige a otra vista
     else:
-        form = comentarios_Forms()
+        # Inicializar el formulario con datos existentes o vacío
+        if comentario_existente:
+            form = comentarios_Forms(instance=comentario_existente)
+        else:
+            form = comentarios_Forms()
+
     return render(request, 'Scrum/Empleado/crear_Comentario.html', {'form': form})
 
 # BETA - Listar asistentes por usuario y mensaje, Planeacion, Empleado
@@ -2764,9 +2811,15 @@ def listaRevisionSprintEmpleado(request):
     proyectos = EmpleadoProyecto.objects.filter(Empleado=empleado).values_list('Proyecto', flat=True)
 
 
-    mensajes = MensajeReceptor.objects.filter(Q(Receptor=empleado) & Q(EventoScrum="5") & Q(Proyecto__in=proyectos)) 
+    #mensajes = MensajeReceptor.objects.filter(Q(Receptor=empleado) & Q(EventoScrum="5") & Q(Proyecto__in=proyectos)) 
     #asistentes = AsistentesEventosScrum.objects.all()
-
+    mensajes = MensajeReceptor.objects.filter(
+        Q(Receptor=empleado) & 
+        Q(EventoScrum="5") & #Reunión de  revisión del sprint
+        Q(Proyecto__in=proyectos)
+    ).annotate(
+        mensaje_fecha_hora=F('Mensaje__FechaHora')  # Relación con el modelo Mensaje
+    )
     data = {
         'form2':mensajes,
         #'form3':asistentes
@@ -2794,33 +2847,68 @@ class ActualizarAsistenteRevisionEmpleado(LoginRequiredMixin, UpdateView):
     success_url = reverse_lazy('Mensajes:mensajeRevisionEmpleado')
 
 # Crear comentarios para Revision Sprint
-def crear_ComentarioEmpleadoRevision(request,id): # id del Mensaje Original
-    mensajes = Mensaje.objects.filter(pk=id) # Recibe el id del mensaje origen
+# def crear_ComentarioEmpleadoRevision_Old(request,id): # id del Mensaje Original
+#     mensajes = Mensaje.objects.filter(pk=id) # Recibe el id del mensaje origen
+#     usuario = request.user
+#     empleado = Empleado.objects.get(Usuario=usuario)
+
+#     if request.method == 'POST':
+#         form = comentarios_Forms(request.POST)
+#         if form.is_valid():
+            
+#             for mensaje in mensajes:
+#                 # Crear un comentario con los datos del mensaje
+#                 comentario = m_Comentarios(
+#                     EventoScrum=mensaje.EventoScrum,
+#                     Mensaje=mensaje,
+#                 )
+                
+#             comentarios = form.cleaned_data['Comentarios']
+#             mensaje_id = comentario.Mensaje
+#             evento = comentario.EventoScrum
+            
+#             mensaje = m_Comentarios(Comentarios=comentarios, Mensaje=mensaje_id, Emisor=empleado, EventoScrum=evento)
+#             mensaje.save()
+#             # asistente.save()
+#             return redirect('Mensajes:mensajeRevisionEmpleado')  # Redirigir a la página de mensajes enviados
+#     else:
+#         form = comentarios_Forms()
+#     return render(request, 'Scrum/Empleado/crear_Comentario.html', {'form': form})
+    
+def crear_ComentarioEmpleadoRevision(request, id):  # id del Mensaje
+    mensajes = Mensaje.objects.filter(pk=id)  # Recibe el id del mensaje origen
     usuario = request.user
     empleado = Empleado.objects.get(Usuario=usuario)
 
+    # Obtener el comentario existente asociado al mensaje (si existe)
+    comentario_existente = None
+    if mensajes.exists():
+        comentario_existente = m_Comentarios.objects.filter(Mensaje=mensajes.first(), Emisor=empleado).first()
+
     if request.method == 'POST':
-        form = comentarios_Forms(request.POST)
+        # Si existe un comentario, se edita; de lo contrario, se crea uno nuevo
+        if comentario_existente:
+            form = comentarios_Forms(request.POST, instance=comentario_existente)
+        else:
+            form = comentarios_Forms(request.POST)
+
         if form.is_valid():
-            
-            for mensaje in mensajes:
-                # Crear un comentario con los datos del mensaje
-                comentario = m_Comentarios(
-                    EventoScrum=mensaje.EventoScrum,
-                    Mensaje=mensaje,
-                )
-                
-            comentarios = form.cleaned_data['Comentarios']
-            mensaje_id = comentario.Mensaje
-            evento = comentario.EventoScrum
-            
-            mensaje = m_Comentarios(Comentarios=comentarios, Mensaje=mensaje_id, Emisor=empleado, EventoScrum=evento)
-            mensaje.save()
-            # asistente.save()
-            return redirect('Mensajes:mensajeRevisionEmpleado')  # Redirigir a la página de mensajes enviados
+            comentario = form.save(commit=False)  # No guarda todavía
+            if not comentario_existente:  # Solo añade estos datos si es un nuevo comentario
+                comentario.Mensaje = mensajes.first()
+                comentario.EventoScrum = mensajes.first().EventoScrum
+                comentario.Emisor = empleado
+            comentario.save()  # Guarda el comentario
+            return redirect('Mensajes:mensajeRevisionEmpleado')  # Redirige a otra vista
     else:
-        form = comentarios_Forms()
+        # Inicializar el formulario con datos existentes o vacío
+        if comentario_existente:
+            form = comentarios_Forms(instance=comentario_existente)
+        else:
+            form = comentarios_Forms()
+
     return render(request, 'Scrum/Empleado/crear_Comentario.html', {'form': form})
+
 
 # Mensaje de recibido Empleado en caso de seleccionar "Comprendido", correcto
 def actualizarRetroStatusCorrectoEmpleadoRevision(request, id): # id del Mensaje Receptor
@@ -3435,9 +3523,15 @@ def listaRetrospectivaSprintEmpleado(request):
         # Obtener los proyectos en los que el empleado participa
         proyectos = EmpleadoProyecto.objects.filter(Empleado=empleado).values_list('Proyecto', flat=True)
 
-        mensajes = MensajeReceptor.objects.filter(Q(Receptor=empleado) & Q(EventoScrum="6") & Q(Proyecto__in=proyectos)) # Evento - Retrospectiva Sprint
+        #mensajes = MensajeReceptor.objects.filter(Q(Receptor=empleado) & Q(EventoScrum="6") & Q(Proyecto__in=proyectos)) # Evento - Retrospectiva Sprint
         #asistentes = AsistentesEventosScrum.objects.all()
-
+        mensajes = MensajeReceptor.objects.filter(
+            Q(Receptor=empleado) & 
+            Q(EventoScrum="6") & # Evento - Retrospectiva Sprint
+            Q(Proyecto__in=proyectos)
+        ).annotate(
+            mensaje_fecha_hora=F('Mensaje__FechaHora')  # Relación con el modelo Mensaje
+        )
         data = {
             'form2':mensajes,
             #'form3':asistentes
@@ -3501,37 +3595,72 @@ class ActualizarAsistenteRetrospectivaEmpleado(LoginRequiredMixin, UpdateView):
     success_url = reverse_lazy('Mensajes:mensajeRetrospectivaEmpleado')
 
 # Crear comentarios para Retrospectiva Sprint
-def crear_Comentarios_Retrospectiva_Empleado(request,id): # id del Mensaje original
-    mensajes = Mensaje.objects.filter(pk=id) # Recibe el id del mensaje origen
+# def crear_Comentarios_Retrospectiva_Empleado_OLD(request,id): # id del Mensaje original
+#     mensajes = Mensaje.objects.filter(pk=id) # Recibe el id del mensaje origen
+#     usuario = request.user
+#     empleado = Empleado.objects.get(Usuario=usuario)
+
+#     if request.method == 'POST':
+#         form = comentariosRetrospectiva_Forms(request.POST)
+#         if form.is_valid():
+            
+#             for mensaje in mensajes:
+#                 # Crear un comentario con los datos del mensaje
+#                 comentario = m_RetrospectivaSprint(
+#                     Proyecto=mensaje.Proyecto,
+#                     Mensaje=mensaje,
+#                     Sprint=mensaje.Sprint,
+#                 )
+                
+#             comentarios = form.cleaned_data['Comentarios']
+#             oportunidades = form.cleaned_data['OportunidadesMejora']
+#             proyecto = comentario.Proyecto
+#             sprint = comentario.Sprint
+#             mensaje_id = comentario.Mensaje
+            
+#             mensaje = m_RetrospectivaSprint(Comentarios=comentarios, Mensaje=mensaje_id, Emisor=empleado, Proyecto=proyecto,
+#                                             Sprint=sprint, OportunidadesMejora=oportunidades)
+#             mensaje.save()
+#             return redirect('Mensajes:mensajeRetrospectivaEmpleado')  # Redirigir a la página de mensajes enviados
+#     else:
+#         form = comentariosRetrospectiva_Forms()
+#     return render(request, 'Scrum/Empleado/crear_Comentario.html', {'form': form})
+    
+# Crear comentarios para Retrospectiva Sprint    
+def crear_Comentarios_Retrospectiva_Empleado(request, id):  # id del Mensaje original
+    mensajes = Mensaje.objects.filter(pk=id)  # Recibe el id del mensaje origen
     usuario = request.user
     empleado = Empleado.objects.get(Usuario=usuario)
 
-    if request.method == 'POST':
-        form = comentariosRetrospectiva_Forms(request.POST)
-        if form.is_valid():
-            
-            for mensaje in mensajes:
-                # Crear un comentario con los datos del mensaje
-                comentario = m_RetrospectivaSprint(
-                    Proyecto=mensaje.Proyecto,
-                    Mensaje=mensaje,
-                    Sprint=mensaje.Sprint,
-                )
-                
-            comentarios = form.cleaned_data['Comentarios']
-            oportunidades = form.cleaned_data['OportunidadesMejora']
-            proyecto = comentario.Proyecto
-            sprint = comentario.Sprint
-            mensaje_id = comentario.Mensaje
-            
-            mensaje = m_RetrospectivaSprint(Comentarios=comentarios, Mensaje=mensaje_id, Emisor=empleado, Proyecto=proyecto,
-                                            Sprint=sprint, OportunidadesMejora=oportunidades)
-            mensaje.save()
-            return redirect('Mensajes:mensajeRetrospectivaEmpleado')  # Redirigir a la página de mensajes enviados
-    else:
-        form = comentariosRetrospectiva_Forms()
-    return render(request, 'Scrum/Empleado/crear_Comentario.html', {'form': form})
+    # Buscar si ya existe un comentario para este mensaje
+    comentario_existente = None
+    if mensajes.exists():
+        comentario_existente = m_RetrospectivaSprint.objects.filter(Mensaje=mensajes.first(), Emisor=empleado).first()
 
+    if request.method == 'POST':
+        # Si existe un comentario, inicializamos el formulario para editarlo
+        if comentario_existente:
+            form = comentariosRetrospectiva_Forms(request.POST, instance=comentario_existente)
+        else:
+            form = comentariosRetrospectiva_Forms(request.POST)
+
+        if form.is_valid():
+            comentario = form.save(commit=False)  # No guarda todavía
+            if not comentario_existente:  # Solo asigna estos campos si es un nuevo comentario
+                comentario.Proyecto = mensajes.first().Proyecto
+                comentario.Mensaje = mensajes.first()
+                comentario.Sprint = mensajes.first().Sprint
+                comentario.Emisor = empleado
+            comentario.save()  # Guarda el comentario
+            return redirect('Mensajes:mensajeRetrospectivaEmpleado')  # Redirige a otra vista
+    else:
+        # Inicializar el formulario con los datos existentes o en blanco
+        if comentario_existente:
+            form = comentariosRetrospectiva_Forms(instance=comentario_existente)
+        else:
+            form = comentariosRetrospectiva_Forms()
+
+    return render(request, 'Scrum/Empleado/crear_Comentario.html', {'form': form})
 # Mensaje de recibido Empleado en caso de seleccionar "Comprendido"
 def statusCorrectoRetrospectivaEmpleado(request, id):
     status = "2" # Comprendido
@@ -4136,8 +4265,14 @@ def listaReunionDiariaEmpleado(request):
         # Obtener los proyectos en los que el empleado participa
         proyectos = EmpleadoProyecto.objects.filter(Empleado=empleado).values_list('Proyecto', flat=True)
 
-        mensajes = MensajeReceptor.objects.filter(Q(Receptor=empleado) & Q(EventoScrum="4")& Q(Proyecto__in=proyectos)) # Evento - Reunion diaria
-
+        #mensajes = MensajeReceptor.objects.filter(Q(Receptor=empleado) & Q(EventoScrum="4")& Q(Proyecto__in=proyectos)) # Evento - Reunion diaria
+        mensajes = MensajeReceptor.objects.filter(
+            Q(Receptor=empleado) & 
+            Q(EventoScrum="4") & 
+            Q(Proyecto__in=proyectos)
+        ).annotate(
+            mensaje_fecha_hora=F('Mensaje__FechaHora')  # Relación con el modelo Mensaje
+        )
         data = {
             'form2':mensajes,
         }
@@ -4201,37 +4336,81 @@ class ActualizarAsistenteReunionDiariaEmpleado(LoginRequiredMixin, UpdateView):
     success_url = reverse_lazy('Mensajes:mensajesReunionDiariaEmpleado')
 
 # Crear comentarios para Reunion Diaria
+# def crear_Comentarios_Reunion_Diaria_Empleado_OLD(request,id): # id del Mensaje original
+#     mensajes = Mensaje.objects.filter(pk=id) # Recibe el id del mensaje origen
+#     usuario = request.user
+#     empleado = Empleado.objects.get(Usuario=usuario)
+
+#     if request.method == 'POST':
+#         form = reunionDiaria_Forms(request.POST)
+#         if form.is_valid():
+            
+#             for mensaje in mensajes:
+#                 # Crear un comentario con los datos del mensaje
+#                 comentario = m_ReunionDiaria(
+#                     Proyecto=mensaje.Proyecto,
+#                     Mensaje=mensaje,
+#                     Sprint=mensaje.Sprint,
+#                 )
+                
+#             obstaculos = form.cleaned_data['ObstaculosPresentados']
+#             plan = form.cleaned_data['PlanDiaSiguiente']
+#             trabajoRealizado = form.cleaned_data['TrabajoRealizadoDiaAnterior']
+#             proyecto = comentario.Proyecto
+#             sprint = comentario.Sprint
+#             mensaje_id = comentario.Mensaje
+            
+#             mensaje = m_ReunionDiaria(ObstaculosPresentados=obstaculos, Mensaje=mensaje_id, Emisor=empleado, Proyecto=proyecto,
+#                                             Sprint=sprint, PlanDiaSiguiente=plan, TrabajoRealizadoDiaAnterior=trabajoRealizado)
+#             mensaje.save()
+#             return redirect('Mensajes:mensajesReunionDiariaEmpleado')  # Redirigir a la página de mensajes enviados
+#     else:
+#         form = reunionDiaria_Forms()
+#     return render(request, 'Scrum/Empleado/crear_Comentario.html', {'form': form})
 def crear_Comentarios_Reunion_Diaria_Empleado(request,id): # id del Mensaje original
     mensajes = Mensaje.objects.filter(pk=id) # Recibe el id del mensaje origen
     usuario = request.user
     empleado = Empleado.objects.get(Usuario=usuario)
-
+    # Busca si ya existe un comentario para este mensaje
+    comentario_existente = None
+    if mensajes.exists():
+        #comentario_existente = m_ReunionDiaria.objects.filter(Mensaje=mensajes.first()).first()
+        comentario_existente = m_ReunionDiaria.objects.filter(
+            Mensaje=mensajes.first(),
+            Emisor = empleado
+            #Emisor__Usuario=request.user
+        ).first()
     if request.method == 'POST':
-        form = reunionDiaria_Forms(request.POST)
+        if comentario_existente:  # Si existe, se edita
+            form = reunionDiaria_Forms(request.POST, instance=comentario_existente)
+        else:  # Si no, se crea un nuevo comentario
+            form = reunionDiaria_Forms(request.POST)
+
         if form.is_valid():
-            
-            for mensaje in mensajes:
-                # Crear un comentario con los datos del mensaje
-                comentario = m_ReunionDiaria(
-                    Proyecto=mensaje.Proyecto,
-                    Mensaje=mensaje,
-                    Sprint=mensaje.Sprint,
-                )
-                
-            obstaculos = form.cleaned_data['ObstaculosPresentados']
-            plan = form.cleaned_data['PlanDiaSiguiente']
-            trabajoRealizado = form.cleaned_data['TrabajoRealizadoDiaAnterior']
-            proyecto = comentario.Proyecto
-            sprint = comentario.Sprint
-            mensaje_id = comentario.Mensaje
-            
-            mensaje = m_ReunionDiaria(ObstaculosPresentados=obstaculos, Mensaje=mensaje_id, Emisor=empleado, Proyecto=proyecto,
-                                            Sprint=sprint, PlanDiaSiguiente=plan, TrabajoRealizadoDiaAnterior=trabajoRealizado)
-            mensaje.save()
+            comentario = form.save(commit=False)  # No guarda todavía
+            comentario.Proyecto = mensajes.first().Proyecto
+            comentario.Mensaje = mensajes.first()
+            comentario.Sprint = mensajes.first().Sprint
+            comentario.Emisor = empleado
+            comentario.save()  # Guarda el formulario junto con los datos adicionales
             return redirect('Mensajes:mensajesReunionDiariaEmpleado')  # Redirigir a la página de mensajes enviados
     else:
-        form = reunionDiaria_Forms()
+        # Inicializa el formulario con los datos existentes o en blanco
+        if comentario_existente:
+            form = reunionDiaria_Forms(instance=comentario_existente)
+        else:
+            form = reunionDiaria_Forms()
+
     return render(request, 'Scrum/Empleado/crear_Comentario.html', {'form': form})
+    
+def listado_comentarios_reunion_diaria(request,id): # id del Mensaje original
+        # Obtener todas las entradas de m_ReunionDiaria
+    reuniones = m_ReunionDiaria.objects.filter(Mensaje__id=id)
+    mensaje = get_object_or_404(Mensaje, pk=id) # Recibe el id del mensaje origen
+    fecha_hora = mensaje.FechaHora
+    # print(f"Mensaje__id: {id}")
+    return render(request, 'Scrum/Empleado/ListadoComentariosReunionDiaria.html', {'reuniones': reuniones, 'fecha_hora': fecha_hora})
+    #return redirect('Mensajes:mensajesReunionDiariaEmpleado')  # Redirigir a la página de mensajes enviados
 
 # Mensaje de recibido Scrum Master en caso de seleccionar "Comprendido"
 def statusCorrectoReunionDiariaEmpleado(request, id): #id del Mensaje Receptor
