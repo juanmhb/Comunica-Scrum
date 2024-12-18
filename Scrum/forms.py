@@ -391,7 +391,7 @@ class TareaAvanceForm(forms.ModelForm):
         #tarea_avance = TareaAvance.objects.get(id=cleaned_data.id)  # Obtenemos una instancia de TareaAvance
         tarea_avance = self.instance  # Obtener la instancia del formulario actual
         horas_restantes_captura = tarea_avance.horasRestantes
-        print (f"horas_restantes_definitivas: {horas_restantes_captura},  id_tarea: {tarea_avance.tarea.id},  id_tarea_avance: {tarea_avance.id}")
+        #print (f"horas_restantes_definitivas: {horas_restantes_captura},  id_tarea: {tarea_avance.tarea.id},  id_tarea_avance: {tarea_avance.id}")
         #---------------------------
         for i, dia in enumerate(self.dias_habiles, start=1):
             if dia.weekday() < 5:  # Solo procesar días laborales
@@ -405,7 +405,7 @@ class TareaAvanceForm(forms.ModelForm):
                             horas_restantes_captura = 0
                         elif horas_restantes != 0:
                             horas_restantes_captura = horas_restantes
-                        print (f"field_name: {field_name}, valor: {valor},  horas_restantes_definitivas: {horas_restantes_captura}")
+                        #print (f"field_name: {field_name}, valor: {valor},  horas_restantes_definitivas: {horas_restantes_captura}")
                        # horas_dedicadas += horas_dedicadas_dia
                     except ValueError:
                         self.add_error(field_name, "Formato de valor no válido. Debe ser 'n/m'.")

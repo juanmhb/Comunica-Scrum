@@ -560,6 +560,7 @@ def tareas_avance(request, sprint_id=None, historia_usuario_id=None):
                         tarea=tarea,
                         horasDedicadas=0,
                         horasRestantes=tarea.horasestimadas,
+                        horasRestantesCaptura=tarea.horasestimadas,
                         fechaAvance=timezone.now().date()
                     )
 
