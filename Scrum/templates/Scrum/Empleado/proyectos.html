@@ -80,14 +80,22 @@
                                 <path
                                   d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1ZM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118ZM2.5 3h11V2h-11v1Z" />
                               </svg>
-                            </a> -->
+                            </a> -->                          
+                            <a href="{% url 'Scrum:listar_sprint' proyecto.id %}" class="btn btn-outline-info"
+                                data-bs-toggle="tooltip" data-bs-placement="top" title="Sprints">
+                                <img src="{% static 'Scrum/img/Sprint_Scrum.png' %}" alt="Sprints" style="width:20px; height:20px;">
+                            </a>
+
                             <a href="{% url 'Scrum:productbacklog' proyecto.id %}" class="btn btn-outline-info"
                               data-bs-toggle="tooltip" data-bs-placement="top" title="Historias de Usuario">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"
+<!--                               <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"
                                 class="bi bi-eye-fill" viewBox="0 0 16 16">
                                 <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z" />
                                 <path
                                   d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z" />
+                              </svg> -->
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-earmark-ruled" viewBox="0 0 16 16">
+                                <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2M9.5 3A1.5 1.5 0 0 0 11 4.5h2V9H3V2a1 1 0 0 1 1-1h5.5zM3 12v-2h2v2zm0 1h2v2H4a1 1 0 0 1-1-1zm3 2v-2h7v1a1 1 0 0 1-1 1zm7-3H6v-2h7z"/>
                               </svg>
                             </a>
   

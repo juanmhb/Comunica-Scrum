@@ -404,14 +404,16 @@ class ActualizarSprint(LoginRequiredMixin, UpdateView):
     def get_success_url(self):
          return reverse('Scrum:listar_sprint', kwargs={'pk': self.object.Proyecto.pk})
 
-
 def AsignarHistoriasSprint(request, pk):
     sprint = get_object_or_404(Sprint, pk=pk)
     pkProyecto = sprint.Proyecto
-    form = SprintHistoriasUsuarioForm(pk=pkProyecto.pk)
+    estatus_sprint = sprint.Estatus
     
+    print(f"estatus_sprint: {estatus_sprint}")
+    estatus = request.GET.get("estatus")  # capturar filtro opcional
+
     if request.method == 'POST':
-        form = SprintHistoriasUsuarioForm(data=request.POST, pk=pkProyecto.pk)
+        form = SprintHistoriasUsuarioForm(data=request.POST, pk=pkProyecto.pk, estatus=estatus)
         if form.is_valid():
             listH = request.POST.getlist("Historias")
             try:
@@ -419,29 +421,68 @@ def AsignarHistoriasSprint(request, pk):
                 for historia_id in listH:
                     updateHistoria = get_object_or_404(HistoriaUsuario, pk=historia_id)
                     updateHistoria.Sprint = sprint
-                    updateHistoria.Estatus = status[3] # [0] = Capturada esta el valor de 1,.. [3] = En Sprint esta el valor 4
+                    updateHistoria.Estatus = status[3]  # "En Sprint"
                     updateHistoria.save()
-                #------------------------------------
-                #Agregar en el modelo sprint_Backlog
-                # Crea una nueva instancia de sprint_Backlog
-                SBacklog = sprint_Backlog(
-                    Proyecto=pkProyecto,
-                    Sprint=sprint,
-                    historiaUsuario=updateHistoria
-                )
-                
-                # Guarda la instancia en la base de datos
-                SBacklog.save()
-                #------------------------------------
+
+                    # Agregar al Sprint Backlog
+                    SBacklog = sprint_Backlog(
+                        Proyecto=pkProyecto,
+                        Sprint=sprint,
+                        historiaUsuario=updateHistoria
+                    )
+                    SBacklog.save()
             except IntegrityError:
-                return render(request, 'ingles/registro.html', {'error_message': 'Ya Existe El Correo Electronico'})
+                return render(request, 'Scrum/gestion_sprint.html', {'error_message': 'Error al asignar la Historia de Usuario al Sprint'})
+
             return HttpResponseRedirect(reverse('Scrum:listar_sprint', kwargs={'pk': pkProyecto.pk}))
-    
-    data = {
+    else:
+        form = SprintHistoriasUsuarioForm(pk=pkProyecto.pk, estatus=estatus)
+
+    return render(request, 'Scrum/AsignarHistorias.html', {
         'form': form,
-        'pk': pk
-    }
-    return render(request, 'Scrum/AsignarHistorias.html', data)
+        'pk': pk,
+        'estatus_actual': estatus,
+        'estatus_list': EstatusHistoria.objects.all(),
+        'estatus_sprint': estatus_sprint
+    })
+
+# def AsignarHistoriasSprint(request, pk):
+#     sprint = get_object_or_404(Sprint, pk=pk)
+#     pkProyecto = sprint.Proyecto
+#     form = SprintHistoriasUsuarioForm(pk=pkProyecto.pk)
+    
+#     if request.method == 'POST':
+#         form = SprintHistoriasUsuarioForm(data=request.POST, pk=pkProyecto.pk)
+#         if form.is_valid():
+#             listH = request.POST.getlist("Historias")
+#             try:
+#                 status = EstatusHistoria.objects.all()
+#                 for historia_id in listH:
+#                     updateHistoria = get_object_or_404(HistoriaUsuario, pk=historia_id)
+#                     updateHistoria.Sprint = sprint
+#                     updateHistoria.Estatus = status[3] # [0] = Capturada esta el valor de 1,.. [3] = En Sprint esta el valor 4
+#                     updateHistoria.save()
+#                 #------------------------------------
+#                 #Agregar en el modelo sprint_Backlog
+#                 # Crea una nueva instancia de sprint_Backlog
+#                 SBacklog = sprint_Backlog(
+#                     Proyecto=pkProyecto,
+#                     Sprint=sprint,
+#                     historiaUsuario=updateHistoria
+#                 )
+                
+#                 # Guarda la instancia en la base de datos
+#                 SBacklog.save()
+#                 #------------------------------------
+#             except IntegrityError:
+#                 return render(request, 'ingles/registro.html', {'error_message': 'Ya Existe El Correo Electronico'})
+#             return HttpResponseRedirect(reverse('Scrum:listar_sprint', kwargs={'pk': pkProyecto.pk}))
+    
+#     data = {
+#         'form': form,
+#         'pk': pk
+#     }
+#     return render(request, 'Scrum/AsignarHistorias.html', data)
 
 # ------------------------------------------------------------------CRUD Tarea----------------------------------------------------------------------
 

@@ -471,30 +471,55 @@ class TareaAvanceForm(forms.ModelForm):
             **{f'dia_{i}': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ingrese horas dedicadas y restantes'}) for i in range(1, 32)}
         }
 
-
-
 class SprintHistoriasUsuarioForm(forms.ModelForm):
     Historias = forms.ModelMultipleChoiceField(
-        queryset=HistoriaUsuario.objects.none(),  # Inicialmente vacío
+        queryset=HistoriaUsuario.objects.none(),
         widget=forms.CheckboxSelectMultiple,
-        required=True
+        required=True,
+        label=''  # Eliminar etiqueta extra
     )
 
     def __init__(self, *args, **kwargs):
-        pk_proyecto = kwargs.pop('pk', None)  # Extraer el pk del proyecto
+        pk_proyecto = kwargs.pop('pk', None)
+        estatus_filter = kwargs.pop('estatus', None)
         super(SprintHistoriasUsuarioForm, self).__init__(*args, **kwargs)
+
         if pk_proyecto:
-            
-            self.fields['Historias'].queryset = HistoriaUsuario.objects.filter(
+            qs = HistoriaUsuario.objects.filter(
                 Sprint__isnull=True,
                 Proyecto__pk=pk_proyecto
             )
+            if estatus_filter:
+                qs = qs.filter(Estatus__pk=estatus_filter)
+            self.fields['Historias'].queryset = qs
 
     class Meta:
         model = HistoriaUsuario
         fields = ['Historias']
 
-# Checkbox
+
+# class SprintHistoriasUsuarioForm(forms.ModelForm):
+#     Historias = forms.ModelMultipleChoiceField(
+#         queryset=HistoriaUsuario.objects.none(),  # Inicialmente vacío
+#         widget=forms.CheckboxSelectMultiple,
+#         required=True
+#     )
+
+#     def __init__(self, *args, **kwargs):
+#         pk_proyecto = kwargs.pop('pk', None)  # Extraer el pk del proyecto
+#         super(SprintHistoriasUsuarioForm, self).__init__(*args, **kwargs)
+#         if pk_proyecto:
+            
+#             self.fields['Historias'].queryset = HistoriaUsuario.objects.filter(
+#                 Sprint__isnull=True,
+#                 Proyecto__pk=pk_proyecto
+#             )
+
+#     class Meta:
+#         model = HistoriaUsuario
+#         fields = ['Historias']
+
+# # Checkbox
 
 class SprintBacklogForm(forms.Form):
     

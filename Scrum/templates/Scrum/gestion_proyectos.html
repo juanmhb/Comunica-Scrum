@@ -15,7 +15,7 @@
   <div id="collapsePages-2" class="collapse show" aria-labelledby="headingPages" data-parent="#accordionSidebar">
     <div class="bg-white py-2 collapse-inner rounded">
       <h6 class="collapse-header">Inicio Historias de Usuario</h6>
-      <a class="collapse-item" href="{% url 'Scrum:productbacklog' pk %}">Historias de Usuario</a>
+      <a class="collapse-item" href="{% url 'Scrum:productbacklog' pk %}">Product Backlog</a>
       <!-- <a class="collapse-item" href="{% url 'Scrum:crear_historiausuario' pk %}" > Crear historia de Usuario</a> -->
       <div class="collapse-divider"></div>
     </div>
@@ -52,7 +52,7 @@
               <div class="card-header">
 
                 {% if Sprint%}
-                  <h1>Historias de Usuarios Sprint {{ Sprint.nombresprint }}</h1>
+                  <h1>Historias de Usuarios del Sprint {{ Sprint.numerosprint }}</h1>
                 {% else %}
                   <h1>ProductBacklog del {{ proyecto.nombreproyecto }}</h1>
                 {% endif %}
@@ -112,6 +112,10 @@
                               <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-list-check" viewBox="0 0 16 16">
                                 <path fill-rule="evenodd" d="M5 11.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zM3.854 2.146a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708 0l-.5-.5a.5.5 0 1 1 .708-.708L2 3.293l1.146-1.147a.5.5 0 0 1 .708 0zm0 4a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708 0l-.5-.5a.5.5 0 1 1 .708-.708L2 7.293l1.146-1.147a.5.5 0 0 1 .708 0zm0 4a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708 0l-.5-.5a.5.5 0 0 1 .708-.708l.146.147 1.146-1.147a.5.5 0 0 1 .708 0z"/>
                               </svg>
+                            </a>
+                            
+                            <a data-bs-toggle="tooltip" data-bs-placement="top" title="Esfuerzo dedicado a las Tareas de la HU" href="{% url 'Scrum:tareas_avance' sprint_id=Sprint.pk historia_usuario_id=Historia.id %}" class="btn btn-outline-info">
+                              <img src="{% static 'Scrum/img/Registro_Esfuerzo_Tarea.png' %}" alt="Esfuerzo Tareas" style="width:25px; height:25px;">
                             </a>
                             <!-- Se debe revisar TODO lo relacionado al tablero Kanban. jmhb 12/nov/2024 -->
                             {% if user.usuarioempleado.Roles.NombreRol != 'Developers' %}

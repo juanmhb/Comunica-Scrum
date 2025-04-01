@@ -1,5 +1,80 @@
 <div class="modal-dialog modal-lg" role="document">
     <div class="modal-content">
+  
+      <div class="modal-header">
+        <h2 class="modal-title">Asignación de HU al Sprint ({{estatus_sprint}}): {{ object }}</h2>
+        <button class="close" type="button" data-bs-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+  
+      <!-- Filtro de Estatus (fuera del formulario POST) -->
+      <div class="modal-body">
+        <label for="estatus">Filtrar por Estatus de la HU:</label>
+        <select name="estatus" id="estatus" class="form-control mb-3" onchange="filtrarEstatus(this.value)">
+          <option value="">Todos</option>
+          {% for e in estatus_list %}
+            <option value="{{ e.pk }}" {% if estatus_actual == e.pk|stringformat:'s' %}selected{% endif %}>
+              {{ e.estatus }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+  
+      <!-- Formulario principal de asignación -->
+      <form action="{% url 'Scrum:asignarhistorias_sprint' pk %}" method="POST">
+        {% csrf_token %}
+        <div class="modal-body">
+  
+          <table class="table table-bordered table-hover">
+            <thead class="thead-light">
+              <tr>
+                <th>Seleccionar</th>
+                <th>N° HU</th>
+                <th>Nombre</th>
+                <th>Estatus</th>
+                <th>Prioridad</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for historia in form.fields.Historias.queryset %}
+                <tr>
+                  <td>
+                    <input type="checkbox" name="Historias" value="{{ historia.pk }}">
+                  </td>
+                  <td>{{ historia.NumeroHU }}</td>
+                  <td>{{ historia.nombre }}</td>
+                  <td>{{ historia.Estatus.estatus }}</td>
+                  <td>{{ historia.get_Prioridad_display }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+  
+        </div>
+        <!-- Sprint: {{estatus_sprint.pk}} -->
+        <div class="modal-footer">
+          <button class="btn btn-outline-danger" type="button" data-bs-dismiss="modal">Salir</button>
+           {% if estatus_sprint.pk == 1 or estatus_sprint.pk == 3 %} <!-- 1 = Creado, 3 = en Ejecución -->
+            <button class="btn btn-outline-primary" type="submit">Confirmar</button>
+          {% endif %}
+        </div>
+      </form>
+  
+    </div>
+  </div>
+  
+  <!-- SCRIPT para recargar con filtro -->
+
+  <script type="text/javascript">
+    function filtrarEstatus(estatus_id) {
+      const base_url = "{% url 'Scrum:asignarhistorias_sprint' pk %}";
+      const full_url = base_url + "?estatus=" + estatus_id;
+      abrir_modal_edicion(full_url);  // ✅ recarga el modal con filtro aplicado
+    }
+  </script>
+<!-- <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
         <div class="modal-header">
             <h2 class="modal-title">Edicion de Proyectos: {{ object }}</h2>
             <button class="close" type="button" data-bs-dismiss="modal" aria-label="Close">
@@ -12,9 +87,9 @@
                 {{ form.as_table }}
             </div>
             <div class="modal-footer">
-                <button class="btn btn-outline-danger" type="button" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-outline-danger" type="button" data-bs-dismiss="modal">Salir</button>
                 <button class="btn btn-outline-primary" type="submit">Confirmar</button>
             </div>
         </form>
     </div>
-</div>
+</div> -->

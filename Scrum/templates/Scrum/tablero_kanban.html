@@ -12,7 +12,7 @@
     <div class="bg-white py-2 collapse-inner rounded">
       <h6 class="collapse-header">Inicio Historias de Usuario</h6>
       {% if pk %}
-        <a class="collapse-item" href="{% url 'Scrum:productbacklog' pk %}">Historias de Usuario</a>
+        <a class="collapse-item" href="{% url 'Scrum:productbacklog' pk %}">Product Backlog</a>
       {% else %}
         <span class="collapse-item">ID de proyecto no disponible</span>
       {% endif %}

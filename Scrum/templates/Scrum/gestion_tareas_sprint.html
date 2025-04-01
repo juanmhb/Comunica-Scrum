@@ -12,9 +12,9 @@
     <div class="bg-white py-2 collapse-inner rounded">
       <h6 class="collapse-header">Inicio Historias de Usuario</h6>
       {% if pk %}
-      <a class="collapse-item" href="{% url 'Scrum:productbacklog' pk %}">Historias de Usuario</a>
+      <a class="collapse-item" href="{% url 'Scrum:productbacklog' pk %}">Product Backlog</a>
       {% else %}
-      <a class="collapse-item" href="#">Historias de Usuario</a>
+      <a class="collapse-item" href="#">Product Backlog</a>
       {% endif %}
       <div class="collapse-divider"></div>
     </div>
@@ -45,50 +45,9 @@
 
 {% block content %}
 <div class="container">
-  <h3>BIENVENIDO A LA SECCIÓN DE TAREAS de {{ historia_usuario.nombre }}</h3>
+  <h3>Listado de tareas de la {{ historia_usuario.NumeroHU }}.  {{ historia_usuario.nombre }}</h3>
 
-  <!-- Botón para ver el avance de tareas -->
  
-  <a href="{% url 'Scrum:tareas_avance' sprint_id=historia_usuario.Sprint.pk historia_usuario_id=historia_usuario.pk %}" class="btn btn-outline-primary ml-auto mb-2 mb-md-0" style="float: right;">Tareas Avance</a>
-
-
-
-  {% if Sprint %}
-  <!-- Botón de regreso según el contexto del sprint -->
-    {% if pksprint %}
-      <a href="{% url 'Scrum:listar_sprint_Historias' pksprint %}" class="btn btn-outline-primary">
-        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-arrow-return-left"
-          viewBox="0 0 16 16">
-          <path fill-rule="evenodd"
-            d="M10.854 5.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 7.793l2.646-2.647a.5.5 0 0 1 .708 0z" />
-          <path
-            d="M2 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2V2a2 2 0 0 1-2 2H2zm6.5 4.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3a.5.5 0 0 1 1 0z" />
-        </svg>
-        Regresar
-      </a>
-    {% else %}
-      <a href="#" class="btn btn-outline-primary">Regresar</a>
-    {% endif %}
-  {% else %}
-    <!-- Botón de regreso al product backlog si no es un sprint -->
-    <div style="margin-bottom: 20px;">
-      {% if pk %}
-      <a href="{% url 'Scrum:productbacklog' pk %}" class="btn btn-outline-primary">
-        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-arrow-return-left"
-          viewBox="0 0 16 16">
-          <path fill-rule="evenodd"
-            d="M14.5 1.5a.5.5 0 0 1 .5.5v4.8a2.5 2.5 0 0 1-2.5 2.5H2.707l3.347 3.346a.5.5 0 0 1-.708.708l-4.2-4.2a.5.5 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 8.3H12.5A1.5 1.5 0 0 0 14 6.8V2a.5.5 0 0 1 .5-.5z" />
-        </svg>
-        Regresar
-      </a>
-      {% else %}
-        <a href="#" class="btn btn-outline-primary">Regresar</a>
-      {% endif %}
-    </div>
-  {% endif %}
-
-  <a href="{% url 'Scrum:crear_tarea_Sprint' historia_usuario.pk %}" class="btn btn-outline-primary mb-3">Crear nueva tarea de la HU</a>
-
   {% if Tareas %}
   <div class="table-responsive">
     <table class="table table-striped">
@@ -160,6 +119,48 @@
     </div>
   </div>
 </div>
+ <!-- Botón para ver el avance de tareas -->
+ 
+ <a href="{% url 'Scrum:tareas_avance' sprint_id=historia_usuario.Sprint.pk historia_usuario_id=historia_usuario.pk %}" class="btn btn-outline-primary ml-auto mb-2 mb-md-0" style="float: right;">Tareas Avance</a>
+
+
+
+ {% if Sprint %}
+ <!-- Botón de regreso según el contexto del sprint -->
+   {% if pksprint %}
+     <a href="{% url 'Scrum:listar_sprint_Historias' pksprint %}" class="btn btn-outline-primary">
+       <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-arrow-return-left"
+         viewBox="0 0 16 16">
+         <path fill-rule="evenodd"
+           d="M10.854 5.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 7.793l2.646-2.647a.5.5 0 0 1 .708 0z" />
+         <path
+           d="M2 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2V2a2 2 0 0 1-2 2H2zm6.5 4.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3a.5.5 0 0 1 1 0z" />
+       </svg>
+       Regresar
+     </a>
+   {% else %}
+     <a href="#" class="btn btn-outline-primary">Regresar</a>
+   {% endif %}
+ {% else %}
+   <!-- Botón de regreso al product backlog si no es un sprint -->
+   <div style="margin-bottom: 20px;">
+     {% if pk %}
+     <a href="{% url 'Scrum:productbacklog' pk %}" class="btn btn-outline-primary">
+       <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-arrow-return-left"
+         viewBox="0 0 16 16">
+         <path fill-rule="evenodd"
+           d="M14.5 1.5a.5.5 0 0 1 .5.5v4.8a2.5 2.5 0 0 1-2.5 2.5H2.707l3.347 3.346a.5.5 0 0 1-.708.708l-4.2-4.2a.5.5 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 8.3H12.5A1.5 1.5 0 0 0 14 6.8V2a.5.5 0 0 1 .5-.5z" />
+       </svg>
+       Regresar
+     </a>
+     {% else %}
+       <a href="#" class="btn btn-outline-primary">Regresar</a>
+     {% endif %}
+   </div>
+ {% endif %}
+
+ <a href="{% url 'Scrum:crear_tarea_Sprint' historia_usuario.pk %}" class="btn btn-outline-primary mb-3">Crear nueva tarea de la HU</a>
+
 {% endblock %}
 
 {% block extrajs %}

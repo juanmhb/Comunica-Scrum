@@ -43,7 +43,7 @@
 {% endblock %}
 
 {% block content %}
-  <h1>Tareas Avance de {{ historia_usuario }}</h1>
+  <h1> Esfuerzo dedicado a las tareas  de la {{ historia_usuario.NumeroHU }}. {{ historia_usuario }}</h1>
 
   {% if historia_usuario.pk %}
   <!-- <a href="{% url 'Scrum:tablero_kanban' historia_usuario.pk %}" class="btn btn-outline-primary">
