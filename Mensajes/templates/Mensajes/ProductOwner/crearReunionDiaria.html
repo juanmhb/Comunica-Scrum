@@ -14,10 +14,16 @@
     <div class=" margin: auto;">
 
     {{ form | crispy }}
-    
+    <!-- <div class="form-check mb-3">
+        {{ form.crear_todas }}
+        <label class="form-check-label" for="crear_todas">
+            Crear todas las reuniones diarias del sprint
+        </label>
+    </div> -->
     <button type="submit" id="submit" class="btn btn-success"> Guardar datos </button>
     
 </div>
 </form>
 
 {% endblock %}
+

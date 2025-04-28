@@ -132,9 +132,14 @@ class Proyecto(models.Model):
 
 
 class EmpleadoProyecto(models.Model):
+    ListaStatus = (
+    ("0", "Baja"), 
+    ("1", "Activo"),
+    )
     Empleado = models.ForeignKey(Empleado,on_delete=models.CASCADE,null=True, related_name='DetalleEmpleado')
     Proyecto = models.ForeignKey(Proyecto,on_delete=models.CASCADE,null=True, related_name='DetalleProyecto')
-
+    Status = models.CharField(max_length=1,choices=ListaStatus,null=True, blank=True)
+    
     class Meta:
         ordering = ['pk']
 

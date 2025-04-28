@@ -3782,44 +3782,180 @@ def subListaReunionDiaria(request):
     return render(request, 'Mensajes/ProductOwner/subListaReunionDiaria.html', data)
 
 # Crear Reunion Diaria heredando datos del modelo Sprint
+# @transaction.atomic
+# def crear_Reunion_Diaria(request, id): # id del Sprint
+#     usuario = request.user
+#     empleado = Empleado.objects.get(Usuario=usuario)
+
+#     if request.method == 'POST':
+#         form = MensajeRevisionSprintForms(request.POST)
+#         if form.is_valid():
+
+#             # Obtener datos del formulario o de donde sea necesario
+#             fecha_hora = form.cleaned_data['FechaHora']
+#             FechaHoraFormateada = fecha_hora.strftime('%d/%m/%Y %H:%M')
+#             ref = m_EventoScrum.objects.get(pk=4) # Evento - Reunion Diaria
+
+#             producto = get_object_or_404(Sprint, pk=id)
+#             #descripcion = producto.objetivosprint
+#             descripcion = f"{FechaHoraFormateada},  Reunión Diaria. {producto.objetivosprint}"
+#             proyecto = producto.Proyecto
+#             # sprint = producto.nombresprint
+
+#             sp = Sprint.objects.get(pk=id)
+
+#             # Crear instancia de Mensaje
+#             mensaje = Mensaje.objects.create(
+#                 Descripcion=descripcion,
+#                 FechaHora=fecha_hora,
+#                 Emisor=empleado,
+#                 Proyecto=proyecto,
+#                 Sprint=sp,
+#                 EventoScrum=ref,
+#                 # Asignar otras relaciones según sea necesario
+#             )
+
+#         # Redirigir a alguna página de éxito o hacer lo que necesites
+#         return redirect('Mensajes:listaReunionDiaria')
+#     else:
+#         form = MensajeRevisionSprintForms()
+#     return render(request, 'Mensajes/ProductOwner/crearReunionDiaria.html', {'form': form})
+
+
+# Crear Reunion Diaria heredando datos del modelo Sprint
+# @transaction.atomic
+# def crear_Reunion_Diaria(request, id):  # id del Sprint
+#     usuario = request.user
+#     empleado = Empleado.objects.get(Usuario=usuario)
+#     ref = m_EventoScrum.objects.get(pk=4)  # Evento - Reunion Diaria
+#     sprint = get_object_or_404(Sprint, pk=id)
+#     proyecto = sprint.Proyecto
+
+#     if request.method == 'POST':
+#         form = MensajeRevisionSprintForms(request.POST)
+#         if form.is_valid():
+#             crear_todas = form.cleaned_data.get('crear_todas')
+#             fecha_hora = form.cleaned_data['FechaHora']
+
+#             if crear_todas:
+#                 # Crear todas las reuniones entre inicio y fin del sprint, ignorando fines de semana
+#                 current_date = sprint.fechainiciosprint
+#                 end_date = sprint.fechafinalsprint
+
+#                 while current_date <= end_date:
+#                     if current_date.weekday() < 5:  # 0 = lunes, 6 = domingo
+#                         fecha_datetime = datetime.combine(current_date, fecha_hora.time())
+#                         descripcion = f"{fecha_datetime.strftime('%d/%m/%Y %H:%M')}, Reunión Diaria. {sprint.objetivosprint}"
+                        
+#                         Mensaje.objects.create(
+#                             Descripcion=descripcion,
+#                             FechaHora=fecha_datetime,
+#                             Emisor=empleado,
+#                             Proyecto=proyecto,
+#                             Sprint=sprint,
+#                             EventoScrum=ref
+#                         )
+#                     current_date += timedelta(days=1)
+
+#             else:
+#                 # Crear solo una reunión
+#                 fecha_formateada = fecha_hora.strftime('%d/%m/%Y %H:%M')
+#                 descripcion = f"{fecha_formateada}, Reunión Diaria. {sprint.objetivosprint}"
+
+#                 Mensaje.objects.create(
+#                     Descripcion=descripcion,
+#                     FechaHora=fecha_hora,
+#                     Emisor=empleado,
+#                     Proyecto=proyecto,
+#                     Sprint=sprint,
+#                     EventoScrum=ref
+#                 )
+
+#             return redirect('Mensajes:listaReunionDiaria')
+#     else:
+#         form = MensajeRevisionSprintForms()
+
+#     return render(request, 'Mensajes/ProductOwner/crearReunionDiaria.html', {'form': form})
+
+# Crear Reunion Diaria heredando datos del modelo Sprint
 @transaction.atomic
-def crear_Reunion_Diaria(request, id): # id del Sprint
+def crear_Reunion_Diaria(request, id):  # id del Sprint
     usuario = request.user
     empleado = Empleado.objects.get(Usuario=usuario)
+    ref = m_EventoScrum.objects.get(pk=4)  # Evento - Reunión Diaria
+    sprint = get_object_or_404(Sprint, pk=id)
+    proyecto = sprint.Proyecto
 
     if request.method == 'POST':
-        form = MensajeRevisionSprintForms(request.POST)
+        form = MensajeReunionDiariaForms(request.POST)
         if form.is_valid():
-
-            # Obtener datos del formulario o de donde sea necesario
+            crear_todas = form.cleaned_data.get('crear_todas')
             fecha_hora = form.cleaned_data['FechaHora']
-            FechaHoraFormateada = fecha_hora.strftime('%d/%m/%Y %H:%M')
-            ref = m_EventoScrum.objects.get(pk=4) # Evento - Reunion Diaria
 
-            producto = get_object_or_404(Sprint, pk=id)
-            #descripcion = producto.objetivosprint
-            descripcion = f"{FechaHoraFormateada},  Reunión Diaria. {producto.objetivosprint}"
-            proyecto = producto.Proyecto
-            # sprint = producto.nombresprint
+            def asignar_asistentes(mensaje):
+                empleados_activos = EmpleadoProyecto.objects.filter(
+                    Proyecto=proyecto,
+                    Status="1"  # Activo
+                ).select_related("Empleado", "Empleado__Roles")
 
-            sp = Sprint.objects.get(pk=id)
+                for ep in empleados_activos:
+                    AsistentesEventosScrum.objects.create(
+                        Proyecto=mensaje.Proyecto,
+                        EventoScrum=mensaje.EventoScrum,
+                        Mensaje=mensaje,
+                        Usuario=ep.Empleado,
+                        Rol=ep.Empleado.Roles,
+                        Status="1",  # Obligatorio
+                        TipoAsistencia="S"  # Síncrona
+                    )
 
-            # Crear instancia de Mensaje
-            mensaje = Mensaje.objects.create(
-                Descripcion=descripcion,
-                FechaHora=fecha_hora,
-                Emisor=empleado,
-                Proyecto=proyecto,
-                Sprint=sp,
-                EventoScrum=ref,
-                # Asignar otras relaciones según sea necesario
-            )
+            if crear_todas:
+                current_date = sprint.fechainiciosprint
+                end_date = sprint.fechafinalsprint
 
-        # Redirigir a alguna página de éxito o hacer lo que necesites
-        return redirect('Mensajes:listaReunionDiaria')
+                while current_date <= end_date:
+                    if current_date.weekday() < 5:  # Lunes a viernes
+                        fecha_datetime = datetime.combine(current_date, fecha_hora.time())
+                        descripcion = f"{fecha_datetime.strftime('%d/%m/%Y %H:%M')}, Reunión Diaria. {sprint.objetivosprint}"
+                        
+                        mensaje = Mensaje.objects.create(
+                            Descripcion=descripcion,
+                            FechaHora=fecha_datetime,
+                            Emisor=empleado,
+                            Proyecto=proyecto,
+                            Sprint=sprint,
+                            EventoScrum=ref
+                        )
+
+                        # Crear asistentes
+                        asignar_asistentes(mensaje)
+
+                    current_date += timedelta(days=1)
+
+
+            else:
+                fecha_formateada = fecha_hora.strftime('%d/%m/%Y %H:%M')
+                descripcion = f"{fecha_formateada}, Reunión Diaria. {sprint.objetivosprint}"
+
+                mensaje = Mensaje.objects.create(
+                    Descripcion=descripcion,
+                    FechaHora=fecha_hora,
+                    Emisor=empleado,
+                    Proyecto=proyecto,
+                    Sprint=sprint,
+                    EventoScrum=ref
+                )
+                # Crear asistentes
+                asignar_asistentes(mensaje)
+
+
+            return redirect('Mensajes:listaReunionDiaria')
+
     else:
-        form = MensajeRevisionSprintForms()
+        form = MensajeReunionDiariaForms()
+
     return render(request, 'Mensajes/ProductOwner/crearReunionDiaria.html', {'form': form})
+
 
 class ActualizarReunionDiaria(LoginRequiredMixin, UpdateView):
     model = Mensaje

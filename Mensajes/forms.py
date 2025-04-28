@@ -540,6 +540,27 @@ class MensajeRevisionSprintForms(forms.ModelForm):
                 }
             ),
         }
+class MensajeReunionDiariaForms(forms.ModelForm):
+    crear_todas = forms.BooleanField(
+        required=False,
+        label="Crear todas las reuniones diarias del sprint",
+    )
+
+    class Meta:
+        model = Mensaje
+        fields = ['FechaHora']
+        labels = {
+            'FechaHora': 'Fecha y Hora (aaaa-mm-dd hh:mm)',
+        }
+
+        widgets = {
+            'FechaHora': forms.DateInput(
+                attrs={
+                    'class': 'form-control',
+                    'placeholder': 'Ejemplo: 2024-01-17 17:30'
+                }
+            ),
+        }
 
 # Formulario para comentarios de los asistentes
 class comentarios_Forms(forms.ModelForm):
