@@ -67,6 +67,87 @@ def listaRefinamientoProductBL(request):
     else: 
         return HttpResponseRedirect(reverse('Scrum:Logout'))
 
+# @transaction.atomic
+# def crear_Refinamiento(request):
+#     usuario = request.user
+#     empleado = Empleado.objects.get(Usuario=usuario)
+
+#     if request.method == 'POST':
+#         form = MensajeForms(request.POST, user=request.user)
+#         if form.is_valid():
+
+#             # Obtener datos del formulario o de donde sea necesario
+#             descripcion = form.cleaned_data['Descripcion']
+#             fecha_hora = form.cleaned_data['FechaHora']
+#             proyecto = form.cleaned_data['Proyecto']
+#             ref = m_EventoScrum.objects.get(pk=2)
+
+#             # Crear instancia de Mensaje
+#             mensaje = Mensaje.objects.create(
+#                 Descripcion=descripcion,
+#                 FechaHora=fecha_hora,
+#                 Emisor=empleado,
+#                 Proyecto=proyecto,
+#                 EventoScrum=ref,
+#                 # Asignar otras relaciones según sea necesario
+#             )
+
+#             # Crear instancia de m_RefinamientoProductBL
+#             planificacion = m_RefinamientoProductBL.objects.create(
+#                 Emisor=empleado,
+#                 FechaHora=fecha_hora,
+#                 Mensaje=mensaje,
+#                 Proyecto=proyecto,
+#                 # Asignar otras relaciones según sea necesario
+#             )
+
+#         # Redirigir a alguna página de éxito o hacer lo que necesites
+#         return redirect('Mensajes:listaRefinamiento')
+#     else:
+#         form = MensajeForms(user=request.user)
+#     return render(request, 'Mensajes/ProductOwner/crearRefinamientoBL.html', {'form': form})
+
+def registrar_asistentes_y_receptores(proyecto, sprint, mensaje, evento, emisor):
+    """
+    Crea automáticamente los asistentes y receptores para un mensaje de evento Scrum.
+
+    Args:
+        proyecto (Proyecto): Proyecto asociado.
+        sprint (Sprint or None): Sprint asociado (puede ser None).
+        mensaje (Mensaje): El mensaje del evento.
+        evento (m_EventoScrum): Tipo de evento Scrum.
+        emisor (Empleado): Empleado que emite el mensaje.
+    """
+    empleados_activos = EmpleadoProyecto.objects.filter(
+        Proyecto=proyecto,
+        Status="1"
+    ).select_related("Empleado", "Empleado__Roles")
+
+    for ep in empleados_activos:
+        empleado = ep.Empleado
+
+        # Asistente
+        AsistentesEventosScrum.objects.create(
+            Proyecto=proyecto,
+            EventoScrum=evento,
+            Mensaje=mensaje,
+            Usuario=empleado,
+            Rol=empleado.Roles,
+            Status="1",  # Obligatorio
+            TipoAsistencia="S"
+        )
+
+        # Receptor
+        MensajeReceptor.objects.create(
+            Proyecto=proyecto,
+            Mensaje=mensaje,
+            Receptor=empleado,
+            EventoScrum=evento,
+            Emisor=emisor,
+            Sprint=sprint,
+        )
+
+
 @transaction.atomic
 def crear_Refinamiento(request):
     usuario = request.user
@@ -75,37 +156,73 @@ def crear_Refinamiento(request):
     if request.method == 'POST':
         form = MensajeForms(request.POST, user=request.user)
         if form.is_valid():
-
-            # Obtener datos del formulario o de donde sea necesario
             descripcion = form.cleaned_data['Descripcion']
             fecha_hora = form.cleaned_data['FechaHora']
             proyecto = form.cleaned_data['Proyecto']
-            ref = m_EventoScrum.objects.get(pk=2)
+            ref = m_EventoScrum.objects.get(pk=2)  # Refinamiento
 
-            # Crear instancia de Mensaje
+            # Crear el mensaje principal (reunión)
             mensaje = Mensaje.objects.create(
                 Descripcion=descripcion,
                 FechaHora=fecha_hora,
                 Emisor=empleado,
                 Proyecto=proyecto,
                 EventoScrum=ref,
-                # Asignar otras relaciones según sea necesario
             )
 
-            # Crear instancia de m_RefinamientoProductBL
-            planificacion = m_RefinamientoProductBL.objects.create(
+            # Crear instancia de refinamiento del Product Backlog
+            m_RefinamientoProductBL.objects.create(
                 Emisor=empleado,
                 FechaHora=fecha_hora,
                 Mensaje=mensaje,
                 Proyecto=proyecto,
-                # Asignar otras relaciones según sea necesario
             )
 
-        # Redirigir a alguna página de éxito o hacer lo que necesites
-        return redirect('Mensajes:listaRefinamiento')
+            # # Obtener empleados activos del proyecto
+            # empleados_activos = EmpleadoProyecto.objects.filter(
+            #     Proyecto=proyecto,
+            #     Status="1"  # Activo
+            # ).select_related("Empleado", "Empleado__Roles")
+
+            # for ep in empleados_activos:
+            #     emp = ep.Empleado
+
+            #     # Crear asistente
+            #     AsistentesEventosScrum.objects.create(
+            #         Proyecto=proyecto,
+            #         EventoScrum=ref,
+            #         Mensaje=mensaje,
+            #         Usuario=emp,
+            #         Rol=emp.Roles,
+            #         Status="1",           # Obligatorio
+            #         TipoAsistencia="S"    # Síncrona
+            #     )
+
+            #     # Crear mensaje receptor
+            #     MensajeReceptor.objects.create(
+            #         Proyecto=proyecto,
+            #         Mensaje=mensaje,
+            #         Receptor=emp,
+            #         EventoScrum=ref,
+            #         Emisor=empleado,
+            #         Sprint=None  # Refinamiento no tiene sprint asignado
+            #     )
+            sp=None
+            registrar_asistentes_y_receptores(
+                proyecto=proyecto,
+                sprint=sp,
+                mensaje=mensaje,
+                evento=ref,
+                emisor=empleado
+            )
+
+            return redirect('Mensajes:listaRefinamiento')
+
     else:
         form = MensajeForms(user=request.user)
+
     return render(request, 'Mensajes/ProductOwner/crearRefinamientoBL.html', {'form': form})
+
 
 class ActualizarMensaje(LoginRequiredMixin, UpdateView):
     model = Mensaje
@@ -1363,31 +1480,76 @@ def crear_PlaneacionSprint5(request):
     return render(request, 'Mensajes/ProductOwner/crearPlaneacionSprint.html', {'form': form})
 
 # Opcion 6, heredando datos del modelo Sprint
+# @transaction.atomic
+# def crear_PlaneacionSprint6(request, id):
+#     usuario = request.user
+#     empleado = Empleado.objects.get(Usuario=usuario)
+
+#     # sprint = Sprint.objects.filter(pk=id)
+
+#     if request.method == 'POST':
+#         form = MensajePlaneacionSprintForms(request.POST)
+#         if form.is_valid():
+
+#             # Obtener datos del formulario o de donde sea necesario
+#             fecha_hora = form.cleaned_data['FechaHora']
+#             # Convertimos la fecha a formato día/mes/año hh:mm
+#             FechaHoraFormateada = fecha_hora.strftime('%d/%m/%Y %H:%M')
+#             ref = m_EventoScrum.objects.get(pk=3)
+
+#             producto = get_object_or_404(Sprint, pk=id)
+#             descripcion = f"{FechaHoraFormateada},  Planeación Sprint. {producto.objetivosprint}"
+#             proyecto = producto.Proyecto
+#             # sprint = producto.nombresprint
+
+#             sp = Sprint.objects.get(pk=id)
+
+#             # Crear instancia de Mensaje
+#             mensaje = Mensaje.objects.create(
+#                 Descripcion=descripcion,
+#                 FechaHora=fecha_hora,
+#                 Emisor=empleado,
+#                 Proyecto=proyecto,
+#                 Sprint=sp,
+#                 EventoScrum=ref,
+#                 # Asignar otras relaciones según sea necesario
+#             )
+
+#             # Crear instancia de m_PlanificacionSprint
+#             planificacion = m_PlanificacionSprint.objects.create(
+#                 Emisor=empleado,
+#                 FechaHora=fecha_hora,
+#                 Mensaje=mensaje,
+#                 Proyecto=proyecto,
+#                 Sprint=sp,
+#                 # Asignar otras relaciones según sea necesario
+#             )
+
+#         # Redirigir a alguna página de éxito o hacer lo que necesites
+#         return redirect('Mensajes:listaPlaneacionSprint')
+#     else:
+#         form = MensajePlaneacionSprintForms()
+#     return render(request, 'Mensajes/ProductOwner/crearPlaneacionSprint.html', {'form': form})
+
+
 @transaction.atomic
 def crear_PlaneacionSprint6(request, id):
     usuario = request.user
     empleado = Empleado.objects.get(Usuario=usuario)
 
-    # sprint = Sprint.objects.filter(pk=id)
-
     if request.method == 'POST':
         form = MensajePlaneacionSprintForms(request.POST)
         if form.is_valid():
-
-            # Obtener datos del formulario o de donde sea necesario
             fecha_hora = form.cleaned_data['FechaHora']
-            # Convertimos la fecha a formato día/mes/año hh:mm
             FechaHoraFormateada = fecha_hora.strftime('%d/%m/%Y %H:%M')
-            ref = m_EventoScrum.objects.get(pk=3)
+            ref = m_EventoScrum.objects.get(pk=3)  # Planeación
 
             producto = get_object_or_404(Sprint, pk=id)
             descripcion = f"{FechaHoraFormateada},  Planeación Sprint. {producto.objetivosprint}"
             proyecto = producto.Proyecto
-            # sprint = producto.nombresprint
+            sp = producto
 
-            sp = Sprint.objects.get(pk=id)
-
-            # Crear instancia de Mensaje
+            # Crear el mensaje (reunión)
             mensaje = Mensaje.objects.create(
                 Descripcion=descripcion,
                 FechaHora=fecha_hora,
@@ -1395,23 +1557,58 @@ def crear_PlaneacionSprint6(request, id):
                 Proyecto=proyecto,
                 Sprint=sp,
                 EventoScrum=ref,
-                # Asignar otras relaciones según sea necesario
             )
 
-            # Crear instancia de m_PlanificacionSprint
+            # Crear la planificación como evento específico
             planificacion = m_PlanificacionSprint.objects.create(
                 Emisor=empleado,
                 FechaHora=fecha_hora,
                 Mensaje=mensaje,
                 Proyecto=proyecto,
                 Sprint=sp,
-                # Asignar otras relaciones según sea necesario
             )
 
-        # Redirigir a alguna página de éxito o hacer lo que necesites
-        return redirect('Mensajes:listaPlaneacionSprint')
+            # # ✅ Crear asistentes y receptores automáticamente
+            # empleados_activos = EmpleadoProyecto.objects.filter(
+            #     Proyecto=proyecto,
+            #     Status="1"  # Activo
+            # ).select_related("Empleado", "Empleado__Roles")
+
+            # for ep in empleados_activos:
+            #     emp = ep.Empleado
+
+            #     # Asistente a la reunión
+            #     AsistentesEventosScrum.objects.create(
+            #         Proyecto=proyecto,
+            #         EventoScrum=ref,
+            #         Mensaje=mensaje,
+            #         Usuario=emp,
+            #         Rol=emp.Roles,
+            #         Status="1",  # Obligatorio
+            #         TipoAsistencia="S"  # Síncrona
+            #     )
+
+            #     # Receptor del mensaje
+            #     MensajeReceptor.objects.create(
+            #         Proyecto=proyecto,
+            #         Mensaje=mensaje,
+            #         Receptor=emp,
+            #         EventoScrum=ref,
+            #         Emisor=empleado,
+            #         Sprint=sp,
+            #     )
+            registrar_asistentes_y_receptores(
+                proyecto=proyecto,
+                sprint=sp,
+                mensaje=mensaje,
+                evento=ref,
+                emisor=empleado
+            )
+
+            return redirect('Mensajes:listaPlaneacionSprint')
     else:
         form = MensajePlaneacionSprintForms()
+
     return render(request, 'Mensajes/ProductOwner/crearPlaneacionSprint.html', {'form': form})
 
 # Opcion 1
@@ -2216,30 +2413,75 @@ def subListaRevisionSprint(request):
 
     return render(request, 'Mensajes/ProductOwner/subListaRevisionSprint.html', data)
 
-# Crear revision del sprint heredando datos del modelo Sprint
+# # Crear revision del sprint heredando datos del modelo Sprint
+# @transaction.atomic
+# def crear_RevisionSprint(request, id): #id del Sprint
+#     usuario = request.user
+#     empleado = Empleado.objects.get(Usuario=usuario)
+
+#     if request.method == 'POST':
+#         form = MensajeRevisionSprintForms(request.POST)
+#         if form.is_valid():
+
+#             # Obtener datos del formulario o de donde sea necesario
+#             fecha_hora = form.cleaned_data['FechaHora']
+#             FechaHoraFormateada = fecha_hora.strftime('%d/%m/%Y %H:%M')
+#             ref = m_EventoScrum.objects.get(pk=5) # Cierre del sprint 
+
+#             producto = get_object_or_404(Sprint, pk=id)
+#             descripcion = f"{FechaHoraFormateada},  Revisión Sprint. {producto.objetivosprint}"
+#             #descripcion = producto.objetivosprint
+#             proyecto = producto.Proyecto
+#             # sprint = producto.nombresprint
+
+#             sp = Sprint.objects.get(pk=id)
+
+#             # Crear instancia de Mensaje
+#             mensaje = Mensaje.objects.create(
+#                 Descripcion=descripcion,
+#                 FechaHora=fecha_hora,
+#                 Emisor=empleado,
+#                 Proyecto=proyecto,
+#                 Sprint=sp,
+#                 EventoScrum=ref,
+#                 # Asignar otras relaciones según sea necesario
+#             )
+
+#             # Crear instancia de m_cierreSprint
+#             revision = m_CierreSprint.objects.create(
+#                 Emisor=empleado,
+#                 FechaHora=fecha_hora,
+#                 Mensaje=mensaje,
+#                 Proyecto=proyecto,
+#                 Sprint=sp,
+#                 # Asignar otras relaciones según sea necesario
+#             )
+
+#         # Redirigir a alguna página de éxito o hacer lo que necesites
+#         return redirect('Mensajes:listaRevisionSprint')
+#     else:
+#         form = MensajeRevisionSprintForms()
+#     return render(request, 'Mensajes/ProductOwner/crearRevisionSprint.html', {'form': form})
+
+
 @transaction.atomic
-def crear_RevisionSprint(request, id): #id del Sprint
+def crear_RevisionSprint(request, id):  # id del Sprint
     usuario = request.user
     empleado = Empleado.objects.get(Usuario=usuario)
 
     if request.method == 'POST':
         form = MensajeRevisionSprintForms(request.POST)
         if form.is_valid():
-
-            # Obtener datos del formulario o de donde sea necesario
             fecha_hora = form.cleaned_data['FechaHora']
             FechaHoraFormateada = fecha_hora.strftime('%d/%m/%Y %H:%M')
-            ref = m_EventoScrum.objects.get(pk=5) # Cierre del sprint 
+            ref = m_EventoScrum.objects.get(pk=5)  # Revisión Sprint
 
             producto = get_object_or_404(Sprint, pk=id)
             descripcion = f"{FechaHoraFormateada},  Revisión Sprint. {producto.objetivosprint}"
-            #descripcion = producto.objetivosprint
             proyecto = producto.Proyecto
-            # sprint = producto.nombresprint
+            sp = producto
 
-            sp = Sprint.objects.get(pk=id)
-
-            # Crear instancia de Mensaje
+            # Crear el mensaje
             mensaje = Mensaje.objects.create(
                 Descripcion=descripcion,
                 FechaHora=fecha_hora,
@@ -2247,23 +2489,60 @@ def crear_RevisionSprint(request, id): #id del Sprint
                 Proyecto=proyecto,
                 Sprint=sp,
                 EventoScrum=ref,
-                # Asignar otras relaciones según sea necesario
             )
 
-            # Crear instancia de m_cierreSprint
-            revision = m_CierreSprint.objects.create(
+            # Crear el registro de revisión
+            m_CierreSprint.objects.create(
                 Emisor=empleado,
                 FechaHora=fecha_hora,
                 Mensaje=mensaje,
                 Proyecto=proyecto,
                 Sprint=sp,
-                # Asignar otras relaciones según sea necesario
             )
 
-        # Redirigir a alguna página de éxito o hacer lo que necesites
-        return redirect('Mensajes:listaRevisionSprint')
+            # # ✅ Crear asistentes y receptores automáticamente
+            # empleados_activos = EmpleadoProyecto.objects.filter(
+            #     Proyecto=proyecto,
+            #     Status="1"
+            # ).select_related("Empleado", "Empleado__Roles")
+
+            # for ep in empleados_activos:
+            #     emp = ep.Empleado
+
+            #     # Crear asistente
+            #     AsistentesEventosScrum.objects.create(
+            #         Proyecto=proyecto,
+            #         EventoScrum=ref,
+            #         Mensaje=mensaje,
+            #         Usuario=emp,
+            #         Rol=emp.Roles,
+            #         Status="1",  # Obligatorio
+            #         TipoAsistencia="S"  # Síncrona
+            #     )
+
+            #     # Crear receptor del mensaje
+            #     MensajeReceptor.objects.create(
+            #         Proyecto=proyecto,
+            #         Mensaje=mensaje,
+            #         Receptor=emp,
+            #         EventoScrum=ref,
+            #         Emisor=empleado,
+            #         Sprint=sp,
+            #     )
+            registrar_asistentes_y_receptores(
+                proyecto=proyecto,
+                sprint=sp,
+                mensaje=mensaje,
+                evento=ref,
+                emisor=empleado
+            )
+
+
+            return redirect('Mensajes:listaRevisionSprint')
+
     else:
         form = MensajeRevisionSprintForms()
+
     return render(request, 'Mensajes/ProductOwner/crearRevisionSprint.html', {'form': form})
 
 class ActualizarRevision(LoginRequiredMixin, UpdateView):
@@ -3096,29 +3375,66 @@ def subListaRetrospectivaSprint(request):
     return render(request, 'Mensajes/ProductOwner/subListaRetrospectiva.html', data)
 
 # Crear Retrospectiva del Sprint heredando datos del modelo Sprint
+# @transaction.atomic
+# def crear_RetrospectivaSprint(request, id): #id del Sprint
+#     usuario = request.user
+#     empleado = Empleado.objects.get(Usuario=usuario)
+
+#     if request.method == 'POST':
+#         form = MensajeRevisionSprintForms(request.POST)
+#         if form.is_valid():
+
+#             # Obtener datos del formulario o de donde sea necesario
+#             fecha_hora = form.cleaned_data['FechaHora']
+#             FechaHoraFormateada = fecha_hora.strftime('%d/%m/%Y %H:%M')
+#             ref = m_EventoScrum.objects.get(pk=6) # Evento - Retrospectiva Sprint 
+
+#             producto = get_object_or_404(Sprint, pk=id)
+#             descripcion = f"{FechaHoraFormateada},  Retrospectiva Sprint. {producto.objetivosprint}"
+#             #descripcion = producto.objetivosprint
+#             proyecto = producto.Proyecto
+#             # sprint = producto.nombresprint
+
+#             sp = Sprint.objects.get(pk=id)
+
+#             # Crear instancia de Mensaje
+#             mensaje = Mensaje.objects.create(
+#                 Descripcion=descripcion,
+#                 FechaHora=fecha_hora,
+#                 Emisor=empleado,
+#                 Proyecto=proyecto,
+#                 Sprint=sp,
+#                 EventoScrum=ref,
+#                 # Asignar otras relaciones según sea necesario
+#             )
+
+#         # Redirigir a alguna página de éxito o hacer lo que necesites
+#         return redirect('Mensajes:listaRetrospectivaSprint')
+#     else:
+#         form = MensajeRevisionSprintForms()
+#     return render(request, 'Mensajes/ProductOwner/crearRetrospectivaSprint.html', {'form': form})
+# utils/eventos_scrum.py
+
+
+
 @transaction.atomic
-def crear_RetrospectivaSprint(request, id): #id del Sprint
+def crear_RetrospectivaSprint(request, id):  # id del Sprint
     usuario = request.user
     empleado = Empleado.objects.get(Usuario=usuario)
 
     if request.method == 'POST':
         form = MensajeRevisionSprintForms(request.POST)
         if form.is_valid():
-
-            # Obtener datos del formulario o de donde sea necesario
             fecha_hora = form.cleaned_data['FechaHora']
             FechaHoraFormateada = fecha_hora.strftime('%d/%m/%Y %H:%M')
-            ref = m_EventoScrum.objects.get(pk=6) # Evento - Retrospectiva Sprint 
+            ref = m_EventoScrum.objects.get(pk=6)  # Retrospectiva Sprint
 
             producto = get_object_or_404(Sprint, pk=id)
             descripcion = f"{FechaHoraFormateada},  Retrospectiva Sprint. {producto.objetivosprint}"
-            #descripcion = producto.objetivosprint
             proyecto = producto.Proyecto
-            # sprint = producto.nombresprint
+            sp = producto
 
-            sp = Sprint.objects.get(pk=id)
-
-            # Crear instancia de Mensaje
+            # Crear el mensaje de la retrospectiva
             mensaje = Mensaje.objects.create(
                 Descripcion=descripcion,
                 FechaHora=fecha_hora,
@@ -3126,13 +3442,51 @@ def crear_RetrospectivaSprint(request, id): #id del Sprint
                 Proyecto=proyecto,
                 Sprint=sp,
                 EventoScrum=ref,
-                # Asignar otras relaciones según sea necesario
             )
 
-        # Redirigir a alguna página de éxito o hacer lo que necesites
-        return redirect('Mensajes:listaRetrospectivaSprint')
+            # #  Crear asistentes y receptores
+            # empleados_activos = EmpleadoProyecto.objects.filter(
+            #     Proyecto=proyecto,
+            #     Status="1"
+            # ).select_related("Empleado", "Empleado__Roles")
+
+            # for ep in empleados_activos:
+            #     emp = ep.Empleado
+
+            #     # Asistente a la reunión
+            #     AsistentesEventosScrum.objects.create(
+            #         Proyecto=proyecto,
+            #         EventoScrum=ref,
+            #         Mensaje=mensaje,
+            #         Usuario=emp,
+            #         Rol=emp.Roles,
+            #         Status="1",  # Obligatorio
+            #         TipoAsistencia="S"  # Síncrona
+            #     )
+
+            #     # Receptor del mensaje
+            #     MensajeReceptor.objects.create(
+            #         Proyecto=proyecto,
+            #         Mensaje=mensaje,
+            #         Receptor=emp,
+            #         EventoScrum=ref,
+            #         Emisor=empleado,
+            #         Sprint=sp,
+            #     )
+            registrar_asistentes_y_receptores(
+                proyecto=proyecto,
+                sprint=sp,
+                mensaje=mensaje,
+                evento=ref,
+                emisor=empleado
+            )
+
+
+            return redirect('Mensajes:listaRetrospectivaSprint')
+
     else:
         form = MensajeRevisionSprintForms()
+
     return render(request, 'Mensajes/ProductOwner/crearRetrospectivaSprint.html', {'form': form})
 
 class ActualizarRetrospectiva(LoginRequiredMixin, UpdateView):
@@ -3736,10 +4090,12 @@ def listaReunionDiaria(request):
             #mensajes = Mensaje.objects.filter(Q(Emisor=empleado) & Q(EventoScrum="4") & Q(Proyecto__in=proyectos)) # 4= Reunión Diaria
             mensajes = Mensaje.objects.filter(Q(EventoScrum="4") & Q(Proyecto__in=proyectos)) # 4= Reunión Diaria
        #asistentes = AsistentesEventosScrum.objects.all()
+        # 🔥 Agregar todos los Sprints disponibles en esos proyectos
+        sprints = Sprint.objects.filter(Proyecto__in=proyectos)
 
         data = {
         'form2':mensajes,
-        #'form3':asistentes
+        'sprints': sprints,
         }
 
         user = request.user
@@ -3907,6 +4263,17 @@ def crear_Reunion_Diaria(request, id):  # id del Sprint
                         Rol=ep.Empleado.Roles,
                         Status="1",  # Obligatorio
                         TipoAsistencia="S"  # Síncrona
+                    )
+
+                    # Crear MensajeReceptor
+                    MensajeReceptor.objects.create(
+                        Proyecto=mensaje.Proyecto,
+                        Mensaje=mensaje,
+                        Receptor=ep.Empleado,
+                        Status="1",  # Recibido
+                        EventoScrum=mensaje.EventoScrum,
+                        Emisor=mensaje.Emisor,
+                        Sprint=mensaje.Sprint
                     )
 
             if crear_todas:
