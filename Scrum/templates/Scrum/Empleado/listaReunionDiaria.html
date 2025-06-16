@@ -9,6 +9,26 @@
 
 {% if form2 %}
 
+  <!-- Filtros -->
+  <div class="col-md-6">
+    <div class="row justify-content-end gx-2">
+      <div class="col-auto">
+        <label for="filtroSprint">Sprint:</label>
+        <select id="filtroSprint" class="form-control">
+          <option value="">Todos</option>
+          {% for sprint in sprints %}
+            <option value="{{ sprint.nombresprint|lower }}">{{ sprint.nombresprint }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-auto">
+        <label for="filtroFecha">Fecha:</label>
+        <input type="date" id="filtroFecha" class="form-control">
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="table-stats order-table ov-h">
     <div class="table table-striped table-bordered">
       <div>
@@ -29,7 +49,7 @@
             {% for p in form2 %}
             
             <tbody>
-              <tr>
+              <tr data-sprint="{{ p.Sprint.nombresprint|lower }}" data-fecha="{{ p.mensaje_fecha_hora|date:'Y-m-d' }}">
                 <th scope="row">{{ forloop.counter }}</th>
                 <td>{{ p.Proyecto }}</td>
 
@@ -175,7 +195,33 @@
     }
   }
 </script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const filtroSprint = document.getElementById('filtroSprint');
+    //const filtroSprint = document.getElementById('nombresprint');
+    
+    const filtroFecha = document.getElementById('filtroFecha');
+    const filas = document.querySelectorAll('tbody tr');
 
+    function aplicarFiltros() {
+      const sprintSeleccionado = filtroSprint.value.toLowerCase();
+      const fechaSeleccionada = filtroFecha.value;
+
+      filas.forEach(fila => {
+        const sprintFila = fila.dataset.sprint;
+        const fechaFila = fila.dataset.fecha;
+
+        const mostrarSprint = !sprintSeleccionado || sprintFila === sprintSeleccionado;
+        const mostrarFecha = !fechaSeleccionada || fechaFila === fechaSeleccionada;
+
+        fila.style.display = (mostrarSprint && mostrarFecha) ? '' : 'none';
+      });
+    }
+
+    filtroSprint.addEventListener('change', aplicarFiltros);
+    filtroFecha.addEventListener('change', aplicarFiltros);
+  });
+</script>
 </div>
 
 {% endblock %}

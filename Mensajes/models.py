@@ -41,8 +41,9 @@ class Mensaje(models.Model):
     # Extras necesarios
     FechaHora = models.DateTimeField(null=True) # solo se usa una vez
     # Destinatario = models.ForeignKey(Empleado, on_delete=models.CASCADE, blank=True,null=True) # Obsoleto
-    archivo = models.ForeignKey('m_Archivos', on_delete=models.CASCADE, blank=True,null=True) # Obsoleto - borrar en la proxima actualizacion
+    #archivo = models.ForeignKey('m_Archivos', on_delete=models.CASCADE, blank=True,null=True) # Obsoleto - borrar en la proxima actualizacion
     Sprint = models.ForeignKey(Sprint,on_delete=models.CASCADE, null=True, blank=True)
+    ArchivosGenerados=models.BooleanField(default=False)
     
     class Meta:
         ordering = ['pk']
@@ -65,7 +66,7 @@ class MensajeReceptor(models.Model):
     # Extras necesarios
     EventoScrum = models.ForeignKey(m_EventoScrum,on_delete=models.CASCADE, blank=True,null=True) # hereda el id del modelo mensaje
     Emisor = models.ForeignKey(Empleado,on_delete=models.CASCADE, related_name="receptorEmisor",blank=True,null=True) # Hereda el emisor del modelo mensaje
-    archivo = models.ForeignKey('m_Archivos',on_delete=models.CASCADE, blank=True,null=True) # Obsoleto - borrar en proxima actualizacion
+    #archivo = models.ForeignKey('m_Archivos',on_delete=models.CASCADE, blank=True,null=True) # Obsoleto - borrar en proxima actualizacion
     Sprint = models.ForeignKey(Sprint,on_delete=models.CASCADE, null=True, blank=True)
     
     class Meta:

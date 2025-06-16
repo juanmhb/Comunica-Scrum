@@ -67,6 +67,7 @@
         <tr>
           <th>#</th>
           <th scope="col">Nombre</th>
+          <th scope="col">Prog.</th>
           <th scope="col">Hrs estim.</th>
           <th scope="col">Hrs reales</th>
           {% for dia in dias_habiles %}
@@ -80,6 +81,7 @@
           <tr>
             <td>{{ forloop.counter }}</td>
             <td>{{ tarea.nombre }}</td>
+            <td>{{ tarea.Usuario }}</td>
             <td>{{ tarea.horas_estimadas }}</td>
             <td>{{ tarea.horas_reales }}</td>
             {% for avance in tarea.avances %}

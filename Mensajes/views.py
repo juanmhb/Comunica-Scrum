@@ -17,6 +17,7 @@ from django.db.models import Q, F
 from django.db import transaction
 from django.contrib import messages
 import time
+from datetime import datetime
 from django.contrib.auth import login, logout, authenticate
 from django.db.models import Sum
 import random
@@ -25,7 +26,10 @@ from django.core.mail import send_mail
 from django.contrib import messages
 from django.shortcuts import get_object_or_404
 from io import BytesIO
+from django.core.files.base import ContentFile
+from django.utils.text import slugify
 import calendar
+
 
 
 # ----------------------------------------------------------------------------------------------------------------------------
@@ -655,7 +659,7 @@ def plantillaPlaneacionSprint(request, id): #id del Mensaje
     comentarios = m_Comentarios.objects.filter(Mensaje=mensaje)
 
     usuario = request.user
-    idiomaPais = Empleado.objects.filter(Usuario=usuario)
+    ObjEmp = Empleado.objects.filter(Usuario=usuario)
 
     # Suma los valores de los objetos
     total_horas = sum(item.HorasEstimadas for item in historias)
@@ -665,7 +669,7 @@ def plantillaPlaneacionSprint(request, id): #id del Mensaje
         'form': planeacion,
         'form2': historias,
         'form3': asistentes,
-        'idiomaPais':idiomaPais,
+        'ObjEmp':ObjEmp,
         'horas':total_horas,
         'dias':total_dias,
         'comentarios':comentarios,
@@ -1685,87 +1689,612 @@ def eliminar_PlaneacionSprint(request, id):
     producto.delete()
     return redirect(to="Mensajes:listaPlaneacionSprint")
 
-# Product Owner
-def enviar_mensaje_Planeacion(request, id, Accion):
-    # mensaje = Mensaje.objects.filter(pk=id) 
-    msm = Mensaje.objects.get(pk=id)
+def obtener_contexto_revision_sprint(mensaje, usuario):
+    id_Sprint = mensaje.Sprint.id
+    id_Proyecto = mensaje.Proyecto.id
+
+    historias = HistoriaUsuario.objects.filter(Q(Sprint=mensaje.Sprint) & Q(Proyecto=mensaje.Proyecto))
+    asistentes = AsistentesEventosScrum.objects.filter(Mensaje=mensaje)
+    comentarios = m_Comentarios.objects.filter(Mensaje=mensaje)
+    empleado = Empleado.objects.filter(Usuario=usuario)
+    tareas = Tarea.objects.filter(HistoriaUsuario__in=historias)
+    registros = TareaAvance.objects.filter(tarea__in=tareas)
+
+    total_horas_estimadas = sum(t.horasestimadas for t in tareas)
+    total_dias_estimados = total_horas_estimadas / 8
+
+    Query = f"""select id, numero_hu, nombre_hu, horasestimadas, horasreales, estatus_id, huaceptada,
+        case 
+            when horasrestantes = 0 and horasrestantescaptura = 0 and  horasreales = 0 Then horasestimadas
+            else horasrestantes
+        end as horasrestantes,
+        case 
+            when horasrestantes = 0 and horasrestantescaptura = 0 and  horasreales = 0 Then horasestimadas
+            else horasrestantescaptura
+        end as horasrestantescaptura,
+        case
+            when
+                HorasReales = 0 and  HorasRestantes = 0 Then 0.0
+            when 
+                HorasReales <> 0 and  HorasRestantes = 0 Then 100.0
+            else
+                ((HorasEstimadas - HorasRestantes) / HorasEstimadas ::float) * 100
+        end AS progreso,
+		case
+            when
+                HorasReales = 0 and  HorasRestantesCaptura = 0 Then 0.0
+            when 
+                HorasReales <> 0 and  HorasRestantesCaptura = 0 Then 100.0
+            else
+                ((HorasEstimadas - HorasRestantesCaptura) / HorasEstimadas ::float) * 100
+        end AS progreso_captura
+        from (SELECT hu.id, hu.\"NumeroHU\" AS numero_hu, hu.nombre AS nombre_hu, eh.\"estatus\" AS Estatus_id,  hu.\"HUAceptada\" AS HUAceptada,
+            COALESCE(sum(t.\"horasestimadas\"), 0) AS HorasEstimadas,
+            COALESCE(sum(ta.\"horasReales\"), 0) AS HorasReales,
+            COALESCE(sum(ta.\"horasRestantes\"), 0) AS HorasRestantes,
+			COALESCE(sum(ta."horasRestantesCaptura"), 0) AS HorasRestantesCaptura
+        FROM public.\"Scrum_historiausuario\" as hu left join public.\"Scrum_tarea\" as t on
+        (
+            hu.id = t.\"HistoriaUsuario_id\"
+        ) left join public.\"Scrum_tareaavance\" as ta on (
+            t.id = ta.\"tarea_id\" and
+            ta.\"HistoriaUsuario_id\" = hu.id and
+            ta.\"horasDedicadas\" = 0
+        ) inner join public.\"Scrum_sprint\" as sp on (
+            hu.\"Sprint_id\" = sp.id
+        ) inner join public."Scrum_estatushistoria" as eh on (
+            hu.\"Estatus_id\" = eh.id
+        )
+        where
+        sp.id =  {id_Sprint}  and
+        hu.\"Proyecto_id\" = {id_Proyecto} 
+        group by hu.id, hu.\"NumeroHU\", hu.nombre, eh.\"estatus\", hu.\"HUAceptada\" 
+        order by numero_hu 
+        ) as temp""" 
+    
+    # Consulta RAW
+    #tareaAvance = TareaAvance.objects.raw(f"""<TU QUERY AQUÍ CON {id_Sprint} y {id_Proyecto}>""")
+    tareaAvance = TareaAvance.objects.raw(Query)
+
+    # Inicializamos una variable para acumular el total
+    total_horas_restantes_captura = 0
+    total_horas_restantes = 0
+
+    # Iteramos sobre los resultados del queryset
+    for tarea in tareaAvance:
+        total_horas_restantes_captura += tarea.horasrestantescaptura 
+        total_horas_restantes += tarea.horasrestantes
+
+    if registros:
+        total_horas_reales = registros.aggregate(total=models.Sum('horasDedicadas'))['total']
+    else:
+        # Si no hay registros mostrara 0 por default
+        total_horas_reales = 0
+    total_dias_reales = total_horas_reales/8
+    total_dias_restantes = total_horas_restantes/8
+    total_dias_restantes_captura = total_horas_restantes_captura/8
+    
+    if total_horas_reales == 0 and total_horas_restantes == 0:
+        avance_sprint = 0
+    elif total_horas_reales != 0 and  total_horas_restantes == 0:  
+        avance_sprint = 100.0
+    else:
+        avance_sprint = ((total_horas_estimadas - total_horas_restantes) / total_horas_estimadas) * 100
+
+    if total_horas_reales == 0 and total_horas_restantes_captura == 0:
+        avance_sprint_captura = 0
+    elif total_horas_reales != 0 and  total_horas_restantes_captura == 0:  
+        avance_sprint_captura = 100.0
+    else:
+        avance_sprint_captura = ((total_horas_estimadas - total_horas_restantes_captura) / total_horas_estimadas) * 100
+    
+  
+    return {
+        'tareaAvance': tareaAvance,
+        'mensaje': mensaje,
+        'asistentes': asistentes,
+        'Empleado': empleado,
+        'comentarios': comentarios,
+        'total_horas_estimadas': total_horas_estimadas,
+        'total_horas_reales': total_horas_reales,
+        'total_horas_restantes': total_horas_restantes,
+        'total_horas_restantes_captura': total_horas_restantes_captura,
+        'total_dias_estimados': total_dias_estimados,
+        'total_dias_reales': total_dias_reales,
+        'total_dias_restantes': total_dias_restantes,
+        'total_dias_restantes_captura': total_dias_restantes_captura,
+        'avance_sprint': avance_sprint,
+        'avance_sprint_captura': avance_sprint_captura,
+    }
+
+def obtener_contexto_retrospectiva_sprint(mensaje, usuario):
+    asistentes = AsistentesEventosScrum.objects.filter(Mensaje=mensaje)
+    comentarios = m_RetrospectivaSprint.objects.filter(Mensaje=mensaje)
+    idiomaPais = Empleado.objects.filter(Usuario=usuario)
+
+    return {
+        'form': mensaje,
+        'form3': asistentes,
+        'idiomaPais':idiomaPais,
+        'comentarios':comentarios
+    }
+
+def obtener_contexto_reunion_diaria(mensaje, usuario):
+    #reunionDiaria = Mensaje.objects.filter(pk=id)
+    reunionDiaria = Mensaje.objects.filter(pk=mensaje.id)
+    #mensaje = Mensaje.objects.get(pk=id)
+    sprint_numero = mensaje.Sprint.numerosprint
+    asistentes = AsistentesEventosScrum.objects.filter(Mensaje=mensaje)
+    comentarios = m_ReunionDiaria.objects.filter(Mensaje=mensaje)
+
+    #usuario = request.user
+    idiomaPais = Empleado.objects.filter(Usuario=usuario)
+
+    return {
+        'form': reunionDiaria,
+        'form2': asistentes,
+        'idiomaPais':idiomaPais,
+        'comentarios':comentarios,
+        'sprint_numero': sprint_numero,
+    }
+
+def obtener_contexto_reunion_diaria_esfuerzo(mensaje, usuario):
+
+    # id_Sprint = Mensaje.objects.get(id=id_ReunionDiaria).Sprint.id
+    id_Sprint = mensaje.Sprint.id
+    # id_Proyecto = Mensaje.objects.get(id=id_ReunionDiaria).Proyecto.id
+    id_Proyecto = mensaje.Proyecto.id
+    HU = HistoriaUsuario.objects.filter(Q(Sprint_id=id_Sprint) & Q(Proyecto_id = id_Proyecto)) # 4=En Sprint, 5=Divididas, 6=EN progreso (son las mismas que estan dentro del modelo sprint_backlog)
+
+    Query = f"""SELECT t.* 
+            FROM public.\"Scrum_tarea\" as t inner join public.\"Scrum_historiausuario\" as hu on
+            (t.\"HistoriaUsuario_id\" = hu.id 
+            ) inner join public.\"Scrum_sprint\" as sp on (
+                hu.\"Sprint_id\" = sp.id
+            )
+            where
+            sp.id = {id_Sprint} and sp.\"Proyecto_id\" = {id_Proyecto}""" 
+
+    tarea = Tarea.objects.raw(Query)
+    
+    Query = f"""SELECT hu.id AS historia_id, hu.\"NumeroHU\" AS numero_hu, hu.nombre AS nombre_hu, t.id, t.nombre AS nombre_tarea, t.horasestimadas,
+            ta.id AS id_tarea_avance, ta.\"horasDedicadas\", ta.\"horasRestantes\", ta.\"horasReales\", sp.\"numerosprint\", hu.\"Estatus_id\",
+            ta.dia_1, ta.dia_2, ta.dia_3, ta.dia_4, ta.dia_5, ta.dia_6, ta.dia_7, ta.dia_8, ta.dia_9, ta.dia_10,
+            ta.dia_11, ta.dia_12, ta.dia_13, ta.dia_14, ta.dia_15, ta.dia_16, ta.dia_17, ta.dia_18, ta.dia_19, ta.dia_20,
+            ta.dia_21, ta.dia_22, ta.dia_23, ta.dia_24, ta.dia_25, ta.dia_26, ta.dia_27, ta.dia_28, ta.dia_29, ta.dia_30, ta.dia_31
+            FROM public."Scrum_historiausuario" as hu left join public."Scrum_tarea" as t on
+            (
+                hu.id = t.\"HistoriaUsuario_id"
+            ) left join public.\"Scrum_tareaavance\" as ta on (
+                t.id = ta.\"tarea_id\" and
+                ta.\"HistoriaUsuario_id\" = hu.id and
+                ta.\"horasDedicadas\" = 0
+            ) inner join public.\"Scrum_sprint\" as sp on (
+                hu.\"Sprint_id\" = sp.id
+            )
+            where
+            sp.id = {id_Sprint} and
+            sp.\"Proyecto_id\" = {id_Proyecto}"""
+    
+
+    tareaAvance = TareaAvance.objects.raw(Query)
+    #print(f"Registro de tareasavance: {len(list(tareaAvance))}, {list(tareaAvance)}")
+
+    msm = Mensaje.objects.filter(pk=mensaje.id)
+    # mensaje = get_object_or_404(Mensaje, id=id_ReunionDiaria)
+    sprint_id = mensaje.Sprint.id
+    dSprint = get_object_or_404(Sprint, id=sprint_id)
+    mes = Sprint.objects.filter(pk=sprint_id)
+
+    # Calcular la diferencia en días
+    # diferencia_dias = (fecha_limite - fecha_inicio).days
+    diferencia_dias = (dSprint.fechafinalsprint - dSprint.fechainiciosprint).days
+    numero = diferencia_dias
+
+    # usuario = request.user
+    dEmpleado = Empleado.objects.filter(Usuario=usuario)
+
+    fechas = [dSprint.fechainiciosprint + timedelta(days=i) for i in range(diferencia_dias + 1)]
+    #print (f"fechas: {fechas}")
+    traduccion_meses = {
+        "January": "Enero", "February": "Febrero", "March": "Marzo",
+        "April": "Abril", "May": "Mayo", "June": "Junio",
+        "July": "Julio", "August": "Agosto", "September": "Septiembre",
+        "October": "Octubre", "November": "Noviembre", "December": "Diciembre"
+    }
+
+    # Crear un diccionario para agrupar días por mes
+    meses = {}
+
+
+    for fecha in fechas:
+        #nombre_mes = fecha.strftime('%B')  # Obtener el nombre del mes en español
+        nombre_mes = traduccion_meses[fecha.strftime('%B')]
+        if nombre_mes not in meses:
+            meses[nombre_mes] = 0
+        meses[nombre_mes] += 1  # Contar los días en ese mes
+
+    # # Imprimir resultados
+    # for mes, cantidad in meses.items():
+    #     print(f"Mes: {mes}, Días: {cantidad}")
+    # print(f"mes: {meses}")
+        
+
+    # Lista para almacenar la matriz
+    matriz_avance = []
+
+    # Iteramos sobre los resultados del Query (tareas de avance)
+    for tarea in tareaAvance:
+        fila = []
+        fila.append(tarea.historia_id) #Id de la Historia de Usuario
+        fila.append(tarea.id) #Id de la Tarea
+        # Iteramos sobre cada fecha del sprint
+        for i, fecha in enumerate(fechas, start=1):
+            # Comparar la fecha actual con los campos dia_1, dia_2, ..., dia_n
+            for j in range(1, 32):
+                field_name = f'dia_{j}'
+                # Usar getattr para obtener el valor del campo 'dia_n' del query
+                valor_dia = getattr(tarea, field_name, '0/0')
+                if fecha.day == j:
+                    # Si no hay valor (None), agregamos '0/0', sino tomamos el valor del campo
+                    if valor_dia is None:
+                        fila.append('0/0')
+                    else:
+                        fila.append(valor_dia)
+    
+        # Añadir la fila a la matriz
+        matriz_avance.append(fila)
+
+    #print (f"matriz_avance: {matriz_avance}")
+    return {
+            'form': HU,
+            'tarea':tarea,
+            'avance':tareaAvance,
+            'diferencia_dias': diferencia_dias,
+            'mensaje': msm, #mensaje,
+            'dEmpleado':dEmpleado,
+            'mes':mes,
+            'fechas':fechas,
+            'matriz_avance':matriz_avance,
+            'Sprint': dSprint,
+            'meses':meses, 
+    }
+
+
+def generar_pdf_y_guardar(mensaje, data, template_path, descripcion_extra="", nombre_extra=""):
+    """
+    Genera un PDF desde un template y guarda archivo físico + binario en m_Archivos.
+    """
+    pdf = render_to_pdf(template_path, data)
+
+    if pdf:
+        base_desc = f"{mensaje.EventoScrum.Descripcion} - {mensaje.FechaHora.strftime('%Y-%m-%d')}"
+        descripcion = f"{base_desc} {descripcion_extra}".strip()
+        archivo_nombre = f"{slugify(descripcion)}{nombre_extra}.pdf"
+
+        nuevo_archivo = m_Archivos(
+            Descripcion=descripcion,
+            Proyecto=mensaje.Proyecto,
+            Mensaje=mensaje,
+        )
+        nuevo_archivo.Archivo.save(archivo_nombre, ContentFile(pdf.getvalue()), save=False)
+        nuevo_archivo.ArchivoObj = pdf.getvalue()
+        nuevo_archivo.save()
+
+#Nuevo código para el envío de correos (MENSAJES)
+def generar_pdf_y_guardar_refinamiento(mensaje, historiasBL, asistentes):
+    data = {
+        'form': asistentes,
+        'form2': historiasBL,
+        'form3': [mensaje],
+    }
+    generar_pdf_y_guardar(
+        mensaje,
+        data,
+        template_path='Mensajes/ProductOwner/plantillaRefinamiento.html'
+    )
+
+def generar_pdf_y_guardar_archivo_planeacion(request, mensaje, asistentes):
+
+    empleado = request.user.usuarioempleado
+    proyectos = EmpleadoProyecto.objects.filter(Empleado=empleado).values_list('Proyecto', flat=True)
+    planeacion = Mensaje.objects.filter(pk=mensaje.id)
+    sprint = mensaje.Sprint
+    objetivo_sprint = sprint.objetivosprint
+
+    historias = HistoriaUsuario.objects.filter(Q(Proyecto__in=proyectos) & Q(Sprint=sprint))
+    comentarios = m_Comentarios.objects.filter(Mensaje=mensaje)
+    ObjEmp = Empleado.objects.filter(Usuario=request.user)
+
+    total_horas = sum(item.HorasEstimadas for item in historias)
+    total_dias = total_horas / 8
+
+    # Parte 1: Planeación Sprint
+    data_planeacion = {
+        'form': planeacion,
+        'form2': historias,
+        'form3': asistentes,
+        'ObjEmp': ObjEmp,
+        'horas': total_horas,
+        'dias': total_dias,
+        'comentarios': comentarios,
+        'objetivo_sprint': objetivo_sprint,
+    }
+    generar_pdf_y_guardar(
+        mensaje=mensaje,
+        data=data_planeacion,
+        template_path='Mensajes/ProductOwner/plantillaPlaneacionSprint.html'
+    )
+
+    # Parte 2: Historias HU divididas
+    historias_divididas = HistoriaUsuario.objects.filter(
+        Q(Estatus__in=[5, 6, 7, 8, 9]) & Q(Sprint=sprint)
+    )
+    data_hu = {'form': historias_divididas}
+
+    generar_pdf_y_guardar(
+        mensaje=mensaje,
+        data=data_hu,
+        template_path='Mensajes/ProductOwner/plantillaHistoriasHU.html',
+        descripcion_extra='- HU divididas en tareas',
+        nombre_extra='-HU-Divididas'
+    )
+
+def generar_pdf_y_guardar_archivo_revision(request, mensaje, asistentes):
+    data = obtener_contexto_revision_sprint(mensaje, request.user)
+    generar_pdf_y_guardar(
+        mensaje=mensaje,
+        data=data,
+        template_path='Mensajes/ProductOwner/plantillaRevisionSprint.html',
+        descripcion_extra='',
+        nombre_extra=''
+    )
+
+def generar_pdf_y_guardar_archivo_retrospectiva(request, mensaje, asistentes):
+    data = obtener_contexto_retrospectiva_sprint(mensaje, request.user)
+    generar_pdf_y_guardar(
+        mensaje=mensaje,
+        data=data,
+        template_path='Mensajes/ProductOwner/plantillaRetrospectivaSprint.html',
+        descripcion_extra='',
+        nombre_extra=''
+    )
+
+def generar_pdf_y_guardar_archivo_reunion_diaria(request, mensaje, asistentes):
+
+    #Parte 1
+    data = obtener_contexto_reunion_diaria(mensaje, request.user)
+    generar_pdf_y_guardar(
+        mensaje=mensaje,
+        data=data,
+        template_path='Mensajes/ProductOwner/plantillaReuniondDiaria.html',
+        descripcion_extra='',
+        nombre_extra=''
+    )
+    
+    #Parte 2
+    data = obtener_contexto_reunion_diaria_esfuerzo(mensaje, request.user)
+
+    generar_pdf_y_guardar(
+        mensaje=mensaje,
+        data=data,
+        template_path='Mensajes/ProductOwner/plantillaEjecucion2.html',
+        descripcion_extra='Esfuerzo_dedicado',
+        nombre_extra=''
+    )   
+
+def enviar_mensaje_evento_scrum(request, id, Accion, template_name, redirect_url, evento_id):
+    mensaje = get_object_or_404(Mensaje, pk=id)
     usuario = request.user.id
     empleado = Empleado.objects.get(Usuario=usuario)
+    asistentes = AsistentesEventosScrum.objects.filter(Mensaje=mensaje)
+
     if request.method == 'POST':
         form = envAsistentesForms(request.POST)
         if form.is_valid():
-            mensajeid = msm
-            proyecto = msm.Proyecto
-            eventoScrum = msm.EventoScrum
-            status = msm.Status
-            fecha = msm.FechaHora
-            archivo = msm.archivo
-            sprint = msm.Sprint
-            DescripcionEventoScrum = msm.EventoScrum.Descripcion
-            FechaHoraReunion = m_PlanificacionSprint.objects.get(Mensaje=id).FechaHora #contenido.m_RefinamientoProductBL.FechaHora
-            NombreProyecto = msm.Proyecto.nombreproyecto
             if Accion == 2:
-                #Actualiza el status del mensaje enviado
-                msm.Status = 2 #Enviado
-                msm.FHUltimaMod = datetime.now()
-                msm.save() #Actualiza  la BD
+                mensaje.Status = 2
+                mensaje.FHUltimaMod = datetime.now()
+                mensaje.save()
 
-            res = AsistentesEventosScrum.objects.filter(Mensaje=msm)
-            Destinatarios = ""
-            for asistente in res:
-                mensaje = MensajeReceptor(Proyecto=proyecto, Mensaje=mensajeid, Receptor=asistente.Usuario, EventoScrum=eventoScrum, 
-                                          Emisor=empleado ,FHCreacion=fecha,Status="1", archivo=archivo, Sprint=sprint)
+            proyecto = mensaje.Proyecto
+            eventoScrum = mensaje.EventoScrum
+            sprint = mensaje.Sprint
+            fecha = mensaje.FechaHora
+            DescripcionEventoScrum = eventoScrum.Descripcion
+            NombreProyecto = proyecto.nombreproyecto
+            if evento_id == 2: #Refinamiento
+                fecha = m_RefinamientoProductBL.objects.get(Mensaje=id).FechaHora
+            FechaHoraReunion = fecha
+            #print(f"FechaHoraReunion: {FechaHoraReunion}")
+
+            for asistente in asistentes:
+                mensajeReceptor = MensajeReceptor(
+                    Proyecto=proyecto,
+                    Mensaje=mensaje,
+                    Receptor=asistente.Usuario,
+                    EventoScrum=eventoScrum,
+                    Emisor=empleado,
+                    FHCreacion=fecha,
+                    Status="1",
+                    Sprint=sprint
+                )
                 if Accion == 1:
-                    mensaje.save() #Guarda la Información en la BD "Mensajes_mensajereceptor" por cada uno de los destinatarios
-                Destinatarios = Destinatarios + str(asistente.Usuario.Usuario.email) + ', ' 
-                
-            Destinatarios = Destinatarios[:-2] #Elimina la última coma y espacio
-   
-            #Inicia Envía el correo
-            Archivos = m_Archivos.objects.filter(Mensaje=msm)
-            #ArchivosAdjuntos=""
+                    mensajeReceptor.save()
 
-            #Envío de correo
-            FechaHoraFormateada = FechaHoraReunion.strftime('%d/%m/%Y %H:%M')
-            asunto = DescripcionEventoScrum +  ' ' +  str(FechaHoraFormateada) #'Reunión de Planificación del Sprint'
-            Remitente = request.user.email
-            CuerpoMensaje = "Ceremonia: " + DescripcionEventoScrum + '\r\n Proyecto: ' + NombreProyecto + '\r\n' + 'Reunión: ' +  str(FechaHoraFormateada) #'Reunión de Planifiación del Sprint
-            ListaDestinatarios = Destinatarios.split(",")
-            email = EmailMessage(
-                subject=asunto,
-                body=CuerpoMensaje,
-                from_email=Remitente,  
-                to=ListaDestinatarios,
-            )   
+            destinatarios = ", ".join([f"{a.Usuario.Usuario.email}" for a in asistentes])
+            Archivos = m_Archivos.objects.filter(Mensaje=mensaje)
+            asunto = f"{DescripcionEventoScrum} {FechaHoraReunion.strftime('%d/%m/%Y %H:%M')}"
+            cuerpo = (
+                f"Ceremonia: {DescripcionEventoScrum}\\nProyecto: {NombreProyecto}\\n"
+                f"Reunión: {FechaHoraReunion.strftime('%d/%m/%Y %H:%M')}\\nDescripción: {mensaje.Descripcion}"
+            )
+            email = EmailMessage(subject=asunto, body=cuerpo, from_email=request.user.email, to=destinatarios.split(","))
+
             for arch in Archivos:
-                 # Convertimos el contenido binario del archivo a un objeto BytesIO
                 archivo_binario = BytesIO(arch.ArchivoObj)
-
-                # Adjuntar el archivo al correo con el nombre original del archivo
                 email.attach(arch.Archivo.name, archivo_binario.read(), 'application/pdf')
-                #email.attach_file(str(arch.Archivo))
+
             if Accion == 2:
                 email.send()
-            #Fin Envío del correo
 
-            time.sleep(2) # 2 segundos de espera, mientras se lee el mensaje de verficacion
-            return redirect('Mensajes:listaPlaneacionSprint')  # Redirigir a la página de mensajes enviados
+            time.sleep(2)
+            return redirect(redirect_url)
+
     else:
-        if msm.Status == '2': #El mensaje ya fue enviado
-            #print(f"idSms.Status2 : {msm.Status} ")
-            # Obtener el mensaje
-            MensajeAviso = get_object_or_404(Mensaje, pk=id)
-            # Mandar un mensaje que será mostrado en el template
-            messages.success(request, 'El mensaje ya fue enviado.')
-            # Renderizar el template y pasar los datos necesarios
-            return render(request, 'Scrum/MensajePantalla.html', {'mensaje': MensajeAviso, 'Ruta': '/listaPlaneacionSprint'})
+        if mensaje.Status in ['2', '3', '4']: # 2 = enviado, 3 = comprendido, 4 = Cancelado
+            messages.success(request, 'El mensaje ya fue enviado o cancelado.')
+            return render(request, 'Scrum/MensajePantalla.html', {'mensaje': mensaje, 'Ruta': redirect_url})
+
+        if mensaje.ArchivosGenerados is not True and evento_id == 2: #evento_id=Refinamiento
+            historiasBL = HistoriaUsuario.objects.filter(MensajeRPBL=id)
+            generar_pdf_y_guardar_refinamiento(mensaje, historiasBL, asistentes)
+        if mensaje.ArchivosGenerados is not True and evento_id == 3: #evento_id=Planeación
+            generar_pdf_y_guardar_archivo_planeacion(request, mensaje, asistentes)
+        if mensaje.ArchivosGenerados is not True and evento_id == 4: #evento_id=Reunión Diaria
+            generar_pdf_y_guardar_archivo_reunion_diaria(request, mensaje, asistentes)            
+        if mensaje.ArchivosGenerados is not True and evento_id == 5: #evento_id=Revisión
+            generar_pdf_y_guardar_archivo_revision(request, mensaje, asistentes)
+        if mensaje.ArchivosGenerados is not True and evento_id == 6: #evento_id=Retrospectiva
+            generar_pdf_y_guardar_archivo_retrospectiva(request, mensaje, asistentes)
+            
+        mensaje.ArchivosGenerados = True
+        mensaje.save()
 
         form = envAsistentesForms
         form2 = Mensaje.objects.filter(pk=id)
-        form3 = AsistentesEventosScrum.objects.filter(Mensaje=msm)
-        #idmensaje = Mensaje.objects.get(pk=id)
-        archivos = m_Archivos.objects.filter(Mensaje=msm)
-    return render(request, 'Mensajes/ProductOwner/enviarMensajePlaneacion.html', {'form': form, 'form2':form2, 'form3':form3, 'archivos':archivos})
+        form3 = asistentes
+        archivos = m_Archivos.objects.filter(Mensaje=mensaje)
+
+        return render(request, template_name, {
+            'form': form, 'form2': form2, 'form3': form3, 'archivos': archivos
+        })
+
+
+# Vistas específicas
+
+def enviar_mensaje2(request, id, Accion):
+    from .models import m_RefinamientoProductBL
+    return enviar_mensaje_evento_scrum(
+        request, id, Accion,
+        template_name='Mensajes/ProductOwner/enviarMensaje.html',
+        redirect_url='/listaRefinamiento',
+        evento_id = 2 # Reunión de Refinamiento del Product BL
+    )
+
+def enviar_mensaje_Planeacion(request, id, Accion):
+    from .models import m_PlanificacionSprint
+    return enviar_mensaje_evento_scrum(
+        request, id, Accion,
+        template_name='Mensajes/ProductOwner/enviarMensajePlaneacion.html',
+        redirect_url='/listaPlaneacionSprint',
+        evento_id = 3 # Reunión de Planeación del Sprint
+    )
+
+def enviar_mensaje_Revision(request, id, Accion):
+    return enviar_mensaje_evento_scrum(
+        request, id, Accion,
+        template_name='Mensajes/ProductOwner/enviarMensajeRevision.html',
+        redirect_url='/listaRevisionSprint',
+        evento_id = 5 # Reunión del Cierre/Revisión del Sprint
+    )
+
+def enviar_mensaje_Retrospectiva(request, id, Accion):
+    return enviar_mensaje_evento_scrum(
+        request, id, Accion,
+        template_name='Mensajes/ProductOwner/enviarMensajeRetrospectiva.html',
+        redirect_url='/listaRetrospectivaSprint',
+        evento_id = 6 # Reunión de Retrospectiva del Sprint
+    )
+
+def enviar_mensaje_Reunion_Diaria(request, id, Accion):
+    return enviar_mensaje_evento_scrum(
+        request, id, Accion,
+        template_name='Mensajes/ProductOwner/enviarMensajeReunionDiaria.html',
+        redirect_url='/listaReunionDiaria',
+        evento_id = 4  # Reunión Diaria
+    )
+# Product Owner
+# def enviar_mensaje_Planeacion(request, id, Accion):
+#     # mensaje = Mensaje.objects.filter(pk=id) 
+#     msm = Mensaje.objects.get(pk=id)
+#     usuario = request.user.id
+#     empleado = Empleado.objects.get(Usuario=usuario)
+#     if request.method == 'POST':
+#         form = envAsistentesForms(request.POST)
+#         if form.is_valid():
+#             mensajeid = msm
+#             proyecto = msm.Proyecto
+#             eventoScrum = msm.EventoScrum
+#             status = msm.Status
+#             fecha = msm.FechaHora
+#             archivo = msm.archivo
+#             sprint = msm.Sprint
+#             DescripcionEventoScrum = msm.EventoScrum.Descripcion
+#             FechaHoraReunion = m_PlanificacionSprint.objects.get(Mensaje=id).FechaHora #contenido.m_RefinamientoProductBL.FechaHora
+#             NombreProyecto = msm.Proyecto.nombreproyecto
+#             if Accion == 2:
+#                 #Actualiza el status del mensaje enviado
+#                 msm.Status = 2 #Enviado
+#                 msm.FHUltimaMod = datetime.now()
+#                 msm.save() #Actualiza  la BD
+
+#             res = AsistentesEventosScrum.objects.filter(Mensaje=msm)
+#             Destinatarios = ""
+#             for asistente in res:
+#                 mensaje = MensajeReceptor(Proyecto=proyecto, Mensaje=mensajeid, Receptor=asistente.Usuario, EventoScrum=eventoScrum, 
+#                                           Emisor=empleado ,FHCreacion=fecha,Status="1", archivo=archivo, Sprint=sprint)
+#                 if Accion == 1:
+#                     mensaje.save() #Guarda la Información en la BD "Mensajes_mensajereceptor" por cada uno de los destinatarios
+#                 Destinatarios = Destinatarios + str(asistente.Usuario.Usuario.email) + ', ' 
+                
+#             Destinatarios = Destinatarios[:-2] #Elimina la última coma y espacio
+   
+#             #Inicia Envía el correo
+#             Archivos = m_Archivos.objects.filter(Mensaje=msm)
+#             #ArchivosAdjuntos=""
+
+#             #Envío de correo
+#             FechaHoraFormateada = FechaHoraReunion.strftime('%d/%m/%Y %H:%M')
+#             asunto = DescripcionEventoScrum +  ' ' +  str(FechaHoraFormateada) #'Reunión de Planificación del Sprint'
+#             Remitente = request.user.email
+#             CuerpoMensaje = "Ceremonia: " + DescripcionEventoScrum + '\r\n Proyecto: ' + NombreProyecto + '\r\n' + 'Reunión: ' +  str(FechaHoraFormateada) #'Reunión de Planifiación del Sprint
+#             ListaDestinatarios = Destinatarios.split(",")
+#             email = EmailMessage(
+#                 subject=asunto,
+#                 body=CuerpoMensaje,
+#                 from_email=Remitente,  
+#                 to=ListaDestinatarios,
+#             )   
+#             for arch in Archivos:
+#                  # Convertimos el contenido binario del archivo a un objeto BytesIO
+#                 archivo_binario = BytesIO(arch.ArchivoObj)
+
+#                 # Adjuntar el archivo al correo con el nombre original del archivo
+#                 email.attach(arch.Archivo.name, archivo_binario.read(), 'application/pdf')
+#                 #email.attach_file(str(arch.Archivo))
+#             if Accion == 2:
+#                 email.send()
+#             #Fin Envío del correo
+
+#             time.sleep(2) # 2 segundos de espera, mientras se lee el mensaje de verficacion
+#             return redirect('Mensajes:listaPlaneacionSprint')  # Redirigir a la página de mensajes enviados
+#     else:
+#         if msm.Status == '2': #El mensaje ya fue enviado
+#             #print(f"idSms.Status2 : {msm.Status} ")
+#             # Obtener el mensaje
+#             MensajeAviso = get_object_or_404(Mensaje, pk=id)
+#             # Mandar un mensaje que será mostrado en el template
+#             messages.success(request, 'El mensaje ya fue enviado.')
+#             # Renderizar el template y pasar los datos necesarios
+#             return render(request, 'Scrum/MensajePantalla.html', {'mensaje': MensajeAviso, 'Ruta': '/listaPlaneacionSprint'})
+
+#         form = envAsistentesForms
+#         form2 = Mensaje.objects.filter(pk=id)
+#         form3 = AsistentesEventosScrum.objects.filter(Mensaje=msm)
+#         #idmensaje = Mensaje.objects.get(pk=id)
+#         archivos = m_Archivos.objects.filter(Mensaje=msm)
+#     return render(request, 'Mensajes/ProductOwner/enviarMensajePlaneacion.html', {'form': form, 'form2':form2, 'form3':form3, 'archivos':archivos})
 
 def enviar_mensaje_Planeacion_OLD(request, id):
     # mensaje = Mensaje.objects.filter(pk=id) 
@@ -2563,89 +3092,89 @@ def eliminar_revision(request, id):
     return redirect(to="Mensajes:listaRevisionSprint")
 
 # Product Owner
-def enviar_mensaje_Revision(request, id, Accion):
+# def enviar_mensaje_Revision(request, id, Accion):
 
-    msm = Mensaje.objects.get(pk=id)
-    usuario = request.user.id
-    empleado = Empleado.objects.get(Usuario=usuario)
+#     msm = Mensaje.objects.get(pk=id)
+#     usuario = request.user.id
+#     empleado = Empleado.objects.get(Usuario=usuario)
 
-    if request.method == 'POST':
-        form = envAsistentesForms(request.POST)
-        if form.is_valid():
-            mensajeid = msm
-            proyecto = msm.Proyecto
-            eventoScrum = msm.EventoScrum
-            status = msm.Status
-            fecha = msm.FechaHora
-            archivo = msm.archivo
-            sprint = msm.Sprint
-            DescripcionEventoScrum = msm.EventoScrum.Descripcion
-            FechaHoraReunion = msm.FechaHora
-            NombreProyecto = msm.Proyecto.nombreproyecto
+#     if request.method == 'POST':
+#         form = envAsistentesForms(request.POST)
+#         if form.is_valid():
+#             mensajeid = msm
+#             proyecto = msm.Proyecto
+#             eventoScrum = msm.EventoScrum
+#             status = msm.Status
+#             fecha = msm.FechaHora
+#             archivo = msm.archivo
+#             sprint = msm.Sprint
+#             DescripcionEventoScrum = msm.EventoScrum.Descripcion
+#             FechaHoraReunion = msm.FechaHora
+#             NombreProyecto = msm.Proyecto.nombreproyecto
 
-            if Accion == 2:
-                #Actualiza el status del mensaje enviado
-                msm.Status = 2 #Enviado
-                msm.FHUltimaMod = datetime.now()
-                msm.save() #Actualiza  la BD
+#             if Accion == 2:
+#                 #Actualiza el status del mensaje enviado
+#                 msm.Status = 2 #Enviado
+#                 msm.FHUltimaMod = datetime.now()
+#                 msm.save() #Actualiza  la BD
 
-            res = AsistentesEventosScrum.objects.filter(Mensaje=msm)
-            Destinatarios = ""
+#             res = AsistentesEventosScrum.objects.filter(Mensaje=msm)
+#             Destinatarios = ""
 
-            #res = AsistentesEventosScrum.objects.filter(Mensaje=idSms)
+#             #res = AsistentesEventosScrum.objects.filter(Mensaje=idSms)
 
-            for asistente in res:
-                mensaje = MensajeReceptor(Proyecto=proyecto, Mensaje=mensajeid, Receptor=asistente.Usuario, EventoScrum=eventoScrum, 
-                                          Emisor=empleado ,FHCreacion=fecha,Status="1", archivo=archivo, Sprint=sprint)
-                if Accion == 1:
-                    mensaje.save() #Guarda la Información en la BD "Mensajes_mensajereceptor" por cada uno de los destinatarios
-                Destinatarios = Destinatarios + str(asistente.Usuario.Usuario.email) + ', ' 
+#             for asistente in res:
+#                 mensaje = MensajeReceptor(Proyecto=proyecto, Mensaje=mensajeid, Receptor=asistente.Usuario, EventoScrum=eventoScrum, 
+#                                           Emisor=empleado ,FHCreacion=fecha,Status="1", archivo=archivo, Sprint=sprint)
+#                 if Accion == 1:
+#                     mensaje.save() #Guarda la Información en la BD "Mensajes_mensajereceptor" por cada uno de los destinatarios
+#                 Destinatarios = Destinatarios + str(asistente.Usuario.Usuario.email) + ', ' 
 
-            Destinatarios = Destinatarios[:-2] #Elimina la última coma y espacio
+#             Destinatarios = Destinatarios[:-2] #Elimina la última coma y espacio
    
-            #Inicia Envía el correo
-            Archivos = m_Archivos.objects.filter(Mensaje=msm)
-            #ArchivosAdjuntos=""
+#             #Inicia Envía el correo
+#             Archivos = m_Archivos.objects.filter(Mensaje=msm)
+#             #ArchivosAdjuntos=""
 
-            #Envío de correo
-            FechaHoraFormateada = FechaHoraReunion.strftime('%d/%m/%Y %H:%M')
-            asunto = DescripcionEventoScrum +  ' ' +  str(FechaHoraFormateada) #'Reunión de Revisión del Sprint'
-            Remitente = request.user.email
-            CuerpoMensaje = "Ceremonia: " + DescripcionEventoScrum + '\r\n Proyecto: ' + NombreProyecto + '\r\n' + 'Reunión: ' +  str(FechaHoraFormateada) #'Reunión de Revisión del Sprint
-            ListaDestinatarios = Destinatarios.split(",")
-            email = EmailMessage(
-                subject=asunto,
-                body=CuerpoMensaje,
-                from_email=Remitente,  
-                to=ListaDestinatarios,
-            )   
-            for arch in Archivos:
-                 # Convertimos el contenido binario del archivo a un objeto BytesIO
-                archivo_binario = BytesIO(arch.ArchivoObj)
+#             #Envío de correo
+#             FechaHoraFormateada = FechaHoraReunion.strftime('%d/%m/%Y %H:%M')
+#             asunto = DescripcionEventoScrum +  ' ' +  str(FechaHoraFormateada) #'Reunión de Revisión del Sprint'
+#             Remitente = request.user.email
+#             CuerpoMensaje = "Ceremonia: " + DescripcionEventoScrum + '\r\n Proyecto: ' + NombreProyecto + '\r\n' + 'Reunión: ' +  str(FechaHoraFormateada) #'Reunión de Revisión del Sprint
+#             ListaDestinatarios = Destinatarios.split(",")
+#             email = EmailMessage(
+#                 subject=asunto,
+#                 body=CuerpoMensaje,
+#                 from_email=Remitente,  
+#                 to=ListaDestinatarios,
+#             )   
+#             for arch in Archivos:
+#                  # Convertimos el contenido binario del archivo a un objeto BytesIO
+#                 archivo_binario = BytesIO(arch.ArchivoObj)
 
-                # Adjuntar el archivo al correo con el nombre original del archivo
-                email.attach(arch.Archivo.name, archivo_binario.read(), 'application/pdf')
-            if Accion == 2:
-                email.send()
-            #Fin Envío del correo
+#                 # Adjuntar el archivo al correo con el nombre original del archivo
+#                 email.attach(arch.Archivo.name, archivo_binario.read(), 'application/pdf')
+#             if Accion == 2:
+#                 email.send()
+#             #Fin Envío del correo
 
-            time.sleep(2)
-            return redirect('Mensajes:listaRevisionSprint')  # Redirigir a la página de mensajes enviados
-    else:
-        if msm.Status == '2': #El mensaje ya fue enviado
+#             time.sleep(2)
+#             return redirect('Mensajes:listaRevisionSprint')  # Redirigir a la página de mensajes enviados
+#     else:
+#         if msm.Status == '2': #El mensaje ya fue enviado
 
-            # Obtener el mensaje
-            MensajeAviso = get_object_or_404(Mensaje, pk=id)
-            # Mandar un mensaje que será mostrado en el template
-            messages.success(request, 'El mensaje ya fue enviado.')
-            # Renderizar el template y pasar los datos necesarios
-            return render(request, 'Scrum/MensajePantalla.html', {'mensaje': MensajeAviso, 'Ruta': '/listaRevisionSprint'})
+#             # Obtener el mensaje
+#             MensajeAviso = get_object_or_404(Mensaje, pk=id)
+#             # Mandar un mensaje que será mostrado en el template
+#             messages.success(request, 'El mensaje ya fue enviado.')
+#             # Renderizar el template y pasar los datos necesarios
+#             return render(request, 'Scrum/MensajePantalla.html', {'mensaje': MensajeAviso, 'Ruta': '/listaRevisionSprint'})
 
-        form = envAsistentesForms
-        form2 = Mensaje.objects.filter(pk=id)
-        form3 = AsistentesEventosScrum.objects.filter(Mensaje=msm)
-        archivos = m_Archivos.objects.filter(Mensaje=msm)
-    return render(request, 'Mensajes/ProductOwner/enviarMensajeRevision.html', {'form': form, 'form2':form2, 'form3':form3, 'archivos':archivos})
+#         form = envAsistentesForms
+#         form2 = Mensaje.objects.filter(pk=id)
+#         form3 = AsistentesEventosScrum.objects.filter(Mensaje=msm)
+#         archivos = m_Archivos.objects.filter(Mensaje=msm)
+#     return render(request, 'Mensajes/ProductOwner/enviarMensajeRevision.html', {'form': form, 'form2':form2, 'form3':form3, 'archivos':archivos})
 
 # ------------- Retroalimentacion de la Reunion de Revisión del Sprint, Product Owner --------------
 def mensajes_RetroAlimentacionRevision(request, id): #id del Mensaje
@@ -2799,145 +3328,174 @@ def vistaRevisionSprint(request, id):
         'progreso':enProgreso,
 
     }
-
     return render(request, 'Mensajes/ProductOwner/plantillaRevisionSprint.html', data)
 
-def PlantillaRevisionSprint(request, id): #id del Mensaje
-    #planeacion = Mensaje.objects.filter(pk=id)
+
+
+def PlantillaRevisionSprint(request, id):
     mensaje = Mensaje.objects.get(pk=id)
-    id_Sprint = mensaje.Sprint.id
-    id_Proyecto = mensaje.Proyecto.id
-    # Status de las HU
-    # 4	"En Sprint"
-    # 5	"Dividida en Tareas"
-    # 6	"En Progreso"
-    # 7	"Completada"
-    # 8	"Aceptada"
-    #historias = HistoriaUsuario.objects.filter(Q(Sprint = mensaje.Sprint) & Q(Estatus__in=[4, 5, 6, 7, 8]))
-    historias = HistoriaUsuario.objects.filter(Q(Sprint = mensaje.Sprint) & Q(Proyecto=mensaje.Proyecto))
-   
-    asistentes = AsistentesEventosScrum.objects.filter(Mensaje=mensaje)
-    comentarios = m_Comentarios.objects.filter(Mensaje=mensaje)
-
-    usuario = request.user
-    empleado = Empleado.objects.filter(Usuario=usuario)
-
-    # Filtra las tareas asociadas a las historias de usuario filtradas anteriormente
-    tareas = Tarea.objects.filter(HistoriaUsuario__in=historias)
-
-    total_horas_estimadas = sum(item.horasestimadas for item in tareas)
-    total_dias_estimados = total_horas_estimadas/8
-
-    # Filtra los registros de TareaAvance asociados a esas tareas
-    registros = TareaAvance.objects.filter(tarea__in=tareas)
-
-    Query = f"""select id, numero_hu, nombre_hu, horasestimadas, horasreales, estatus_id, huaceptada,
-        case 
-            when horasrestantes = 0 and horasrestantescaptura = 0 and  horasreales = 0 Then horasestimadas
-            else horasrestantes
-        end as horasrestantes,
-        case 
-            when horasrestantes = 0 and horasrestantescaptura = 0 and  horasreales = 0 Then horasestimadas
-            else horasrestantescaptura
-        end as horasrestantescaptura,
-        case
-            when
-                HorasReales = 0 and  HorasRestantes = 0 Then 0.0
-            when 
-                HorasReales <> 0 and  HorasRestantes = 0 Then 100.0
-            else
-                ((HorasEstimadas - HorasRestantes) / HorasEstimadas ::float) * 100
-        end AS progreso,
-		case
-            when
-                HorasReales = 0 and  HorasRestantesCaptura = 0 Then 0.0
-            when 
-                HorasReales <> 0 and  HorasRestantesCaptura = 0 Then 100.0
-            else
-                ((HorasEstimadas - HorasRestantesCaptura) / HorasEstimadas ::float) * 100
-        end AS progreso_captura
-        from (SELECT hu.id, hu.\"NumeroHU\" AS numero_hu, hu.nombre AS nombre_hu, eh.\"estatus\" AS Estatus_id,  hu.\"HUAceptada\" AS HUAceptada,
-            COALESCE(sum(t.\"horasestimadas\"), 0) AS HorasEstimadas,
-            COALESCE(sum(ta.\"horasReales\"), 0) AS HorasReales,
-            COALESCE(sum(ta.\"horasRestantes\"), 0) AS HorasRestantes,
-			COALESCE(sum(ta."horasRestantesCaptura"), 0) AS HorasRestantesCaptura
-        FROM public.\"Scrum_historiausuario\" as hu left join public.\"Scrum_tarea\" as t on
-        (
-            hu.id = t.\"HistoriaUsuario_id\"
-        ) left join public.\"Scrum_tareaavance\" as ta on (
-            t.id = ta.\"tarea_id\" and
-            ta.\"HistoriaUsuario_id\" = hu.id and
-            ta.\"horasDedicadas\" = 0
-        ) inner join public.\"Scrum_sprint\" as sp on (
-            hu.\"Sprint_id\" = sp.id
-        ) inner join public."Scrum_estatushistoria" as eh on (
-            hu.\"Estatus_id\" = eh.id
-        )
-        where
-        sp.id =  {id_Sprint}  and
-        hu.\"Proyecto_id\" = {id_Proyecto} 
-        group by hu.id, hu.\"NumeroHU\", hu.nombre, eh.\"estatus\", hu.\"HUAceptada\" 
-        order by numero_hu 
-        ) as temp""" 
-        #    hu.\"Estatus_id\" in (4,5,6,7,8)
-        #%id_Sprint %id_Proyecto
-    tareaAvance = TareaAvance.objects.raw(Query)
-
-    # Inicializamos una variable para acumular el total
-    total_horas_restantes_captura = 0
-    total_horas_restantes = 0
-
-    # Iteramos sobre los resultados del queryset
-    for tarea in tareaAvance:
-        total_horas_restantes_captura += tarea.horasrestantescaptura 
-        total_horas_restantes += tarea.horasrestantes
-
-    if registros:
-        total_horas_reales = registros.aggregate(total=models.Sum('horasDedicadas'))['total']
-        #total_horas_restantes = registros.aggregate(total=models.Sum('horasRestantes'))['total']
-        #total_horas_restantes = registros.filter(horasDedicadas=0).aggregate(total=Sum('horasRestantes'))['total']
-    else:
-        # Si no hay registros mostrara 0 por default
-        total_horas_reales = 0
-        #total_horas_restantes = 0
-    total_dias_reales = total_horas_reales/8
-    total_dias_restantes = total_horas_restantes/8
-    total_dias_restantes_captura = total_horas_restantes_captura/8
-    
-    if total_horas_reales == 0 and total_horas_restantes == 0:
-        avance_sprint = 0
-    elif total_horas_reales != 0 and  total_horas_restantes == 0:  
-        avance_sprint = 100.0
-    else:
-        avance_sprint = ((total_horas_estimadas - total_horas_restantes) / total_horas_estimadas) * 100
-
-    if total_horas_reales == 0 and total_horas_restantes_captura == 0:
-        avance_sprint_captura = 0
-    elif total_horas_reales != 0 and  total_horas_restantes_captura == 0:  
-        avance_sprint_captura = 100.0
-    else:
-        avance_sprint_captura = ((total_horas_estimadas - total_horas_restantes_captura) / total_horas_estimadas) * 100
-    
-    data = {
-        'tareaAvance': tareaAvance,
-        'mensaje': mensaje,
-        'asistentes': asistentes,
-        'Empleado':empleado,
-        'total_horas_estimadas': total_horas_estimadas,
-        'total_horas_reales': total_horas_reales,
-        'total_horas_restantes':total_horas_restantes,
-        'total_horas_restantes_captura':total_horas_restantes_captura,
-        'total_dias_estimados':total_dias_estimados,
-        'total_dias_reales':total_dias_reales,
-        'total_dias_restantes':total_dias_restantes,
-        'total_dias_restantes_captura':total_dias_restantes_captura,
-        'avance_sprint':avance_sprint,
-        'avance_sprint_captura':avance_sprint_captura,
-        'comentarios':comentarios,
-    }
-
-    pdf = render_to_pdf('Mensajes/ProductOwner/plantillaRevisionSprint.html', data)
+    contexto = obtener_contexto_revision_sprint(mensaje, request.user)
+    pdf = render_to_pdf('Mensajes/ProductOwner/plantillaRevisionSprint.html', contexto)
     return HttpResponse(pdf, content_type='application/pdf')
+
+
+def plantillaRetrospectivaSprint(request, id): #id del Mensaje
+    mensaje = Mensaje.objects.get(pk=id)
+    contexto = obtener_contexto_retrospectiva_sprint(mensaje, request.user)
+    pdf = render_to_pdf('Mensajes/ProductOwner/plantillaRetrospectivaSprint.html', contexto)
+    return HttpResponse(pdf, content_type='application/pdf')
+
+def plantillaReunionDiaria(request, id): #id del Mensaje
+    mensaje = Mensaje.objects.get(pk=id)
+    contexto = obtener_contexto_reunion_diaria(mensaje, request.user)
+
+    pdf = render_to_pdf('Mensajes/ProductOwner/plantillaReuniondDiaria.html', contexto)
+    return HttpResponse(pdf, content_type='application/pdf')
+
+def vistaEjecucionSprintID(request, id_ReunionDiaria): #id del Mensaje
+    mensaje = Mensaje.objects.get(pk=id_ReunionDiaria)  
+    contexto = obtener_contexto_reunion_diaria_esfuerzo(mensaje, request.user)
+
+    # pdf = render_to_pdf('Mensajes/ProductOwner/plantillaEjecucion2.html', contexto)
+    return render(request, 'Mensajes/ProductOwner/plantillaEjecucion2.html', contexto)
+
+# def PlantillaRevisionSprint(request, id): #id del Mensaje
+#     #planeacion = Mensaje.objects.filter(pk=id)
+#     mensaje = Mensaje.objects.get(pk=id)
+#     id_Sprint = mensaje.Sprint.id
+#     id_Proyecto = mensaje.Proyecto.id
+#     # Status de las HU
+#     # 4	"En Sprint"
+#     # 5	"Dividida en Tareas"
+#     # 6	"En Progreso"
+#     # 7	"Completada"
+#     # 8	"Aceptada"
+#     # 9 "Incompleta"
+#     #historias = HistoriaUsuario.objects.filter(Q(Sprint = mensaje.Sprint) & Q(Estatus__in=[4, 5, 6, 7, 8, 9]))
+#     historias = HistoriaUsuario.objects.filter(Q(Sprint = mensaje.Sprint) & Q(Proyecto=mensaje.Proyecto))
+   
+#     asistentes = AsistentesEventosScrum.objects.filter(Mensaje=mensaje)
+#     comentarios = m_Comentarios.objects.filter(Mensaje=mensaje)
+
+#     usuario = request.user
+#     empleado = Empleado.objects.filter(Usuario=usuario)
+
+#     # Filtra las tareas asociadas a las historias de usuario filtradas anteriormente
+#     tareas = Tarea.objects.filter(HistoriaUsuario__in=historias)
+
+#     total_horas_estimadas = sum(item.horasestimadas for item in tareas)
+#     total_dias_estimados = total_horas_estimadas/8
+
+#     # Filtra los registros de TareaAvance asociados a esas tareas
+#     registros = TareaAvance.objects.filter(tarea__in=tareas)
+
+#     Query = f"""select id, numero_hu, nombre_hu, horasestimadas, horasreales, estatus_id, huaceptada,
+#         case 
+#             when horasrestantes = 0 and horasrestantescaptura = 0 and  horasreales = 0 Then horasestimadas
+#             else horasrestantes
+#         end as horasrestantes,
+#         case 
+#             when horasrestantes = 0 and horasrestantescaptura = 0 and  horasreales = 0 Then horasestimadas
+#             else horasrestantescaptura
+#         end as horasrestantescaptura,
+#         case
+#             when
+#                 HorasReales = 0 and  HorasRestantes = 0 Then 0.0
+#             when 
+#                 HorasReales <> 0 and  HorasRestantes = 0 Then 100.0
+#             else
+#                 ((HorasEstimadas - HorasRestantes) / HorasEstimadas ::float) * 100
+#         end AS progreso,
+# 		case
+#             when
+#                 HorasReales = 0 and  HorasRestantesCaptura = 0 Then 0.0
+#             when 
+#                 HorasReales <> 0 and  HorasRestantesCaptura = 0 Then 100.0
+#             else
+#                 ((HorasEstimadas - HorasRestantesCaptura) / HorasEstimadas ::float) * 100
+#         end AS progreso_captura
+#         from (SELECT hu.id, hu.\"NumeroHU\" AS numero_hu, hu.nombre AS nombre_hu, eh.\"estatus\" AS Estatus_id,  hu.\"HUAceptada\" AS HUAceptada,
+#             COALESCE(sum(t.\"horasestimadas\"), 0) AS HorasEstimadas,
+#             COALESCE(sum(ta.\"horasReales\"), 0) AS HorasReales,
+#             COALESCE(sum(ta.\"horasRestantes\"), 0) AS HorasRestantes,
+# 			COALESCE(sum(ta."horasRestantesCaptura"), 0) AS HorasRestantesCaptura
+#         FROM public.\"Scrum_historiausuario\" as hu left join public.\"Scrum_tarea\" as t on
+#         (
+#             hu.id = t.\"HistoriaUsuario_id\"
+#         ) left join public.\"Scrum_tareaavance\" as ta on (
+#             t.id = ta.\"tarea_id\" and
+#             ta.\"HistoriaUsuario_id\" = hu.id and
+#             ta.\"horasDedicadas\" = 0
+#         ) inner join public.\"Scrum_sprint\" as sp on (
+#             hu.\"Sprint_id\" = sp.id
+#         ) inner join public."Scrum_estatushistoria" as eh on (
+#             hu.\"Estatus_id\" = eh.id
+#         )
+#         where
+#         sp.id =  {id_Sprint}  and
+#         hu.\"Proyecto_id\" = {id_Proyecto} 
+#         group by hu.id, hu.\"NumeroHU\", hu.nombre, eh.\"estatus\", hu.\"HUAceptada\" 
+#         order by numero_hu 
+#         ) as temp""" 
+#         #    hu.\"Estatus_id\" in (4,5,6,7,8)
+#         #%id_Sprint %id_Proyecto
+#     tareaAvance = TareaAvance.objects.raw(Query)
+
+#     # Inicializamos una variable para acumular el total
+#     total_horas_restantes_captura = 0
+#     total_horas_restantes = 0
+
+#     # Iteramos sobre los resultados del queryset
+#     for tarea in tareaAvance:
+#         total_horas_restantes_captura += tarea.horasrestantescaptura 
+#         total_horas_restantes += tarea.horasrestantes
+
+#     if registros:
+#         total_horas_reales = registros.aggregate(total=models.Sum('horasDedicadas'))['total']
+#         #total_horas_restantes = registros.aggregate(total=models.Sum('horasRestantes'))['total']
+#         #total_horas_restantes = registros.filter(horasDedicadas=0).aggregate(total=Sum('horasRestantes'))['total']
+#     else:
+#         # Si no hay registros mostrara 0 por default
+#         total_horas_reales = 0
+#         #total_horas_restantes = 0
+#     total_dias_reales = total_horas_reales/8
+#     total_dias_restantes = total_horas_restantes/8
+#     total_dias_restantes_captura = total_horas_restantes_captura/8
+    
+#     if total_horas_reales == 0 and total_horas_restantes == 0:
+#         avance_sprint = 0
+#     elif total_horas_reales != 0 and  total_horas_restantes == 0:  
+#         avance_sprint = 100.0
+#     else:
+#         avance_sprint = ((total_horas_estimadas - total_horas_restantes) / total_horas_estimadas) * 100
+
+#     if total_horas_reales == 0 and total_horas_restantes_captura == 0:
+#         avance_sprint_captura = 0
+#     elif total_horas_reales != 0 and  total_horas_restantes_captura == 0:  
+#         avance_sprint_captura = 100.0
+#     else:
+#         avance_sprint_captura = ((total_horas_estimadas - total_horas_restantes_captura) / total_horas_estimadas) * 100
+    
+#     data = {
+#         'tareaAvance': tareaAvance,
+#         'mensaje': mensaje,
+#         'asistentes': asistentes,
+#         'Empleado':empleado,
+#         'total_horas_estimadas': total_horas_estimadas,
+#         'total_horas_reales': total_horas_reales,
+#         'total_horas_restantes':total_horas_restantes,
+#         'total_horas_restantes_captura':total_horas_restantes_captura,
+#         'total_dias_estimados':total_dias_estimados,
+#         'total_dias_reales':total_dias_reales,
+#         'total_dias_restantes':total_dias_restantes,
+#         'total_dias_restantes_captura':total_dias_restantes_captura,
+#         'avance_sprint':avance_sprint,
+#         'avance_sprint_captura':avance_sprint_captura,
+#         'comentarios':comentarios,
+#     }
+
+#     pdf = render_to_pdf('Mensajes/ProductOwner/plantillaRevisionSprint.html', data)
+#     return HttpResponse(pdf, content_type='application/pdf')
 
 
 # ------------------------------------------- Reunion de Revison del Sprint, Scrum Master ------------------------------------------------
@@ -3285,25 +3843,25 @@ def vistaRetrospectivaSprint(request, id):
 
     return render(request, 'Mensajes/ProductOwner/plantillaRetrospectivaSprint.html', data)
 
-def plantillaRetrospectivaSprint(request, id): #id del Mensaje
-    #print(f"plantillaRetrospectivaSprint id: {id} ")
-    retrospectiva = Mensaje.objects.filter(pk=id)
-    mensaje = Mensaje.objects.get(pk=id)
-    asistentes = AsistentesEventosScrum.objects.filter(Mensaje=mensaje)
-    comentarios = m_RetrospectivaSprint.objects.filter(Mensaje=mensaje)
+# def plantillaRetrospectivaSprint(request, id): #id del Mensaje
+#     #print(f"plantillaRetrospectivaSprint id: {id} ")
+#     retrospectiva = Mensaje.objects.filter(pk=id)
+#     mensaje = Mensaje.objects.get(pk=id)
+#     asistentes = AsistentesEventosScrum.objects.filter(Mensaje=mensaje)
+#     comentarios = m_RetrospectivaSprint.objects.filter(Mensaje=mensaje)
 
-    usuario = request.user
-    idiomaPais = Empleado.objects.filter(Usuario=usuario)
+#     usuario = request.user
+#     idiomaPais = Empleado.objects.filter(Usuario=usuario)
 
-    data = {
-        'form': mensaje,
-        'form3': asistentes,
-        'idiomaPais':idiomaPais,
-        'comentarios':comentarios
-    }
+#     data = {
+#         'form': mensaje,
+#         'form3': asistentes,
+#         'idiomaPais':idiomaPais,
+#         'comentarios':comentarios
+#     }
 
-    pdf = render_to_pdf('Mensajes/ProductOwner/plantillaRetrospectivaSprint.html', data)
-    return HttpResponse(pdf, content_type='application/pdf')
+#     pdf = render_to_pdf('Mensajes/ProductOwner/plantillaRetrospectivaSprint.html', data)
+#     return HttpResponse(pdf, content_type='application/pdf')
 
 # Plantilla para el mensaje de retroalimentacion de la retrospectiva del sprint
 def plantillaRetroAlimentacionRestrospectiva(request,id): # id del Mensaje de Retroalimentación
@@ -3506,87 +4064,87 @@ def eliminar_retrospectiva(request, id):
     producto.delete()
     return redirect(to="Mensajes:listaRetrospectivaSprint")
 
-def enviar_mensaje_Retrospectiva(request, id, Accion):
-    msm = Mensaje.objects.get(pk=id)
-    usuario = request.user.id
-    empleado = Empleado.objects.get(Usuario=usuario)
+# def enviar_mensaje_Retrospectiva(request, id, Accion):
+#     msm = Mensaje.objects.get(pk=id)
+#     usuario = request.user.id
+#     empleado = Empleado.objects.get(Usuario=usuario)
 
-    if request.method == 'POST':
-        form = envAsistentesForms(request.POST)
-        if form.is_valid():
-            mensajeid = msm
-            proyecto = msm.Proyecto
-            eventoScrum = msm.EventoScrum
-            status = msm.Status
-            fecha = msm.FechaHora
-            archivo = msm.archivo
-            sprint = msm.Sprint
-            DescripcionEventoScrum = msm.EventoScrum.Descripcion
-            FechaHoraReunion = msm.FechaHora #m_PlanificacionSprint.objects.get(Mensaje=id).FechaHora 
-            NombreProyecto = msm.Proyecto.nombreproyecto
-            if Accion == 2:
-                #Actualiza el status del mensaje enviado
-                msm.Status = 2 #Enviado
-                msm.FHUltimaMod = datetime.now()
-                msm.save() #Actualiza  la BD
+#     if request.method == 'POST':
+#         form = envAsistentesForms(request.POST)
+#         if form.is_valid():
+#             mensajeid = msm
+#             proyecto = msm.Proyecto
+#             eventoScrum = msm.EventoScrum
+#             status = msm.Status
+#             fecha = msm.FechaHora
+#             archivo = msm.archivo
+#             sprint = msm.Sprint
+#             DescripcionEventoScrum = msm.EventoScrum.Descripcion
+#             FechaHoraReunion = msm.FechaHora #m_PlanificacionSprint.objects.get(Mensaje=id).FechaHora 
+#             NombreProyecto = msm.Proyecto.nombreproyecto
+#             if Accion == 2:
+#                 #Actualiza el status del mensaje enviado
+#                 msm.Status = 2 #Enviado
+#                 msm.FHUltimaMod = datetime.now()
+#                 msm.save() #Actualiza  la BD
 
-            res = AsistentesEventosScrum.objects.filter(Mensaje=msm)
-            Destinatarios = ""
+#             res = AsistentesEventosScrum.objects.filter(Mensaje=msm)
+#             Destinatarios = ""
 
-            for asistente in res:
-                mensaje = MensajeReceptor(Proyecto=proyecto, Mensaje=mensajeid, Receptor=asistente.Usuario, EventoScrum=eventoScrum, 
-                                          Emisor=empleado ,FHCreacion=fecha,Status="1", archivo=archivo, Sprint=sprint)
-                if Accion == 1:
-                    mensaje.save() #Guarda la Información en la BD "Mensajes_mensajereceptor" por cada uno de los destinatarios
-                Destinatarios = Destinatarios + str(asistente.Usuario.Usuario.email) + ', ' 
+#             for asistente in res:
+#                 mensaje = MensajeReceptor(Proyecto=proyecto, Mensaje=mensajeid, Receptor=asistente.Usuario, EventoScrum=eventoScrum, 
+#                                           Emisor=empleado ,FHCreacion=fecha,Status="1", archivo=archivo, Sprint=sprint)
+#                 if Accion == 1:
+#                     mensaje.save() #Guarda la Información en la BD "Mensajes_mensajereceptor" por cada uno de los destinatarios
+#                 Destinatarios = Destinatarios + str(asistente.Usuario.Usuario.email) + ', ' 
                 
-            Destinatarios = Destinatarios[:-2] #Elimina la última coma y espacio
+#             Destinatarios = Destinatarios[:-2] #Elimina la última coma y espacio
 
-            #Inicia Envía el correo
-            Archivos = m_Archivos.objects.filter(Mensaje=msm)
-            #ArchivosAdjuntos=""
+#             #Inicia Envía el correo
+#             Archivos = m_Archivos.objects.filter(Mensaje=msm)
+#             #ArchivosAdjuntos=""
 
-            #Envío de correo
-            FechaHoraFormateada = FechaHoraReunion.strftime('%d/%m/%Y %H:%M')
-            asunto = DescripcionEventoScrum +  ' ' +  str(FechaHoraFormateada) #'Reunión de Retrospectiva'
-            Remitente = request.user.email
-            CuerpoMensaje = "Ceremonia: " + DescripcionEventoScrum + '\r\n Proyecto: ' + NombreProyecto + '\r\n' + 'Reunión: ' +  str(FechaHoraFormateada) #'Reunión de  Retrospectiva
-            ListaDestinatarios = Destinatarios.split(",")
-            email = EmailMessage(
-                subject=asunto,
-                body=CuerpoMensaje,
-                from_email=Remitente,  
-                to=ListaDestinatarios,
-            )   
-            for arch in Archivos:
-                 # Convertimos el contenido binario del archivo a un objeto BytesIO
-                archivo_binario = BytesIO(arch.ArchivoObj)
+#             #Envío de correo
+#             FechaHoraFormateada = FechaHoraReunion.strftime('%d/%m/%Y %H:%M')
+#             asunto = DescripcionEventoScrum +  ' ' +  str(FechaHoraFormateada) #'Reunión de Retrospectiva'
+#             Remitente = request.user.email
+#             CuerpoMensaje = "Ceremonia: " + DescripcionEventoScrum + '\r\n Proyecto: ' + NombreProyecto + '\r\n' + 'Reunión: ' +  str(FechaHoraFormateada) #'Reunión de  Retrospectiva
+#             ListaDestinatarios = Destinatarios.split(",")
+#             email = EmailMessage(
+#                 subject=asunto,
+#                 body=CuerpoMensaje,
+#                 from_email=Remitente,  
+#                 to=ListaDestinatarios,
+#             )   
+#             for arch in Archivos:
+#                  # Convertimos el contenido binario del archivo a un objeto BytesIO
+#                 archivo_binario = BytesIO(arch.ArchivoObj)
 
-                # Adjuntar el archivo al correo con el nombre original del archivo
-                email.attach(arch.Archivo.name, archivo_binario.read(), 'application/pdf')
-            if Accion == 2:
-                email.send()
-            #Fin Envío del correo
+#                 # Adjuntar el archivo al correo con el nombre original del archivo
+#                 email.attach(arch.Archivo.name, archivo_binario.read(), 'application/pdf')
+#             if Accion == 2:
+#                 email.send()
+#             #Fin Envío del correo
                 
-            time.sleep(2)
-            return redirect('Mensajes:listaRetrospectivaSprint')  # Redirigir a la página de mensajes enviados
-    else:
-        if msm.Status == '2': #El mensaje ya fue enviado
-            # print(f"idSms.Status2 : {msm.Status} ")
-            # Obtener el mensaje
-            MensajeAviso = get_object_or_404(Mensaje, pk=id)
-            # Mandar un mensaje que será mostrado en el template
-            messages.success(request, 'El mensaje ya fue enviado.')
-            # Renderizar el template y pasar los datos necesarios
-            return render(request, 'Scrum/MensajePantalla.html', {'mensaje': MensajeAviso, 'Ruta': '/listaRetrospectivaSprint'})
+#             time.sleep(2)
+#             return redirect('Mensajes:listaRetrospectivaSprint')  # Redirigir a la página de mensajes enviados
+#     else:
+#         if msm.Status == '2': #El mensaje ya fue enviado
+#             # print(f"idSms.Status2 : {msm.Status} ")
+#             # Obtener el mensaje
+#             MensajeAviso = get_object_or_404(Mensaje, pk=id)
+#             # Mandar un mensaje que será mostrado en el template
+#             messages.success(request, 'El mensaje ya fue enviado.')
+#             # Renderizar el template y pasar los datos necesarios
+#             return render(request, 'Scrum/MensajePantalla.html', {'mensaje': MensajeAviso, 'Ruta': '/listaRetrospectivaSprint'})
 
 
-        form = envAsistentesForms
-        form2 = Mensaje.objects.filter(pk=id)
-        form3 = AsistentesEventosScrum.objects.filter(Mensaje=msm)
-        idmensaje = Mensaje.objects.get(pk=id)
-        archivos = m_Archivos.objects.filter(Mensaje=idmensaje)
-    return render(request, 'Mensajes/ProductOwner/enviarMensajeRetrospectiva.html', {'form': form, 'form2':form2, 'form3':form3, 'archivos':archivos})
+#         form = envAsistentesForms
+#         form2 = Mensaje.objects.filter(pk=id)
+#         form3 = AsistentesEventosScrum.objects.filter(Mensaje=msm)
+#         idmensaje = Mensaje.objects.get(pk=id)
+#         archivos = m_Archivos.objects.filter(Mensaje=idmensaje)
+#     return render(request, 'Mensajes/ProductOwner/enviarMensajeRetrospectiva.html', {'form': form, 'form2':form2, 'form3':form3, 'archivos':archivos})
 
 # ------------- Retroalimentacion de la Reunion de Retrospectiva del Sprint, Product Owner --------------
 def mensajes_RetroAlimentacionRetrospectiva(request, id): #id del Mensaje
@@ -4342,93 +4900,93 @@ def eliminar_reunion_diaria(request, id): # id del Mensaje
     producto.delete()
     return redirect(to="Mensajes:listaReunionDiaria")
 
-def enviar_mensaje_Reunion_Diaria(request, id, Accion):
-    msm = Mensaje.objects.get(pk=id)
-    usuario = request.user.id
-    empleado = Empleado.objects.get(Usuario=usuario)
+# def enviar_mensaje_Reunion_Diaria(request, id, Accion):
+#     msm = Mensaje.objects.get(pk=id)
+#     usuario = request.user.id
+#     empleado = Empleado.objects.get(Usuario=usuario)
 
 
-    if request.method == 'POST':
-        form = envAsistentesForms(request.POST)
-        if form.is_valid():
-            #msm = Mensaje.objects.filter(pk=id)
-            mensajeid = msm
-            proyecto = msm.Proyecto
-            eventoScrum = msm.EventoScrum
-            status = msm.Status
-            fecha = msm.FechaHora
-            archivo = msm.archivo
-            sprint = msm.Sprint
-            DescripcionEventoScrum = msm.EventoScrum.Descripcion
-            FechaHoraReunion = msm.FechaHora #m_PlanificacionSprint.objects.get(Mensaje=id).FechaHora 
-            NombreProyecto = msm.Proyecto.nombreproyecto
-            if Accion == 2:
-                #Actualiza el status del mensaje enviado
-                msm.Status = 2 #Enviado
-                msm.FHUltimaMod = datetime.now()
-                msm.save() #Actualiza  la BD
+#     if request.method == 'POST':
+#         form = envAsistentesForms(request.POST)
+#         if form.is_valid():
+#             #msm = Mensaje.objects.filter(pk=id)
+#             mensajeid = msm
+#             proyecto = msm.Proyecto
+#             eventoScrum = msm.EventoScrum
+#             status = msm.Status
+#             fecha = msm.FechaHora
+#             archivo = msm.archivo
+#             sprint = msm.Sprint
+#             DescripcionEventoScrum = msm.EventoScrum.Descripcion
+#             FechaHoraReunion = msm.FechaHora #m_PlanificacionSprint.objects.get(Mensaje=id).FechaHora 
+#             NombreProyecto = msm.Proyecto.nombreproyecto
+#             if Accion == 2:
+#                 #Actualiza el status del mensaje enviado
+#                 msm.Status = 2 #Enviado
+#                 msm.FHUltimaMod = datetime.now()
+#                 msm.save() #Actualiza  la BD
 
-            res = AsistentesEventosScrum.objects.filter(Mensaje=msm)
-            Destinatarios = ""
+#             res = AsistentesEventosScrum.objects.filter(Mensaje=msm)
+#             Destinatarios = ""
 
-            res = AsistentesEventosScrum.objects.filter(Mensaje=msm)
-            Destinatarios = ""
-            for asistente in res:
-                mensaje = MensajeReceptor(Proyecto=proyecto, Mensaje=mensajeid, Receptor=asistente.Usuario, EventoScrum=eventoScrum, 
-                                          Emisor=empleado ,FHCreacion=fecha,Status="1", archivo=archivo, Sprint=sprint)
-                if Accion == 1:
-                    mensaje.save() #Guarda la Información en la BD "Mensajes_mensajereceptor" por cada uno de los destinatarios
-                Destinatarios = Destinatarios + str(asistente.Usuario.Usuario.email) + ', ' 
+#             res = AsistentesEventosScrum.objects.filter(Mensaje=msm)
+#             Destinatarios = ""
+#             for asistente in res:
+#                 mensaje = MensajeReceptor(Proyecto=proyecto, Mensaje=mensajeid, Receptor=asistente.Usuario, EventoScrum=eventoScrum, 
+#                                           Emisor=empleado ,FHCreacion=fecha,Status="1", archivo=archivo, Sprint=sprint)
+#                 if Accion == 1:
+#                     mensaje.save() #Guarda la Información en la BD "Mensajes_mensajereceptor" por cada uno de los destinatarios
+#                 Destinatarios = Destinatarios + str(asistente.Usuario.Usuario.email) + ', ' 
                 
-            Destinatarios = Destinatarios[:-2] #Elimina la última coma y espacio
+#             Destinatarios = Destinatarios[:-2] #Elimina la última coma y espacio
    
-            #Inicia Envía el correo
-            Archivos = m_Archivos.objects.filter(Mensaje=msm)
-            #ArchivosAdjuntos=""
+#             #Inicia Envía el correo
+#             Archivos = m_Archivos.objects.filter(Mensaje=msm)
+#             #ArchivosAdjuntos=""
 
-            #Envío de correo
-            FechaHoraFormateada = FechaHoraReunion.strftime('%d/%m/%Y %H:%M')
-            asunto = DescripcionEventoScrum +  ' ' +  str(FechaHoraFormateada) #'Reunión Diaria'
-            Remitente = request.user.email
-            CuerpoMensaje = "Ceremonia: " + DescripcionEventoScrum + '\r\n Proyecto: ' + NombreProyecto + '\r\n' + 'Reunión: ' +  str(FechaHoraFormateada) #'Reunión diaria
-            ListaDestinatarios = Destinatarios.split(",")
-            email = EmailMessage(
-                subject=asunto,
-                body=CuerpoMensaje,
-                from_email=Remitente,  
-                to=ListaDestinatarios,
-            )   
-            for arch in Archivos:
-                 # Convertimos el contenido binario del archivo a un objeto BytesIO
-                archivo_binario = BytesIO(arch.ArchivoObj)
+#             #Envío de correo
+#             FechaHoraFormateada = FechaHoraReunion.strftime('%d/%m/%Y %H:%M')
+#             asunto = DescripcionEventoScrum +  ' ' +  str(FechaHoraFormateada) #'Reunión Diaria'
+#             Remitente = request.user.email
+#             CuerpoMensaje = "Ceremonia: " + DescripcionEventoScrum + '\r\n Proyecto: ' + NombreProyecto + '\r\n' + 'Reunión: ' +  str(FechaHoraFormateada) #'Reunión diaria
+#             ListaDestinatarios = Destinatarios.split(",")
+#             email = EmailMessage(
+#                 subject=asunto,
+#                 body=CuerpoMensaje,
+#                 from_email=Remitente,  
+#                 to=ListaDestinatarios,
+#             )   
+#             for arch in Archivos:
+#                  # Convertimos el contenido binario del archivo a un objeto BytesIO
+#                 archivo_binario = BytesIO(arch.ArchivoObj)
 
-                # Adjuntar el archivo al correo con el nombre original del archivo
-                email.attach(arch.Archivo.name, archivo_binario.read(), 'application/pdf')
-                #email.attach_file(str(arch.Archivo))
-            if Accion == 2:
-                email.send()
-            #Fin Envío del correo
+#                 # Adjuntar el archivo al correo con el nombre original del archivo
+#                 email.attach(arch.Archivo.name, archivo_binario.read(), 'application/pdf')
+#                 #email.attach_file(str(arch.Archivo))
+#             if Accion == 2:
+#                 email.send()
+#             #Fin Envío del correo
 
-            time.sleep(2)
-            #return redirect('Mensajes:listaRetrospectivaSprint')  # Redirigir a la página de mensajes enviados
-            return redirect('Mensajes:listaReunionDiaria') 
-    else:
-        if msm.Status == '2': #El mensaje ya fue enviado
-            #print(f"idSms.Status2 : {msm.Status} ")
-            # Obtener el mensaje
-            MensajeAviso = get_object_or_404(Mensaje, pk=id)
-            # Mandar un mensaje que será mostrado en el template
-            messages.success(request, 'El mensaje ya fue enviado.')
-            # Renderizar el template y pasar los datos necesarios
-            return render(request, 'Scrum/MensajePantalla.html', {'mensaje': MensajeAviso, 'Ruta': '/listaReunionDiaria'})
+#             time.sleep(2)
+#             #return redirect('Mensajes:listaRetrospectivaSprint')  # Redirigir a la página de mensajes enviados
+#             return redirect('Mensajes:listaReunionDiaria') 
+#     else:
+#         if msm.Status == '2': #El mensaje ya fue enviado
+#             #print(f"idSms.Status2 : {msm.Status} ")
+#             # Obtener el mensaje
+#             MensajeAviso = get_object_or_404(Mensaje, pk=id)
+#             # Mandar un mensaje que será mostrado en el template
+#             messages.success(request, 'El mensaje ya fue enviado.')
+#             # Renderizar el template y pasar los datos necesarios
+#             return render(request, 'Scrum/MensajePantalla.html', {'mensaje': MensajeAviso, 'Ruta': '/listaReunionDiaria'})
 
 
-        form = envAsistentesForms
-        form2 = Mensaje.objects.filter(pk=id)
-        form3 = AsistentesEventosScrum.objects.filter(Mensaje=msm)
-        idmensaje = Mensaje.objects.get(pk=id)
-        archivos = m_Archivos.objects.filter(Mensaje=idmensaje)
-    return render(request, 'Mensajes/ProductOwner/enviarMensajeReunionDiaria.html', {'form': form,  'form2':form2, 'form3':form3, 'archivos':archivos})
+#         form = envAsistentesForms
+#         form2 = Mensaje.objects.filter(pk=id)
+#         form3 = AsistentesEventosScrum.objects.filter(Mensaje=msm)
+#         idmensaje = Mensaje.objects.get(pk=id)
+#         archivos = m_Archivos.objects.filter(Mensaje=idmensaje)
+#     return render(request, 'Mensajes/ProductOwner/enviarMensajeReunionDiaria.html', {'form': form,  'form2':form2, 'form3':form3, 'archivos':archivos})
 
 # ------------- Retroalimentacion de la Reunion Diaria, Product Owner --------------
 def mensajes_RetroAlimentacionReunionDiaria(request, id): # id del Mensaje original
@@ -4569,26 +5127,26 @@ def vistaReunionDiaria(request, id):
 
     return render(request, 'Mensajes/ProductOwner/plantillaReuniondDiaria.html', data)
 
-def plantillaReunionDiaria(request, id): #id del Mensaje original
-    reunionDiaria = Mensaje.objects.filter(pk=id)
-    mensaje = Mensaje.objects.get(pk=id)
-    sprint_numero = mensaje.Sprint.numerosprint
-    asistentes = AsistentesEventosScrum.objects.filter(Mensaje=mensaje)
-    comentarios = m_ReunionDiaria.objects.filter(Mensaje=mensaje)
+# def plantillaReunionDiaria(request, id): #id del Mensaje original
+#     reunionDiaria = Mensaje.objects.filter(pk=id)
+#     mensaje = Mensaje.objects.get(pk=id)
+#     sprint_numero = mensaje.Sprint.numerosprint
+#     asistentes = AsistentesEventosScrum.objects.filter(Mensaje=mensaje)
+#     comentarios = m_ReunionDiaria.objects.filter(Mensaje=mensaje)
 
-    usuario = request.user
-    idiomaPais = Empleado.objects.filter(Usuario=usuario)
+#     usuario = request.user
+#     idiomaPais = Empleado.objects.filter(Usuario=usuario)
 
-    data = {
-        'form': reunionDiaria,
-        'form2': asistentes,
-        'idiomaPais':idiomaPais,
-        'comentarios':comentarios,
-        'sprint_numero': sprint_numero,
-    }
+#     data = {
+#         'form': reunionDiaria,
+#         'form2': asistentes,
+#         'idiomaPais':idiomaPais,
+#         'comentarios':comentarios,
+#         'sprint_numero': sprint_numero,
+#     }
 
-    pdf = render_to_pdf('Mensajes/ProductOwner/plantillaReuniondDiaria.html', data)
-    return HttpResponse(pdf, content_type='application/pdf')
+#     pdf = render_to_pdf('Mensajes/ProductOwner/plantillaReuniondDiaria.html', data)
+#     return HttpResponse(pdf, content_type='application/pdf')
 
 
 # ------------------------------- Reunion Diaria - Scrum Master (Mensajes recibidos) ----------------
@@ -4767,6 +5325,8 @@ def listaReunionDiariaEmpleado(request):
 
         # Obtener los proyectos en los que el empleado participa
         proyectos = EmpleadoProyecto.objects.filter(Empleado=empleado).values_list('Proyecto', flat=True)
+        # 🔥 Agregar todos los Sprints disponibles en esos proyectos
+        sprints = Sprint.objects.filter(Proyecto__in=proyectos)
 
         #mensajes = MensajeReceptor.objects.filter(Q(Receptor=empleado) & Q(EventoScrum="4")& Q(Proyecto__in=proyectos)) # Evento - Reunion diaria
         mensajes = MensajeReceptor.objects.filter(
@@ -4778,6 +5338,7 @@ def listaReunionDiariaEmpleado(request):
         )
         data = {
             'form2':mensajes,
+            'sprints': sprints,
         }
 
         user = request.user
@@ -4980,31 +5541,31 @@ def eliminar_archivo_refinamiento(request, id):
     producto = get_object_or_404(m_Archivos, id=id)
     producto.delete()
     msm = producto.Mensaje.id
-    return redirect("Mensajes:enviarMensajes", msm)
+    return redirect("Mensajes:enviarMensajes", msm, "1")
 
 def eliminar_archivo_planeacion(request, id):
     producto = get_object_or_404(m_Archivos, id=id)
     producto.delete()
     msm = producto.Mensaje.id
-    return redirect("Mensajes:enviarMensajePlaneacion", msm)
+    return redirect("Mensajes:enviarMensajePlaneacion", msm, "1")
 
 def eliminar_archivo_revision(request, id):
     producto = get_object_or_404(m_Archivos, id=id)
     producto.delete()
     msm = producto.Mensaje.id
-    return redirect("Mensajes:enviarMensajeRevision", msm)
+    return redirect("Mensajes:enviarMensajeRevision", msm, "1")
 
 def eliminar_archivo_retrospectiva(request, id):
     producto = get_object_or_404(m_Archivos, id=id)
     producto.delete()
     msm = producto.Mensaje.id
-    return redirect("Mensajes:enviarMensajeRetrospectiva", msm)
+    return redirect("Mensajes:enviarMensajeRetrospectiva", msm, "1")
 
 def eliminar_archivo_reunion_diaria(request, id):
     producto = get_object_or_404(m_Archivos, id=id)
     producto.delete()
     msm = producto.Mensaje.id
-    return redirect("Mensajes:enviarMensajeReunionDiaria", msm)
+    return redirect("Mensajes:enviarMensajeReunionDiaria", msm, "1")
 
 
 # Pruebas para ver el pais del empleado
@@ -5107,7 +5668,7 @@ def archivosRecibidosRevisionEmpleado(request, id): # id del Mensaje
     # return render(request, 'Mensajes/ProductOwner/plantillaHistoriasHU.html', data)
 
 def plantillaHistoriasHU(request, id_sprint):
-    dato = HistoriaUsuario.objects.filter(Q(Estatus=5) & Q(Sprint=id_sprint)) #HU Divididas en Tareas
+    dato = HistoriaUsuario.objects.filter(Q(Estatus__in= [5,6,7,8,9]) & Q(Sprint=id_sprint)) #HU 5= Divididas en Tareas, 6=EN progreso, 7= Completada, 8=Aceptada, 9=Incompleta
     #tarea = Tarea.objects.all()
 
     data = {
@@ -5147,250 +5708,363 @@ def vistaEjecucionSprint(request, id_ReunionDiaria):
 
     return render(request, 'Mensajes/ProductOwner/plantillaEjecucion.html', data)
 
-def vistaEjecucionSprintID(request, id_ReunionDiaria):
-    #dato = HistoriaUsuario.objects.filter(Estatus=4) # En Sprint (son las mismas que estan dentro del modelo sprint_backlog)
-    #modelo ReunionDiaria ?
-    id_Sprint = Mensaje.objects.get(id=id_ReunionDiaria).Sprint.id
-    id_Proyecto = Mensaje.objects.get(id=id_ReunionDiaria).Proyecto.id
+# def vistaEjecucionSprintID(request, id_ReunionDiaria):
+#     #dato = HistoriaUsuario.objects.filter(Estatus=4) # En Sprint (son las mismas que estan dentro del modelo sprint_backlog)
+#     #modelo ReunionDiaria ?
+#     id_Sprint = Mensaje.objects.get(id=id_ReunionDiaria).Sprint.id
+#     id_Proyecto = Mensaje.objects.get(id=id_ReunionDiaria).Proyecto.id
 
-    #HU = HistoriaUsuario.objects.filter(Q(Sprint_id=id_Sprint) & Q(Estatus__in=[4, 5, 6])) # 4=En Sprint, 5=Divididas, 6=EN progreso (son las mismas que estan dentro del modelo sprint_backlog)
-    HU = HistoriaUsuario.objects.filter(Q(Sprint_id=id_Sprint) & Q(Proyecto_id = id_Proyecto)) # 4=En Sprint, 5=Divididas, 6=EN progreso (son las mismas que estan dentro del modelo sprint_backlog)
+#     #HU = HistoriaUsuario.objects.filter(Q(Sprint_id=id_Sprint) & Q(Estatus__in=[4, 5, 6])) # 4=En Sprint, 5=Divididas, 6=EN progreso (son las mismas que estan dentro del modelo sprint_backlog)
+#     HU = HistoriaUsuario.objects.filter(Q(Sprint_id=id_Sprint) & Q(Proyecto_id = id_Proyecto)) # 4=En Sprint, 5=Divididas, 6=EN progreso (son las mismas que estan dentro del modelo sprint_backlog)
 
-    #dato = HistoriaUsuario.objects.filter(Estatus=4) # En Sprint (son las mismas que estan dentro del modelo sprint_backlog)
-    Query = f"""SELECT t.* 
-            FROM public.\"Scrum_tarea\" as t inner join public.\"Scrum_historiausuario\" as hu on
-            (t.\"HistoriaUsuario_id\" = hu.id 
-            ) inner join public.\"Scrum_sprint\" as sp on (
-                hu.\"Sprint_id\" = sp.id
-            )
-            where
-            sp.id = {id_Sprint} and sp.\"Proyecto_id\" = {id_Proyecto}""" 
-    #and             hu.\"Estatus_id\" in (4,5,6)
-    tarea = Tarea.objects.raw(Query)
+#     #dato = HistoriaUsuario.objects.filter(Estatus=4) # En Sprint (son las mismas que estan dentro del modelo sprint_backlog)
+#     Query = f"""SELECT t.* 
+#             FROM public.\"Scrum_tarea\" as t inner join public.\"Scrum_historiausuario\" as hu on
+#             (t.\"HistoriaUsuario_id\" = hu.id 
+#             ) inner join public.\"Scrum_sprint\" as sp on (
+#                 hu.\"Sprint_id\" = sp.id
+#             )
+#             where
+#             sp.id = {id_Sprint} and sp.\"Proyecto_id\" = {id_Proyecto}""" 
+#     #and             hu.\"Estatus_id\" in (4,5,6)
+#     tarea = Tarea.objects.raw(Query)
     
-    Query = f"""SELECT hu.id AS historia_id, hu.\"NumeroHU\" AS numero_hu, hu.nombre AS nombre_hu, t.id, t.nombre AS nombre_tarea, t.horasestimadas,
-            ta.id AS id_tarea_avance, ta.\"horasDedicadas\", ta.\"horasRestantes\", ta.\"horasReales\", sp.\"numerosprint\", hu.\"Estatus_id\",
-            ta.dia_1, ta.dia_2, ta.dia_3, ta.dia_4, ta.dia_5, ta.dia_6, ta.dia_7, ta.dia_8, ta.dia_9, ta.dia_10,
-            ta.dia_11, ta.dia_12, ta.dia_13, ta.dia_14, ta.dia_15, ta.dia_16, ta.dia_17, ta.dia_18, ta.dia_19, ta.dia_20,
-            ta.dia_21, ta.dia_22, ta.dia_23, ta.dia_24, ta.dia_25, ta.dia_26, ta.dia_27, ta.dia_28, ta.dia_29, ta.dia_30, ta.dia_31
-            FROM public."Scrum_historiausuario" as hu left join public."Scrum_tarea" as t on
-            (
-                hu.id = t.\"HistoriaUsuario_id"
-            ) left join public.\"Scrum_tareaavance\" as ta on (
-                t.id = ta.\"tarea_id\" and
-                ta.\"HistoriaUsuario_id\" = hu.id and
-                ta.\"horasDedicadas\" = 0
-            ) inner join public.\"Scrum_sprint\" as sp on (
-                hu.\"Sprint_id\" = sp.id
-            )
-            where
-            sp.id = {id_Sprint} and
-            sp.\"Proyecto_id\" = {id_Proyecto}"""
+#     Query = f"""SELECT hu.id AS historia_id, hu.\"NumeroHU\" AS numero_hu, hu.nombre AS nombre_hu, t.id, t.nombre AS nombre_tarea, t.horasestimadas,
+#             ta.id AS id_tarea_avance, ta.\"horasDedicadas\", ta.\"horasRestantes\", ta.\"horasReales\", sp.\"numerosprint\", hu.\"Estatus_id\",
+#             ta.dia_1, ta.dia_2, ta.dia_3, ta.dia_4, ta.dia_5, ta.dia_6, ta.dia_7, ta.dia_8, ta.dia_9, ta.dia_10,
+#             ta.dia_11, ta.dia_12, ta.dia_13, ta.dia_14, ta.dia_15, ta.dia_16, ta.dia_17, ta.dia_18, ta.dia_19, ta.dia_20,
+#             ta.dia_21, ta.dia_22, ta.dia_23, ta.dia_24, ta.dia_25, ta.dia_26, ta.dia_27, ta.dia_28, ta.dia_29, ta.dia_30, ta.dia_31
+#             FROM public."Scrum_historiausuario" as hu left join public."Scrum_tarea" as t on
+#             (
+#                 hu.id = t.\"HistoriaUsuario_id"
+#             ) left join public.\"Scrum_tareaavance\" as ta on (
+#                 t.id = ta.\"tarea_id\" and
+#                 ta.\"HistoriaUsuario_id\" = hu.id and
+#                 ta.\"horasDedicadas\" = 0
+#             ) inner join public.\"Scrum_sprint\" as sp on (
+#                 hu.\"Sprint_id\" = sp.id
+#             )
+#             where
+#             sp.id = {id_Sprint} and
+#             sp.\"Proyecto_id\" = {id_Proyecto}"""
     
-            #hu.\"Estatus_id\" in (4,5,6)""" % 
+#             #hu.\"Estatus_id\" in (4,5,6)""" % 
 
-    tareaAvance = TareaAvance.objects.raw(Query)
-    #print(f"Registro de tareasavance: {len(list(tareaAvance))}, {list(tareaAvance)}")
+#     tareaAvance = TareaAvance.objects.raw(Query)
+#     #print(f"Registro de tareasavance: {len(list(tareaAvance))}, {list(tareaAvance)}")
 
-    msm = Mensaje.objects.filter(pk=id_ReunionDiaria)
-    mensaje = get_object_or_404(Mensaje, id=id_ReunionDiaria)
-    sprint_id = mensaje.Sprint.id
-    dSprint = get_object_or_404(Sprint, id=sprint_id)
-    mes = Sprint.objects.filter(pk=sprint_id)
+#     msm = Mensaje.objects.filter(pk=id_ReunionDiaria)
+#     mensaje = get_object_or_404(Mensaje, id=id_ReunionDiaria)
+#     sprint_id = mensaje.Sprint.id
+#     dSprint = get_object_or_404(Sprint, id=sprint_id)
+#     mes = Sprint.objects.filter(pk=sprint_id)
 
-    # Calcular la diferencia en días
-    # diferencia_dias = (fecha_limite - fecha_inicio).days
-    diferencia_dias = (dSprint.fechafinalsprint - dSprint.fechainiciosprint).days
-    numero = diferencia_dias
+#     # Calcular la diferencia en días
+#     # diferencia_dias = (fecha_limite - fecha_inicio).days
+#     diferencia_dias = (dSprint.fechafinalsprint - dSprint.fechainiciosprint).days
+#     numero = diferencia_dias
 
-    usuario = request.user
-    dEmpleado = Empleado.objects.filter(Usuario=usuario)
+#     usuario = request.user
+#     dEmpleado = Empleado.objects.filter(Usuario=usuario)
 
-    # sprintbacklog = sprint_Backlog.objects.all()
-    fechas = [dSprint.fechainiciosprint + timedelta(days=i) for i in range(diferencia_dias + 1)]
-    #print (f"fechas: {fechas}")
-    traduccion_meses = {
-        "January": "Enero", "February": "Febrero", "March": "Marzo",
-        "April": "Abril", "May": "Mayo", "June": "Junio",
-        "July": "Julio", "August": "Agosto", "September": "Septiembre",
-        "October": "Octubre", "November": "Noviembre", "December": "Diciembre"
-    }
+#     # sprintbacklog = sprint_Backlog.objects.all()
+#     fechas = [dSprint.fechainiciosprint + timedelta(days=i) for i in range(diferencia_dias + 1)]
+#     #print (f"fechas: {fechas}")
+#     traduccion_meses = {
+#         "January": "Enero", "February": "Febrero", "March": "Marzo",
+#         "April": "Abril", "May": "Mayo", "June": "Junio",
+#         "July": "Julio", "August": "Agosto", "September": "Septiembre",
+#         "October": "Octubre", "November": "Noviembre", "December": "Diciembre"
+#     }
 
-    # Crear un diccionario para agrupar días por mes
-    meses = {}
+#     # Crear un diccionario para agrupar días por mes
+#     meses = {}
 
 
-    for fecha in fechas:
-        #nombre_mes = fecha.strftime('%B')  # Obtener el nombre del mes en español
-        nombre_mes = traduccion_meses[fecha.strftime('%B')]
-        if nombre_mes not in meses:
-            meses[nombre_mes] = 0
-        meses[nombre_mes] += 1  # Contar los días en ese mes
+#     for fecha in fechas:
+#         #nombre_mes = fecha.strftime('%B')  # Obtener el nombre del mes en español
+#         nombre_mes = traduccion_meses[fecha.strftime('%B')]
+#         if nombre_mes not in meses:
+#             meses[nombre_mes] = 0
+#         meses[nombre_mes] += 1  # Contar los días en ese mes
 
-    # # Imprimir resultados
-    # for mes, cantidad in meses.items():
-    #     print(f"Mes: {mes}, Días: {cantidad}")
-    # print(f"mes: {meses}")
+#     # # Imprimir resultados
+#     # for mes, cantidad in meses.items():
+#     #     print(f"Mes: {mes}, Días: {cantidad}")
+#     # print(f"mes: {meses}")
         
 
-    # Lista para almacenar la matriz
-    matriz_avance = []
+#     # Lista para almacenar la matriz
+#     matriz_avance = []
 
-    # Iteramos sobre los resultados del Query (tareas de avance)
-    for tarea in tareaAvance:
-        fila = []
-        fila.append(tarea.historia_id) #Id de la Historia de Usuario
-        fila.append(tarea.id) #Id de la Tarea
-        # Iteramos sobre cada fecha del sprint
-        for i, fecha in enumerate(fechas, start=1):
-            # Comparar la fecha actual con los campos dia_1, dia_2, ..., dia_n
-            for j in range(1, 32):
-                field_name = f'dia_{j}'
-                # Usar getattr para obtener el valor del campo 'dia_n' del query
-                valor_dia = getattr(tarea, field_name, '0/0')
-                if fecha.day == j:
-                    # Si no hay valor (None), agregamos '0/0', sino tomamos el valor del campo
-                    if valor_dia is None:
-                        fila.append('0/0')
-                    else:
-                        fila.append(valor_dia)
+#     # Iteramos sobre los resultados del Query (tareas de avance)
+#     for tarea in tareaAvance:
+#         fila = []
+#         fila.append(tarea.historia_id) #Id de la Historia de Usuario
+#         fila.append(tarea.id) #Id de la Tarea
+#         # Iteramos sobre cada fecha del sprint
+#         for i, fecha in enumerate(fechas, start=1):
+#             # Comparar la fecha actual con los campos dia_1, dia_2, ..., dia_n
+#             for j in range(1, 32):
+#                 field_name = f'dia_{j}'
+#                 # Usar getattr para obtener el valor del campo 'dia_n' del query
+#                 valor_dia = getattr(tarea, field_name, '0/0')
+#                 if fecha.day == j:
+#                     # Si no hay valor (None), agregamos '0/0', sino tomamos el valor del campo
+#                     if valor_dia is None:
+#                         fila.append('0/0')
+#                     else:
+#                         fila.append(valor_dia)
     
-        # Añadir la fila a la matriz
-        matriz_avance.append(fila)
+#         # Añadir la fila a la matriz
+#         matriz_avance.append(fila)
 
-    #print (f"matriz_avance: {matriz_avance}")
-    data = {
-            'form': HU,
-            'tarea':tarea,
-            'avance':tareaAvance,
-            'diferencia_dias': diferencia_dias,
-            'mensaje':msm,
-            'dEmpleado':dEmpleado,
-            'mes':mes,
-            'fechas':fechas,
-            'matriz_avance':matriz_avance,
-            'Sprint': dSprint,
-            'meses':meses, 
-            # 'dia':diaDedicado
-            # 'sprintbl': sprintbacklog
-    }
+#     #print (f"matriz_avance: {matriz_avance}")
+#     data = {
+#             'form': HU,
+#             'tarea':tarea,
+#             'avance':tareaAvance,
+#             'diferencia_dias': diferencia_dias,
+#             'mensaje':msm,
+#             'dEmpleado':dEmpleado,
+#             'mes':mes,
+#             'fechas':fechas,
+#             'matriz_avance':matriz_avance,
+#             'Sprint': dSprint,
+#             'meses':meses, 
+#             # 'dia':diaDedicado
+#             # 'sprintbl': sprintbacklog
+#     }
 
-    return render(request, 'Mensajes/ProductOwner/plantillaEjecucion2.html', data)
+#     return render(request, 'Mensajes/ProductOwner/plantillaEjecucion2.html', data)
 
-# Product Owner, original
-def enviar_mensaje2(request, id, Accion):
-    # mensaje = Mensaje.objects.filter(pk=id) 
-    idSms = Mensaje.objects.get(pk=id)
-    #IdProyecto = idSms.Proyecto
-    receptor = User.objects.get(pk=5)
-    # emisor = request.user
 
-    usuario = request.user.id
-    empleado = Empleado.objects.get(Usuario=usuario)
+# def generar_pdf_y_guardar_archivo(mensaje, historiasBL, asistentes):
+#     """
+#     Genera el PDF del evento de refinamiento y lo guarda en m_Archivos.
+#     """
+#     data = {
+#         'form': asistentes,
+#         'form2': historiasBL,
+#         'form3': [mensaje],
+#     }
+#     print(f"generar_pdf_y_guardar_archivo: {mensaje}")
+#     pdf = render_to_pdf('Mensajes/ProductOwner/plantillaRefinamiento.html', data)
 
-    if request.method == 'POST':
+#     if pdf:
+#         descripcion = f"{mensaje.EventoScrum.Descripcion} - {mensaje.FechaHora.strftime('%Y-%m-%d')}"
+#         archivo_nombre = f"{slugify(descripcion)}.pdf"
 
-        # form = MensajeForms(request.POST)
-        form = envAsistentesForms(request.POST)
-        if form.is_valid():
-            # idSms = Mensaje.objects.get(pk=id)
-            msm = Mensaje.objects.filter(pk=id)
+#         nuevo_archivo = m_Archivos(
+#             Descripcion=descripcion,
+#             Proyecto=mensaje.Proyecto,
+#             Mensaje=mensaje,
+#         )
+#         nuevo_archivo.Archivo.save(archivo_nombre, ContentFile(pdf.getvalue()), save=False)
+#         nuevo_archivo.ArchivoObj = pdf.getvalue()
+#         nuevo_archivo.save()
+
+
+# # Product Owner, original
+# def enviar_mensaje2(request, id, Accion):
+#     idSms = Mensaje.objects.get(pk=id)
+#     usuario = request.user.id
+#     empleado = Empleado.objects.get(Usuario=usuario)
+#     asistentes = AsistentesEventosScrum.objects.filter(Mensaje=idSms)
+#     form3 = asistentes
+#     if request.method == 'POST':
+#         form = envAsistentesForms(request.POST)
+#         if form.is_valid():
+#             msm = Mensaje.objects.filter(pk=id)
+#             mensaje = msm.first()
+#             #mensajeid = mensaje
+#             proyecto = mensaje.Proyecto
+#             eventoScrum = mensaje.EventoScrum
+#             #status = mensaje.Status
+#             fecha = mensaje.FechaHora
+#             #archivo = mensaje.archivo
+#             DescripcionEventoScrum = mensaje.EventoScrum.Descripcion
+#             FechaHoraReunion = m_RefinamientoProductBL.objects.get(Mensaje=id).FechaHora
+#             NombreProyecto = mensaje.Proyecto.nombreproyecto
+
+#             if Accion == 2:
+#                 mensaje.Status = 2  # Enviado
+#                 mensaje.FHUltimaMod = datetime.now()
+#                 mensaje.save()
+
+#             res = AsistentesEventosScrum.objects.filter(Mensaje=idSms)
+#             Destinatarios = ""
+#             for asistente in res:
+#                 mensajeRecep = MensajeReceptor(
+#                     Proyecto=proyecto, Mensaje=mensaje, Receptor=asistente.Usuario,
+#                     EventoScrum=eventoScrum, Emisor=empleado, FHCreacion=fecha,
+#                     Status="1" #, archivo=archivo
+#                 )
+#                 if Accion == 1:
+#                     mensajeRecep.save()
+#                 Destinatarios += f"{asistente.Usuario.Usuario.email}, "
+
+#             Destinatarios = Destinatarios.rstrip(', ')
+#             Archivos = m_Archivos.objects.filter(Mensaje=idSms)
+#             FechaHoraFormateada = FechaHoraReunion.strftime('%d/%m/%Y %H:%M')
+#             asunto = f"{DescripcionEventoScrum} {FechaHoraFormateada}"
+#             Remitente = request.user.email
+#             CuerpoMensaje = (
+#                 f"Ceremonia: {DescripcionEventoScrum}\nProyecto: {NombreProyecto}\n"
+#                 f"Reunión: {FechaHoraFormateada}\nDescripción: {mensaje.Descripcion}"
+#             )
+#             ListaDestinatarios = Destinatarios.split(",")
+
+#             email = EmailMessage(subject=asunto, body=CuerpoMensaje, from_email=Remitente, to=ListaDestinatarios)
+
+#             for arch in Archivos:
+#                 archivo_binario = BytesIO(arch.ArchivoObj)
+#                 email.attach(arch.Archivo.name, archivo_binario.read(), 'application/pdf')
+
+#             if Accion == 2:
+#                 email.send()
+
+#             time.sleep(2)
+#             return redirect('Mensajes:listaRefinamiento')
+#     else:
+#         if idSms.Status == '2':
+#             MensajeAviso = get_object_or_404(Mensaje, pk=id)
+#             messages.success(request, 'El mensaje ya fue enviado.')
+#             return render(request, 'Scrum/MensajePantalla.html', {'mensaje': MensajeAviso, 'Ruta': '/listaRefinamiento'})
+        
+#         if idSms.ArchivosGenerados is not True:
+#             # ✅ Obtener datos necesarios para generar el PDF
+#             historiasBL = HistoriaUsuario.objects.filter(MensajeRPBL=id)
+#             # ✅ Generar y guardar el PDF en m_Archivos
+#             generar_pdf_y_guardar_archivo(idSms, historiasBL, asistentes)
+#             idSms.ArchivosGenerados = True
+#             idSms.save()#(update_fields=["ArchivosGenerados"])
+
+#         form = envAsistentesForms
+#         form2 = Mensaje.objects.filter(pk=id)
+#         #form3 = AsistentesEventosScrum.objects.filter(Mensaje=idSms)
+#         archivos = m_Archivos.objects.filter(Mensaje=idSms)
+
+#     return render(request, 'Mensajes/ProductOwner/enviarMensaje.html', {
+#         'form': form,
+#         'form2': form2,
+#         'form3': form3,
+#         'archivos': archivos
+#     })
+       
+# def enviar_mensaje2(request, id, Accion):
+#     # mensaje = Mensaje.objects.filter(pk=id) 
+#     idSms = Mensaje.objects.get(pk=id)
+#     #IdProyecto = idSms.Proyecto
+#     #receptor = User.objects.get(pk=5)
+#     # emisor = request.user
+
+#     usuario = request.user.id
+#     empleado = Empleado.objects.get(Usuario=usuario)
+
+#     if request.method == 'POST':
+
+#         # form = MensajeForms(request.POST)
+#         form = envAsistentesForms(request.POST)
+#         if form.is_valid():
+#             # idSms = Mensaje.objects.get(pk=id)
+#             msm = Mensaje.objects.filter(pk=id)
             
-            contenido = msm.first()
-            mensaje=contenido
-            mensajeid = contenido
-            proyecto = contenido.Proyecto
-            eventoScrum = contenido.EventoScrum
-            status = contenido.Status
-            fecha = contenido.FechaHora
-            archivo = contenido.archivo
-            DescripcionEventoScrum = contenido.EventoScrum.Descripcion
-            FechaHoraReunion = m_RefinamientoProductBL.objects.get(Mensaje=id).FechaHora #contenido.m_RefinamientoProductBL.FechaHora
-            NombreProyecto = contenido.Proyecto.nombreproyecto
+#             contenido = msm.first()
+#             mensaje=contenido
+#             mensajeid = contenido
+#             proyecto = contenido.Proyecto
+#             eventoScrum = contenido.EventoScrum
+#             status = contenido.Status
+#             fecha = contenido.FechaHora
+#             archivo = contenido.archivo
+#             DescripcionEventoScrum = contenido.EventoScrum.Descripcion
+#             FechaHoraReunion = m_RefinamientoProductBL.objects.get(Mensaje=id).FechaHora #contenido.m_RefinamientoProductBL.FechaHora
+#             NombreProyecto = contenido.Proyecto.nombreproyecto
 
-            if Accion == 2:
-                #Actualiza el status del mensaje enviado
-                mensaje.Status = 2 #Enviado
-                mensaje.FHUltimaMod = datetime.now()
-                mensaje.save() #Actualiza  la BD
+#             if Accion == 2:
+#                 #Actualiza el status del mensaje enviado
+#                 mensaje.Status = 2 #Enviado
+#                 mensaje.FHUltimaMod = datetime.now()
+#                 mensaje.save() #Actualiza  la BD
 
-            res = AsistentesEventosScrum.objects.filter(Mensaje=idSms)
-            Destinatarios = ""
-            for asistente in res:
-                mensajeRecep = MensajeReceptor(Proyecto=proyecto, Mensaje=mensajeid, Receptor=asistente.Usuario, EventoScrum=eventoScrum, 
-                                          Emisor=empleado ,FHCreacion=fecha,Status="1", archivo=archivo)
-                if Accion == 1:
-                    mensajeRecep.save()
-                #messages.success(request,"Mensaje enviado con exito")
-                Destinatarios = Destinatarios + str(asistente.Usuario.Usuario.email) + ', ' #"\"" + str(asistente.Usuario.Usuario.email) +  "\""+ ', '
+#             res = AsistentesEventosScrum.objects.filter(Mensaje=idSms)
+#             Destinatarios = ""
+#             for asistente in res:
+#                 mensajeRecep = MensajeReceptor(Proyecto=proyecto, Mensaje=mensajeid, Receptor=asistente.Usuario, EventoScrum=eventoScrum, 
+#                                           Emisor=empleado ,FHCreacion=fecha,Status="1", archivo=archivo)
+#                 if Accion == 1:
+#                     mensajeRecep.save()
+#                 #messages.success(request,"Mensaje enviado con exito")
+#                 Destinatarios = Destinatarios + str(asistente.Usuario.Usuario.email) + ', ' #"\"" + str(asistente.Usuario.Usuario.email) +  "\""+ ', '
                 
-            Destinatarios = Destinatarios[:-2] #Elimina la última coma y espacio
-            #print(f"Destinatario: {Destinatarios}")
+#             Destinatarios = Destinatarios[:-2] #Elimina la última coma y espacio
+#             #print(f"Destinatario: {Destinatarios}")
 
-            #Envía el correo
-            Archivos = m_Archivos.objects.filter(Mensaje=idSms)
-            #ArchivosAdjuntos=""
+#             #Envía el correo
+#             Archivos = m_Archivos.objects.filter(Mensaje=idSms)
+#             #ArchivosAdjuntos=""
 
-            #Envío de correo
-            FechaHoraFormateada = FechaHoraReunion.strftime('%d/%m/%Y %H:%M')
-            asunto = DescripcionEventoScrum +  ' ' +  str(FechaHoraFormateada) #'Reunión de Refinamiento del Product Backlog' #form.cleaned_data['asunto']
-            Remitente = request.user.email
-            #print(f"Remitente: {Remitente}")
-            #destinatario = form.cleaned_data['destinatario']
-            CuerpoMensaje = "Ceremonia: " + DescripcionEventoScrum + '\r\n Proyecto: ' + NombreProyecto + '\r\n' + 'Reunión: ' +  str(FechaHoraFormateada) #'Reunión de Refinamiento del Product Backlog' #form.cleaned_data['mensaje']
-            CuerpoMensaje += '\r\nDescripción: ' +  mensaje.Descripcion
+#             #Envío de correo
+#             FechaHoraFormateada = FechaHoraReunion.strftime('%d/%m/%Y %H:%M')
+#             asunto = DescripcionEventoScrum +  ' ' +  str(FechaHoraFormateada) #'Reunión de Refinamiento del Product Backlog' #form.cleaned_data['asunto']
+#             Remitente = request.user.email
+#             #print(f"Remitente: {Remitente}")
+#             #destinatario = form.cleaned_data['destinatario']
+#             CuerpoMensaje = "Ceremonia: " + DescripcionEventoScrum + '\r\n Proyecto: ' + NombreProyecto + '\r\n' + 'Reunión: ' +  str(FechaHoraFormateada) #'Reunión de Refinamiento del Product Backlog' #form.cleaned_data['mensaje']
+#             CuerpoMensaje += '\r\nDescripción: ' +  mensaje.Descripcion
             
-            #archivo = request.FILES.get('archivo', None)
-            #Destinatarios = 'jmhernan@yahoo.com'
-            ListaDestinatarios = Destinatarios.split(",")
-            #print(f"ListaDestinatarios: {ListaDestinatarios}")
-            email = EmailMessage(
-                subject=asunto,
-                body=CuerpoMensaje,
-                from_email=Remitente,  # Remitente
-                to=ListaDestinatarios,
-            )   
-            for arch in Archivos:
-                #print(f"archivo: {arch.Archivo}")
-                #ArchivosAdjuntos = ArchivosAdjuntos  + "'"+str(arch.Archivo)+"'" + ','
+#             #archivo = request.FILES.get('archivo', None)
+#             #Destinatarios = 'jmhernan@yahoo.com'
+#             ListaDestinatarios = Destinatarios.split(",")
+#             #print(f"ListaDestinatarios: {ListaDestinatarios}")
+#             email = EmailMessage(
+#                 subject=asunto,
+#                 body=CuerpoMensaje,
+#                 from_email=Remitente,  # Remitente
+#                 to=ListaDestinatarios,
+#             )   
+#             for arch in Archivos:
+#                 #print(f"archivo: {arch.Archivo}")
+#                 #ArchivosAdjuntos = ArchivosAdjuntos  + "'"+str(arch.Archivo)+"'" + ','
 
-                # Se convierte el contenido binario del archivo a un objeto BytesIO
-                archivo_binario = BytesIO(arch.ArchivoObj)
-                 # Adjuntar el archivo al correo con el nombre original del archivo
-                email.attach(arch.Archivo.name, archivo_binario.read(), 'application/pdf')
-                #email.attach_file(str(arch.Archivo))
-                #print(f"archivo: {arch.Archivo}")
-            #ArchivosAdjuntos = ArchivosAdjuntos[:-1]
-            #print(f"archivos adjuntos: {ArchivosAdjuntos}")
+#                 # Se convierte el contenido binario del archivo a un objeto BytesIO
+#                 archivo_binario = BytesIO(arch.ArchivoObj)
+#                  # Adjuntar el archivo al correo con el nombre original del archivo
+#                 email.attach(arch.Archivo.name, archivo_binario.read(), 'application/pdf')
+#                 #email.attach_file(str(arch.Archivo))
+#                 #print(f"archivo: {arch.Archivo}")
+#             #ArchivosAdjuntos = ArchivosAdjuntos[:-1]
+#             #print(f"archivos adjuntos: {ArchivosAdjuntos}")
 
-            #email.attach_file(ArchivosAdjuntos)
-            if Accion == 2:
-                email.send()
-            #messages.success(request,"Mensaje enviado con éxito")
-            #Fin Envío del correo
-            time.sleep(2)
-            return redirect('Mensajes:listaRefinamiento')  # Redirigir a la página de mensajes enviados
-    else:
-        if idSms.Status == '2': #El mensaje ya fue enviado
-            print(f"idSms.Status2 : {idSms.Status} ")
-            # Obtener el mensaje
-            MensajeAviso = get_object_or_404(Mensaje, pk=id)
-            # Mandar un mensaje que será mostrado en el template
-            messages.success(request, 'El mensaje ya fue enviado.')
-            # Renderizar el template y pasar los datos necesarios
-            return render(request, 'Scrum/MensajePantalla.html', {'mensaje': MensajeAviso, 'Ruta': '/listaRefinamiento'})
+#             #email.attach_file(ArchivosAdjuntos)
+#             if Accion == 2:
+#                 email.send()
+#             #messages.success(request,"Mensaje enviado con éxito")
+#             #Fin Envío del correo
+#             time.sleep(2)
+#             return redirect('Mensajes:listaRefinamiento')  # Redirigir a la página de mensajes enviados
+#     else:
+#         if idSms.Status == '2': #El mensaje ya fue enviado
+#             print(f"idSms.Status2 : {idSms.Status} ")
+#             # Obtener el mensaje
+#             MensajeAviso = get_object_or_404(Mensaje, pk=id)
+#             # Mandar un mensaje que será mostrado en el template
+#             messages.success(request, 'El mensaje ya fue enviado.')
+#             # Renderizar el template y pasar los datos necesarios
+#             return render(request, 'Scrum/MensajePantalla.html', {'mensaje': MensajeAviso, 'Ruta': '/listaRefinamiento'})
 
-            # # Datos que deseas enviar al template del modal
-            # title = "Aviso"
-            # content = "El mensaje ya fue enviado."
+#             # # Datos que deseas enviar al template del modal
+#             # title = "Aviso"
+#             # content = "El mensaje ya fue enviado."
             
-            # # Si quieres devolver el HTML del modal
-            # return render(request, 'Scrum/MensajePantalla.html', {'title': title, 'content': content})
+#             # # Si quieres devolver el HTML del modal
+#             # return render(request, 'Scrum/MensajePantalla.html', {'title': title, 'content': content})
 
         
-        form = envAsistentesForms
-        form2 = Mensaje.objects.filter(pk=id)
-        form3 = AsistentesEventosScrum.objects.filter(Mensaje=idSms)
-        idmensaje = Mensaje.objects.get(pk=id)
-        archivos = m_Archivos.objects.filter(Mensaje=idmensaje)
-    return render(request, 'Mensajes/ProductOwner/enviarMensaje.html', {'form': form, 'form2':form2, 'form3':form3, 'archivos':archivos})
+#         form = envAsistentesForms
+#         form2 = Mensaje.objects.filter(pk=id)
+#         form3 = AsistentesEventosScrum.objects.filter(Mensaje=idSms)
+#         idmensaje = Mensaje.objects.get(pk=id)
+#         archivos = m_Archivos.objects.filter(Mensaje=idmensaje)
+#     return render(request, 'Mensajes/ProductOwner/enviarMensaje.html', {'form': form, 'form2':form2, 'form3':form3, 'archivos':archivos})

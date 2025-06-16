@@ -618,6 +618,7 @@ def tareas_avance(request, sprint_id=None, historia_usuario_id=None):
                 
                 datos_tareas.append({
                     'nombre': tarea.nombre,
+                    'Usuario': tarea.Empleado.Usuario,
                     'horas_estimadas': tarea.horasestimadas,
                     'horas_reales': horas_reales,
                     'avances': avances,
