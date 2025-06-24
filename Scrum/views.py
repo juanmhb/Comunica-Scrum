@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django.http.response import HttpResponseRedirect
+from django.http import HttpResponse
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm,AuthenticationForm
@@ -21,10 +22,17 @@ from django.utils import timezone
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.csrf import csrf_protect
-from django.db.models import Sum
+from django.db.models import Sum, F, Value,Q
 from django.db.models import Max
 from django.db.models import Subquery, OuterRef
 from django.db import transaction
+import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')  # 🧊 Usa backend no interactivo
+from matplotlib.backends.backend_pdf import PdfPages
+import io
+from django.http import FileResponse
+from django.db.models.functions import Coalesce
 
 logger = logging.getLogger(__name__)
 
@@ -330,6 +338,360 @@ class EliminarHistoriaUsuarioSprint(LoginRequiredMixin, DeleteView):
          return reverse('Scrum:listar_sprint_Historias', kwargs={'pk': self.object.Sprint.pk})
 
 # ------------------------------------------------------------------CRUD Sprint----------------------------------------------------------------------
+def generar_burndown_chart(fechas, reales, total_estimadas, titulo, nombre_dev=None):
+    ideal = [total_estimadas - (total_estimadas / (len(fechas) - 1)) * i for i in range(len(fechas))]
+    plt.figure(figsize=(10, 5))
+    plt.plot(fechas, ideal, label='Ideal', linestyle='--', marker='o')
+    plt.plot(fechas, reales, label='Real', linestyle='-', marker='x')
+
+    for x, y in zip(fechas, ideal):
+        plt.annotate(f"{int(round(y))}", (x, y), textcoords="offset points", xytext=(0, 8), ha='center', fontsize=8, color='green')
+    for x, y in zip(fechas, reales):
+        plt.annotate(f"{int(round(y))}", (x, y), textcoords="offset points", xytext=(0, -12), ha='center', fontsize=8, color='blue')
+
+    plt.grid(True)
+    plt.xticks(rotation=45)
+    plt.xlabel('Fecha')
+    plt.ylabel('Horas restantes')
+    plt.title(f"{titulo}" + (f" - {nombre_dev}" if nombre_dev else ""))
+    plt.legend()
+    plt.tight_layout()
+    return plt
+
+
+def burndown_sprint(request, sprint_id):
+    sprint = get_object_or_404(Sprint, pk=sprint_id)
+    tareas_sprint = Tarea.objects.filter(HistoriaUsuario__Sprint=sprint)
+
+    avances_subquery = TareaAvance.objects.filter(
+        tarea=OuterRef('pk'),
+        horasDedicadas=0
+    ).annotate(
+        total=Coalesce(F('horasReales'), Value(0)) + Coalesce(F('horasRestantesCaptura'), Value(0))
+    ).values('tarea').annotate(
+        suma=Sum('total')
+    ).values('suma')[:1]
+
+    tareas_sprint = tareas_sprint.annotate(
+        esfuerzo_total=Coalesce(Subquery(avances_subquery), F('horasestimadas'))
+    )
+
+    horas_estimadas = tareas_sprint.aggregate(total=Coalesce(Sum('horasestimadas'), Value(0)))['total']
+    horas_reestimadas = tareas_sprint.aggregate(total=Coalesce(Sum('esfuerzo_total'), Value(0)))['total']
+
+    inicio = sprint.fechainiciosprint
+    fin = sprint.fechafinalsprint
+    dias = (fin - inicio).days + 1
+    fechas = [inicio + timedelta(days=i) for i in range(dias)]
+
+    esfuerzo_por_dia = {fecha: 0 for fecha in fechas}
+    avances = TareaAvance.objects.filter(tarea__in=tareas_sprint, horasDedicadas__gt=0).order_by('fechaAvance')
+    for a in avances:
+        if a.fechaAvance in esfuerzo_por_dia:
+            esfuerzo_por_dia[a.fechaAvance] += a.horasDedicadas
+    acumulado = 0
+    reales = []
+    for fecha in fechas:
+        acumulado += esfuerzo_por_dia[fecha]
+        reales.append(max(horas_estimadas - acumulado, 0))
+
+    buffer = io.BytesIO()
+    with PdfPages(buffer) as pdf:
+        plt1 = generar_burndown_chart(fechas, reales, horas_estimadas, f'Gráfica Burndown Horas Estimadas Inicio - {sprint.nombresprint} ({inicio} al {fin})')
+        pdf.savefig()
+        plt1.close()
+
+        if horas_estimadas != horas_reestimadas:
+            acumulado = 0
+            reales_reestimadas = []
+            for fecha in fechas:
+                acumulado += esfuerzo_por_dia[fecha]
+                reales_reestimadas.append(max(horas_reestimadas - acumulado, 0))
+            plt2 = generar_burndown_chart(fechas, reales_reestimadas, horas_reestimadas, f'Gráfica Burndown Horas Reestimadas - {sprint.nombresprint} ({inicio} al {fin})')
+            pdf.savefig()
+            plt2.close()
+
+        developers = Empleado.objects.filter(
+            Roles__NombreRol='Developers',
+            DetalleEmpleado__Proyecto=sprint.Proyecto,
+            #DetalleEmpleado__Status='1'
+        ).distinct()
+        #print(f"developers: {developers}")
+        for dev in developers:
+            # print(f"HistoriaUsuario__Sprint: {sprint}, Empleado: {dev} ")
+            tareas_dev = Tarea.objects.filter(HistoriaUsuario__Sprint=sprint, Empleado=dev)
+            # print(f"Desarrollador: {dev}, tareas encontradas: {tareas_dev.count()}")
+
+            tareas_dev = Tarea.objects.filter(HistoriaUsuario__Sprint=sprint, Empleado=dev).annotate(
+                esfuerzo_total=Coalesce(Subquery(avances_subquery), F('horasestimadas'))
+            )
+            # print(f"tareas_dev: {tareas_dev}")
+            if not tareas_dev.exists():
+                continue
+
+            est = tareas_dev.aggregate(total=Coalesce(Sum('horasestimadas'), Value(0)))['total']
+            reest = tareas_dev.aggregate(total=Coalesce(Sum('esfuerzo_total'), Value(0)))['total']
+
+            esfuerzo_por_dia_dev = {f: 0 for f in fechas}
+            avances_dev = TareaAvance.objects.filter(tarea__in=tareas_dev, horasDedicadas__gt=0).order_by('fechaAvance')
+            for a in avances_dev:
+                if a.fechaAvance in esfuerzo_por_dia_dev:
+                    esfuerzo_por_dia_dev[a.fechaAvance] += a.horasDedicadas
+            acumulado = 0
+            reales_dev = []
+            for f in fechas:
+                acumulado += esfuerzo_por_dia_dev[f]
+                reales_dev.append(max(est - acumulado, 0))
+            plt3 = generar_burndown_chart(fechas, reales_dev, est, f'{dev.Usuario.get_full_name()}  Horas Estimadas - {sprint.nombresprint} ({inicio} al {fin})')
+            pdf.savefig()
+            plt3.close()
+
+            if est != reest:
+                acumulado = 0
+                reales_reest_dev = []
+                for f in fechas:
+                    acumulado += esfuerzo_por_dia_dev[f]
+                    reales_reest_dev.append(max(reest - acumulado, 0))
+                plt4 = generar_burndown_chart(fechas, reales_reest_dev, reest, f'{dev.Usuario.get_full_name()} Horas Reestimadas - {sprint.nombresprint} ({inicio} al {fin})')
+                                              
+
+                pdf.savefig()
+                plt4.close()
+
+    buffer.seek(0)
+    return FileResponse(
+        buffer,
+        content_type='application/pdf',
+        filename=f"burndown_sprint_{sprint.id}.pdf"
+    )
+    # return FileResponse(buffer, content_type='application/pdf')
+
+# # Función reutilizable para graficar burndown
+
+# def generar_burndown_chart(fechas, reales, total_estimadas, titulo):
+#     ideal = [total_estimadas - (total_estimadas / (len(fechas) - 1)) * i for i in range(len(fechas))]
+
+#     plt.figure(figsize=(10, 5))
+#     plt.plot(fechas, ideal, label='Ideal', linestyle='--', marker='o')
+#     plt.plot(fechas, reales, label='Real', linestyle='-', marker='x')
+
+#     # Anotar valores en cada punto
+#     for x, y in zip(fechas, ideal):
+#         plt.annotate(f"{int(round(y))}", (x, y), textcoords="offset points", xytext=(0, 8), ha='center', fontsize=8, color='green')
+#     for x, y in zip(fechas, reales):
+#         plt.annotate(f"{int(round(y))}", (x, y), textcoords="offset points", xytext=(0, -12), ha='center', fontsize=8, color='blue')
+
+#     plt.grid(True)
+#     plt.xticks(rotation=45)
+#     plt.xlabel('Fecha')
+#     plt.ylabel('Horas restantes')
+#     plt.title(titulo)
+#     plt.legend()
+#     plt.tight_layout()
+#     return plt
+
+# def burndown_sprint(request, sprint_id):
+#     sprint = get_object_or_404(Sprint, pk=sprint_id)
+#     tareas = Tarea.objects.filter(HistoriaUsuario__Sprint=sprint)
+
+#     avances_subquery = TareaAvance.objects.filter(
+#         tarea=OuterRef('pk'),
+#         horasDedicadas=0
+#     ).annotate(
+#         total=Coalesce(F('horasReales'), Value(0)) + Coalesce(F('horasRestantesCaptura'), Value(0))
+#     ).values('tarea').annotate(
+#         suma=Sum('total')
+#     ).values('suma')[:1]
+
+#     tareas = tareas.annotate(
+#         esfuerzo_total=Coalesce(Subquery(avances_subquery), F('horasestimadas'))
+#     )
+
+#     horas_estimadas = tareas.aggregate(total=Coalesce(Sum('horasestimadas'), Value(0)))['total']
+#     horas_reestimadas = tareas.aggregate(total=Coalesce(Sum('esfuerzo_total'), Value(0)))['total']
+
+#     inicio = sprint.fechainiciosprint
+#     fin = sprint.fechafinalsprint
+#     dias = (fin - inicio).days + 1
+#     fechas = [inicio + timedelta(days=i) for i in range(dias)]
+
+#     esfuerzo_por_dia = {fecha: 0 for fecha in fechas}
+#     avances = TareaAvance.objects.filter(
+#         tarea__in=tareas,
+#         horasDedicadas__gt=0
+#     ).order_by('fechaAvance')
+
+#     if not avances.exists():
+#         plt.figure(figsize=(10, 5))
+#         plt.plot(fechas, [horas_estimadas] * dias, label='Ideal', linestyle='--', marker='o')
+#         plt.text(0.5, 0.5, '⚠️ No hay avances aún', fontsize=14, color='red',
+#                  ha='center', va='center', transform=plt.gca().transAxes)
+#         plt.xlabel('Fecha')
+#         plt.ylabel('Horas restantes')
+#         plt.title(f'Burndown Chart - {sprint.nombresprint}')
+#         plt.legend()
+#         plt.tight_layout()
+
+#         buffer = io.BytesIO()
+#         plt.savefig(buffer, format='pdf')
+#         plt.close()
+#         buffer.seek(0)
+#         return FileResponse(buffer, content_type='application/pdf')
+    
+
+#     for a in avances:
+#         if a.fechaAvance in esfuerzo_por_dia:
+#             esfuerzo_por_dia[a.fechaAvance] += a.horasDedicadas
+#     # print(f"esfuerzo_por_dia2: {esfuerzo_por_dia}")
+#     acumulado = 0
+#     reales = []
+#     for fecha in fechas:
+#         acumulado += esfuerzo_por_dia[fecha]
+#         reales.append(max(horas_estimadas - acumulado, 0))
+#     # print(f"reales: {reales}")
+#     buffer = io.BytesIO()
+#     with PdfPages(buffer) as pdf:
+#         plt1 = generar_burndown_chart(fechas, reales, horas_estimadas, f'Gráfica Burndown Horas Estimadas Inicio - {sprint.nombresprint} ({inicio} al {fin})')
+#         pdf.savefig()
+#         plt1.close()
+
+#         if horas_estimadas != horas_reestimadas:
+#             reales_reestimadas = []
+#             acumulado = 0
+#             for fecha in fechas:
+#                 acumulado += esfuerzo_por_dia[fecha]
+#                 reales_reestimadas.append(max(horas_reestimadas - acumulado, 0))
+#             # print(f"reales_reestimadas: {reales_reestimadas}")
+#             plt2 = generar_burndown_chart(fechas, reales_reestimadas, horas_reestimadas, f'Gráfica Burndown Horas Reestimadas - {sprint.nombresprint} ({inicio} al {fin})')
+#             pdf.savefig()
+#             plt2.close()
+
+#     buffer.seek(0)
+#     return FileResponse(buffer, content_type='application/pdf')
+
+# def burndown_sprint(request, sprint_id):
+#     sprint = get_object_or_404(Sprint, pk=sprint_id)
+#     tareas = Tarea.objects.filter(HistoriaUsuario__Sprint=sprint)
+#     total_estimadas = sum(t.horasestimadas for t in tareas)
+
+#     # SELECT
+#     # t.id,
+#     # COALESCE((
+#     #     SELECT SUM(ta.horasReales + ta.horasRestantesCaptura)
+#     #     FROM TareaAvance ta
+#     #     WHERE ta.tarea_id = t.id AND ta.horasDedicadas = 0
+#     #     GROUP BY ta.tarea_id
+#     #     LIMIT 1
+#     # ), t.horasEstimadas) AS esfuerzo_total
+#     # FROM Tarea t
+
+#     # Subquery: obtener suma por tarea
+#     avances_subquery = TareaAvance.objects.filter(
+#         tarea=OuterRef('pk'),
+#         horasDedicadas=0
+#     ).annotate(
+#         total=Coalesce(F('horasReales'), Value(0)) + Coalesce(F('horasRestantesCaptura'), Value(0))
+#     ).values('tarea')\
+#     .annotate(suma=Sum('total'))\
+#     .values('suma')[:1]
+
+#     # Annotar cada tarea con esfuerzo_total, dependiendo si hay avances o no
+#     tareas = tareas.annotate(
+#         esfuerzo_total=Coalesce(
+#             Subquery(avances_subquery),
+#             F('horasestimadas')  # ← si no hay avances, usa horasEstimadas
+#         )
+#     )
+
+#     # Totales
+#     horas_estimadas = tareas.aggregate(total=Coalesce(Sum('horasestimadas'), Value(0)))['total']
+#     horas_reestimadas = tareas.aggregate(total=Coalesce(Sum('esfuerzo_total'), Value(0)))['total']
+#     # print(f"total_estimadas: {total_estimadas}; horas_estimadas: {horas_estimadas}; horas_reestimadas: {horas_reestimadas}")
+#     total_estimadas = horas_estimadas #horas_reestimadas
+#     inicio = sprint.fechainiciosprint
+#     fin = sprint.fechafinalsprint
+#     dias = (fin - inicio).days + 1
+#     fechas = [inicio + timedelta(days=i) for i in range(dias)]
+#     # print(f"fecha: {fechas}")
+    
+#     ideal_burndown = [total_estimadas - (total_estimadas / (dias - 1)) * i for i in range(dias)]
+
+#     avances = TareaAvance.objects.filter(
+#         tarea__in=tareas,
+#        horasDedicadas__gt=0
+#     ).order_by('fechaAvance')
+
+#     if not avances.exists():
+#         # 🎯 No hay avances aún → gráfico plano con mensaje
+#         plt.figure(figsize=(10, 5))
+#         plt.plot(fechas, ideal_burndown, label='Ideal', linestyle='--', marker='o')
+#         plt.xlabel('Fecha')
+#         plt.ylabel('Horas restantes')
+#         plt.title(f'Burndown Chart - {sprint.nombresprint}')
+#         plt.text(0.5, 0.5, '⚠️ No hay avances aún', fontsize=14, color='red',
+#                  ha='center', va='center', transform=plt.gca().transAxes)
+#         plt.legend()
+#         plt.tight_layout()
+
+#         buffer = io.BytesIO()
+#         plt.savefig(buffer, format='png')
+#         plt.close()
+#         buffer.seek(0)
+#         return HttpResponse(buffer.getvalue(), content_type='image/png')
+
+#     # 🎯 Avances reales existentes
+#     esfuerzo_por_dia = {fecha: 0 for fecha in fechas}
+#     # print(f"esfuerzo_por_dia 1: {esfuerzo_por_dia }")
+#     for a in avances:
+#         fecha = a.fechaAvance
+#         if fecha in esfuerzo_por_dia:
+#             esfuerzo_por_dia[fecha] += a.horasDedicadas
+#             # print(f"fecha: {fecha}, esfuerzo_por_dia[fecha] {esfuerzo_por_dia[fecha] }, horasReales: {a.horasDedicadas}")
+#     # print(f"esfuerzo_por_dia 2: {esfuerzo_por_dia }")
+#     acumulado = 0
+#     reales = []
+#     for fecha in fechas:
+#         acumulado += esfuerzo_por_dia[fecha]
+#         reales.append(max(total_estimadas - acumulado, 0))
+
+
+#     # plt.figure(figsize=(10, 5))
+#     # plt.plot(fechas, ideal_burndown, label='Ideal', linestyle='--', marker='o')
+#     # plt.plot(fechas, reales, label='Real', linestyle='-', marker='x')
+
+#     # Anotar valores reales (línea Real)
+#     for x, y in zip(fechas, reales):
+#         plt.annotate(f"{int(round(y))}", (x, y), textcoords="offset points", xytext=(0, -12),
+#                     ha='center', fontsize=8, color='blue')
+
+#     # Anotar valores ideales (línea Ideal)
+#     for x, y in zip(fechas, ideal_burndown):
+#         plt.annotate(f"{int(round(y))}", (x, y), textcoords="offset points", xytext=(0, 8),
+#                     ha='center', fontsize=8, color='green')
+
+#     buffer = io.BytesIO()
+#     with PdfPages(buffer) as pdf:
+#         plt.figure(figsize=(10, 5))
+#         plt.plot(fechas, ideal_burndown, label='Ideal', linestyle='--', marker='o')
+#         for i, val in enumerate(ideal_burndown):
+#             plt.annotate(f'{round(val)}', (fechas[i], ideal_burndown[i]), textcoords="offset points", xytext=(0, 10), ha='center', fontsize=8)
+
+#         plt.plot(fechas, reales, label='Real', linestyle='-', marker='x')
+#         for i, val in enumerate(reales):
+#             plt.annotate(f'{round(val)}', (fechas[i], reales[i]), textcoords="offset points", xytext=(0, -15), ha='center', fontsize=8, color='blue')
+#         plt.grid(True)
+#         plt.xticks(rotation=45)
+#         plt.xlabel('Fecha')
+#         plt.ylabel('Horas restantes')
+#         plt.title(f'Burndown Chart {sprint} ({inicio} al {fin}) ')
+#         plt.legend()
+#         plt.tight_layout()
+#         pdf.savefig()
+#         plt.close()
+
+#     buffer.seek(0)
+#     return FileResponse(buffer, content_type='application/pdf')
+#     # return FileResponse(buffer, as_attachment=True, filename='burndown_chart.pdf')
 
 def ListadoSprint(request, pk): #pk del proyecto
     Sprints = Sprint.objects.filter(Proyecto__pk=pk)

@@ -98,6 +98,15 @@
                                 <path d="M10.854 7.854a.5.5 0 0 0-.708-.708L7.5 9.793 6.354 8.646a.5.5 0 1 0-.708.708l1.5 1.5a.5.5 0 0 0 .708 0l3-3Z"/>
                               </svg>
                             </button>
+                            <a href="{% url 'Scrum:burndown_sprint' Sprint.id %}" 
+                                title="Ver gráfica Burndown"
+                                class="btn btn-outline-warning">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" 
+                                    class="bi bi-graph-down" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd" d="M0 0h1v15h15v1H0V0zm14.293 5.207 1.414-1.414-2.5-2.5a1 1 0 0 0-1.414 0L9 3.086 5.854.94a.5.5 0 0 0-.708 0L2 4.086V6h1V4.5L5.5 2 9 5.5l2.793-2.793 2.5 2.5z"/>
+                                <path d="M15 10.5a.5.5 0 0 0-.5-.5H10v-3a.5.5 0 0 0-1 0v3H6a.5.5 0 0 0 0 1h3v3a.5.5 0 0 0 1 0v-3h4.5a.5.5 0 0 0 .5-.5z"/>
+                              </svg>
+                            </a>                            
                           {% endif %}
 
 

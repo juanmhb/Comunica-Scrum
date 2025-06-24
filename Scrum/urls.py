@@ -3,7 +3,7 @@ from .views import *
 from . import  views
 from django.contrib.auth.decorators import login_required
 
-
+from .views import burndown_sprint
 
 app_name = 'Scrum'
 
@@ -36,6 +36,7 @@ urlpatterns = [
     path('eliminar_sprint/<int:pk>', EliminarSprint.as_view() , name = 'eliminar_sprint'),
     path('editar_sprint/<int:pk>', ActualizarSprint.as_view() , name = 'editar_sprint'),
     path('asignarhistorias_sprint/<int:pk>', login_required(AsignarHistoriasSprint), name = 'asignarhistorias_sprint'),
+    path('burndown_sprint/<int:sprint_id>/', burndown_sprint, name='burndown_sprint'),
 
     path('listar_sprint_Historias/<int:pk>', login_required(ListadoSprintHistorias), name = 'listar_sprint_Historias'),
     path('editar_historiausuario_sprint/<int:pk>', ActualizarHistoriaUsuarioSprint.as_view() , name = 'editar_historiausuario_sprint'),

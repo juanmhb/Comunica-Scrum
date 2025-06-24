@@ -29,8 +29,8 @@ from io import BytesIO
 from django.core.files.base import ContentFile
 from django.utils.text import slugify
 import calendar
-
-
+import matplotlib.pyplot as plt
+import io
 
 # ----------------------------------------------------------------------------------------------------------------------------
 # ---------------------------------------- Reunión de Refinamiento del Product Backlog ---------------------------------------
@@ -3356,8 +3356,9 @@ def vistaEjecucionSprintID(request, id_ReunionDiaria): #id del Mensaje
     mensaje = Mensaje.objects.get(pk=id_ReunionDiaria)  
     contexto = obtener_contexto_reunion_diaria_esfuerzo(mensaje, request.user)
 
-    # pdf = render_to_pdf('Mensajes/ProductOwner/plantillaEjecucion2.html', contexto)
-    return render(request, 'Mensajes/ProductOwner/plantillaEjecucion2.html', contexto)
+    pdf = render_to_pdf('Mensajes/ProductOwner/plantillaEjecucion2.html', contexto)
+    # return render(request, 'Mensajes/ProductOwner/plantillaEjecucion2.html', contexto)
+    return HttpResponse(pdf, content_type='application/pdf')
 
 # def PlantillaRevisionSprint(request, id): #id del Mensaje
 #     #planeacion = Mensaje.objects.filter(pk=id)
