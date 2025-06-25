@@ -37,6 +37,7 @@ urlpatterns = [
     path('editar_sprint/<int:pk>', ActualizarSprint.as_view() , name = 'editar_sprint'),
     path('asignarhistorias_sprint/<int:pk>', login_required(AsignarHistoriasSprint), name = 'asignarhistorias_sprint'),
     path('burndown_sprint/<int:sprint_id>/', burndown_sprint, name='burndown_sprint'),
+    path('burndown_desarrollador/<int:sprint_id>/', burndown_desarrollador, name='burndown_desarrollador'),
 
     path('listar_sprint_Historias/<int:pk>', login_required(ListadoSprintHistorias), name = 'listar_sprint_Historias'),
     path('editar_historiausuario_sprint/<int:pk>', ActualizarHistoriaUsuarioSprint.as_view() , name = 'editar_historiausuario_sprint'),
