@@ -2041,6 +2041,26 @@ def generar_pdf_y_guardar_archivo_planeacion(request, mensaje, asistentes):
         nombre_extra='-HU-Divididas'
     )
 
+def guardar_burndown_chart(mensaje):
+    sprint = mensaje.Sprint
+    if sprint:
+        pdf_buffer, _ = construir_pdf_burndown(sprint.id)
+        fecha_evento = mensaje.FechaHora.strftime("%Y-%m-%d")
+        fecha_actual = datetime.now().strftime("%Y-%m-%d")
+        descripcion = (
+            f"Avance del {sprint.nombresprint} - {fecha_evento} - "
+            f"FechaActual ({fecha_actual}) en Gráficas de Burndown"
+        )
+        archivo_nombre = f"{slugify(descripcion)}.pdf"
+        archivo_burndown = m_Archivos(
+            Descripcion=descripcion,
+            Proyecto=mensaje.Proyecto,
+            Mensaje=mensaje,
+        )
+        archivo_burndown.Archivo.save(archivo_nombre, ContentFile(pdf_buffer.getvalue()), save=False)
+        archivo_burndown.ArchivoObj = pdf_buffer.getvalue()
+        archivo_burndown.save()
+
 def generar_pdf_y_guardar_archivo_revision(request, mensaje, asistentes):
     data = obtener_contexto_revision_sprint(mensaje, request.user)
     generar_pdf_y_guardar(
@@ -2050,6 +2070,9 @@ def generar_pdf_y_guardar_archivo_revision(request, mensaje, asistentes):
         descripcion_extra='',
         nombre_extra=''
     )
+     #  Burndown Chart del Sprint (como archivo binario)
+    guardar_burndown_chart(mensaje)
+ 
 
 def generar_pdf_y_guardar_archivo_retrospectiva(request, mensaje, asistentes):
     data = obtener_contexto_retrospectiva_sprint(mensaje, request.user)
@@ -2084,28 +2107,22 @@ def generar_pdf_y_guardar_archivo_reunion_diaria(request, mensaje, asistentes):
         nombre_extra=''
     )   
      # Parte 3 - Burndown Chart del Sprint (como archivo binario)
-    sprint = mensaje.Sprint  # ⚠️ Asegúrate de que el mensaje tenga relación al Sprint
-    if sprint:
-        pdf_buffer, sprint_obj = construir_pdf_burndown(sprint.id)
-        # descripcion = f"{mensaje.EventoScrum.Descripcion} - {mensaje.FechaHora.strftime('%Y-%m-%d')} - Burndown"
-        descripcion = f" Avance del {sprint.nombresprint} - {mensaje.FechaHora.strftime('%Y-%m-%d')} - FechaActual ({datetime.now().strftime("%Y-%m-%d")}) en Gráficas de Burndown"
-        archivo_nombre = f"{slugify(descripcion)}.pdf"
-        archivo_burndown = m_Archivos(
-            Descripcion=descripcion,
-            Proyecto=mensaje.Proyecto,
-            Mensaje=mensaje,
-        )
-        archivo_burndown.Archivo.save(archivo_nombre, ContentFile(pdf_buffer.getvalue()), save=False)
-        archivo_burndown.ArchivoObj = pdf_buffer.getvalue()
-        archivo_burndown.save()
-        # nuevo_archivo = m_Archivos(
-        #     Descripcion=descripcion,
-        #     Proyecto=mensaje.Proyecto,
-        #     Mensaje=mensaje,
-        # )
-        # nuevo_archivo.Archivo.save(archivo_nombre, ContentFile(pdf.getvalue()), save=False)
-        # nuevo_archivo.ArchivoObj = pdf.getvalue()
-        # nuevo_archivo.save()
+    guardar_burndown_chart(mensaje)
+ 
+    # sprint = mensaje.Sprint  # ⚠️ Asegúrate de que el mensaje tenga relación al Sprint
+    # if sprint:
+    #     pdf_buffer, sprint_obj = construir_pdf_burndown(sprint.id)
+    #     # descripcion = f"{mensaje.EventoScrum.Descripcion} - {mensaje.FechaHora.strftime('%Y-%m-%d')} - Burndown"
+    #     descripcion = f" Avance del {sprint.nombresprint} - {mensaje.FechaHora.strftime('%Y-%m-%d')} - FechaActual ({datetime.now().strftime("%Y-%m-%d")}) en Gráficas de Burndown"
+    #     archivo_nombre = f"{slugify(descripcion)}.pdf"
+    #     archivo_burndown = m_Archivos(
+    #         Descripcion=descripcion,
+    #         Proyecto=mensaje.Proyecto,
+    #         Mensaje=mensaje,
+    #     )
+    #     archivo_burndown.Archivo.save(archivo_nombre, ContentFile(pdf_buffer.getvalue()), save=False)
+    #     archivo_burndown.ArchivoObj = pdf_buffer.getvalue()
+    #     archivo_burndown.save()
 
 def enviar_mensaje_evento_scrum(request, id, Accion, template_name, redirect_url, evento_id):
     mensaje = get_object_or_404(Mensaje, pk=id)
