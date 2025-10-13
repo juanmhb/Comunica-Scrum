@@ -142,6 +142,9 @@ class EmpleadoProyecto(models.Model):
     
     class Meta:
         ordering = ['pk']
+    def __str__(self):
+        return f"{self.Empleado} - {self.Proyecto} ({self.get_Status_display()})"
+
 
 
 # class ProductBacklog(models.Model):
