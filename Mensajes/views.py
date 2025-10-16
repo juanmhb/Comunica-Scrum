@@ -33,6 +33,26 @@ import matplotlib.pyplot as plt
 import io
 from Scrum.utils.burndown import construir_pdf_burndown
 
+#--
+from io import BytesIO
+import logging
+from threading import Thread
+
+from django.http import JsonResponse, HttpResponseNotAllowed
+from django.shortcuts import get_object_or_404, render, redirect
+from django.utils import timezone
+from django.db import transaction
+from django.core.mail import EmailMessage, get_connection
+
+from .models import (
+    Mensaje, Empleado, AsistentesEventosScrum, MensajeReceptor,
+    m_Archivos, m_RefinamientoProductBL,
+)
+
+logger = logging.getLogger(__name__)
+#--
+
+
 # ----------------------------------------------------------------------------------------------------------------------------
 # ---------------------------------------- Reunión de Refinamiento del Product Backlog ---------------------------------------
 # Lista Refinamiento
@@ -2123,34 +2143,68 @@ def generar_pdf_y_guardar_archivo_reunion_diaria(request, mensaje, asistentes):
     #     archivo_burndown.Archivo.save(archivo_nombre, ContentFile(pdf_buffer.getvalue()), save=False)
     #     archivo_burndown.ArchivoObj = pdf_buffer.getvalue()
     #     archivo_burndown.save()
+def _enviar_email_async(subject, body, from_email, to_list, attachments):
+    """Envía correo en background con timeout SMTP y logging de errores."""
+    try:
+        # timeout SMTP explícito para no colgar el worker
+        with get_connection(timeout=10) as conn:
+            email = EmailMessage(
+                subject=subject,
+                body=body,
+                from_email=from_email,
+                to=to_list,
+                connection=conn,
+            )
+            # Adjuntar sin cargar todo en memoria si tienes FileField
+            for name, content, mimetype in attachments:
+                email.attach(name, content, mimetype)
+
+            email.send(fail_silently=False)
+    except Exception:
+        logger.exception("Fallo enviando correo (async)")
+
 
 def enviar_mensaje_evento_scrum(request, id, Accion, template_name, redirect_url, evento_id):
     mensaje = get_object_or_404(Mensaje, pk=id)
-    usuario = request.user.id
-    empleado = Empleado.objects.get(Usuario=usuario)
+
+    # ⚠️ evita fallar si no existe Empleado-Usuario
+    try:
+        empleado = Empleado.objects.get(Usuario=request.user.id)
+    except Empleado.DoesNotExist:
+        logger.warning("Empleado no encontrado para user_id=%s", request.user.id)
+        empleado = None
+
     asistentes = AsistentesEventosScrum.objects.filter(Mensaje=mensaje)
 
     if request.method == 'POST':
         form = envAsistentesForms(request.POST)
-        if form.is_valid():
-            if Accion == 2:
-                mensaje.Status = 2
-                mensaje.FHUltimaMod = datetime.now()
-                mensaje.save()
+        if not form.is_valid():
+            return JsonResponse({'error': 'Datos inválidos'}, status=400)
 
-            proyecto = mensaje.Proyecto
-            eventoScrum = mensaje.EventoScrum
-            sprint = mensaje.Sprint
-            fecha = mensaje.FechaHora
-            DescripcionEventoScrum = eventoScrum.Descripcion
-            NombreProyecto = proyecto.nombreproyecto
-            if evento_id == 2: #Refinamiento
-                fecha = m_RefinamientoProductBL.objects.get(Mensaje=id).FechaHora
-            FechaHoraReunion = fecha
-            #print(f"FechaHoraReunion: {FechaHoraReunion}")
+        # Si se marca enviado, actualiza status con tiempo aware
+        if Accion == 2:
+            mensaje.Status = 2
+            mensaje.FHUltimaMod = timezone.now()
+            mensaje.save(update_fields=["Status", "FHUltimaMod"])
 
+        proyecto = mensaje.Proyecto
+        eventoScrum = mensaje.EventoScrum
+        sprint = mensaje.Sprint
+
+        # Fecha del evento (algunas ceremonias la toman de otro modelo)
+        fecha = mensaje.FechaHora
+        if evento_id == 2:  # Refinamiento
+            fecha = m_RefinamientoProductBL.objects.get(Mensaje=id).FechaHora
+
+        DescripcionEventoScrum = eventoScrum.Descripcion
+        NombreProyecto = proyecto.nombreproyecto
+        FechaHoraReunion = fecha
+
+        # Persistencia de MensajeReceptor solo si Accion == 1 (según tu lógica)
+        if Accion == 1:
+            objs = []
             for asistente in asistentes:
-                mensajeReceptor = MensajeReceptor(
+                objs.append(MensajeReceptor(
                     Proyecto=proyecto,
                     Mensaje=mensaje,
                     Receptor=asistente.Usuario,
@@ -2159,69 +2213,191 @@ def enviar_mensaje_evento_scrum(request, id, Accion, template_name, redirect_url
                     FHCreacion=fecha,
                     Status="1",
                     Sprint=sprint
-                )
-                if Accion == 1:
-                    mensajeReceptor.save()
+                ))
+            if objs:
+                MensajeReceptor.objects.bulk_create(objs, ignore_conflicts=True)
 
-            destinatarios = ", ".join([f"{a.Usuario.Usuario.email}" for a in asistentes])
-            Archivos = m_Archivos.objects.filter(Mensaje=mensaje)
-            asunto = f"{DescripcionEventoScrum} {FechaHoraReunion.strftime('%d/%m/%Y %H:%M')}"
-            cuerpo = (
-                f"Ceremonia: {DescripcionEventoScrum}\\nProyecto: {NombreProyecto}\\n"
-                f"Reunión: {FechaHoraReunion.strftime('%d/%m/%Y %H:%M')}\\nDescripción: {mensaje.Descripcion}"
-            )
-            email = EmailMessage(subject=asunto, body=cuerpo, from_email=request.user.email, to=destinatarios.split(","))
+        # Construye destinatarios (filtra vacíos y espacios)
+        destinatarios = [
+            (a.Usuario.Usuario.email or "").strip()
+            for a in asistentes
+            if getattr(a.Usuario.Usuario, "email", None)
+        ]
+        destinatarios = [e for e in destinatarios if e]
 
-            for arch in Archivos:
-                archivo_binario = BytesIO(arch.ArchivoObj)
-                email.attach(arch.Archivo.name, archivo_binario.read(), 'application/pdf')
+        # Prepara asunto y cuerpo (usa DEFAULT_FROM_EMAIL si el del user viene vacío)
+        from_email = getattr(request.user, "email", None) or "no-reply@tudominio.com"
+        asunto = f"{DescripcionEventoScrum} {FechaHoraReunion.strftime('%d/%m/%Y %H:%M')}"
+        cuerpo = (
+            f"Ceremonia: {DescripcionEventoScrum}\n"
+            f"Proyecto: {NombreProyecto}\n"
+            f"Reunión: {FechaHoraReunion.strftime('%d/%m/%Y %H:%M')}\n"
+            f"Descripción: {mensaje.Descripcion}"
+        )
 
-            if Accion == 2:
-                email.send()
+        # Adjuntos (nombre, contenido, mimetype). Si tu campo es FileField, usa .open()
+        attachments = []
+        for arch in m_Archivos.objects.filter(Mensaje=mensaje):
+            try:
+                # Si arch.Archivo es FileField -> arch.Archivo.open(); content = arch.Archivo.read()
+                content = arch.ArchivoObj if isinstance(arch.ArchivoObj, (bytes, bytearray)) \
+                          else BytesIO(arch.ArchivoObj).read()
+                attachments.append((arch.Archivo.name, content, 'application/pdf'))
+            except Exception:
+                logger.exception("No se pudo anexar archivo %s", getattr(arch.Archivo, "name", ""))
+                continue
 
-            time.sleep(2)
-            return redirect(redirect_url)
+        # 🔑 Enviar el correo DESPUÉS del commit y FUERA del hilo de la request
+        if Accion == 2 and destinatarios:
+            transaction.on_commit(lambda: Thread(
+                target=_enviar_email_async,
+                args=(asunto, cuerpo, from_email, destinatarios, attachments),
+                daemon=True
+            ).start())
 
-    else:
-        if mensaje.Status in ['2', '3', '4']: # 2 = enviado, 3 = comprendido, 4 = Cancelado
-            messages.success(request, 'El mensaje ya fue enviado o cancelado.')
-            return render(request, 'Scrum/MensajePantalla.html', {'mensaje': mensaje, 'Ruta': redirect_url})
+        # ❌ Quita la espera activa que mata al worker en Render
+        # time.sleep(2)
 
-        if mensaje.ArchivosGenerados is not True and evento_id == 2: #evento_id=Refinamiento
+        # Responde de inmediato (no bloquees al usuario)
+        return redirect(redirect_url)
+
+    # === GET ===
+    # Evita generar PDFs pesados en cada GET; solo si no se han generado
+    if mensaje.Status in ['2', '3', '4']:  # ya enviado/comprendido/cancelado
+        messages.success(request, 'El mensaje ya fue enviado o cancelado.')
+        return render(request, 'Scrum/MensajePantalla.html', {'mensaje': mensaje, 'Ruta': redirect_url})
+
+    if not mensaje.ArchivosGenerados:
+        if evento_id == 2:  # Refinamiento
             historiasBL = HistoriaUsuario.objects.filter(MensajeRPBL=id)
             generar_pdf_y_guardar_refinamiento(mensaje, historiasBL, asistentes)
-        if mensaje.ArchivosGenerados is not True and evento_id == 3: #evento_id=Planeación
+        elif evento_id == 3:
             generar_pdf_y_guardar_archivo_planeacion(request, mensaje, asistentes)
-        if mensaje.ArchivosGenerados is not True and evento_id == 4: #evento_id=Reunión Diaria
-            generar_pdf_y_guardar_archivo_reunion_diaria(request, mensaje, asistentes)            
-        if mensaje.ArchivosGenerados is not True and evento_id == 5: #evento_id=Revisión
+        elif evento_id == 4:
+            generar_pdf_y_guardar_archivo_reunion_diaria(request, mensaje, asistentes)
+        elif evento_id == 5:
             generar_pdf_y_guardar_archivo_revision(request, mensaje, asistentes)
-        if mensaje.ArchivosGenerados is not True and evento_id == 6: #evento_id=Retrospectiva
+        elif evento_id == 6:
             generar_pdf_y_guardar_archivo_retrospectiva(request, mensaje, asistentes)
-            
         mensaje.ArchivosGenerados = True
-        mensaje.save()
+        mensaje.save(update_fields=["ArchivosGenerados"])
 
-        form = envAsistentesForms
-        form2 = Mensaje.objects.filter(pk=id)
-        form3 = asistentes
-        archivos = m_Archivos.objects.filter(Mensaje=mensaje)
+    form = envAsistentesForms
+    form2 = Mensaje.objects.filter(pk=id)
+    form3 = asistentes
+    archivos = m_Archivos.objects.filter(Mensaje=mensaje)
 
-        return render(request, template_name, {
-            'form': form, 'form2': form2, 'form3': form3, 'archivos': archivos
-        })
+    return render(request, template_name, {
+        'form': form, 'form2': form2, 'form3': form3, 'archivos': archivos
+    })
 
-
-# Vistas específicas
 
 def enviar_mensaje2(request, id, Accion):
-    from .models import m_RefinamientoProductBL
     return enviar_mensaje_evento_scrum(
         request, id, Accion,
         template_name='Mensajes/ProductOwner/enviarMensaje.html',
         redirect_url='/listaRefinamiento',
-        evento_id = 2 # Reunión de Refinamiento del Product BL
-    )
+        evento_id=2
+    )    
+#15-10-2025
+# def enviar_mensaje_evento_scrum(request, id, Accion, template_name, redirect_url, evento_id):
+#     mensaje = get_object_or_404(Mensaje, pk=id)
+#     usuario = request.user.id
+#     empleado = Empleado.objects.get(Usuario=usuario)
+#     asistentes = AsistentesEventosScrum.objects.filter(Mensaje=mensaje)
+
+#     if request.method == 'POST':
+#         form = envAsistentesForms(request.POST)
+#         if form.is_valid():
+#             if Accion == 2:
+#                 mensaje.Status = 2
+#                 mensaje.FHUltimaMod = datetime.now()
+#                 mensaje.save()
+
+#             proyecto = mensaje.Proyecto
+#             eventoScrum = mensaje.EventoScrum
+#             sprint = mensaje.Sprint
+#             fecha = mensaje.FechaHora
+#             DescripcionEventoScrum = eventoScrum.Descripcion
+#             NombreProyecto = proyecto.nombreproyecto
+#             if evento_id == 2: #Refinamiento
+#                 fecha = m_RefinamientoProductBL.objects.get(Mensaje=id).FechaHora
+#             FechaHoraReunion = fecha
+#             #print(f"FechaHoraReunion: {FechaHoraReunion}")
+
+#             for asistente in asistentes:
+#                 mensajeReceptor = MensajeReceptor(
+#                     Proyecto=proyecto,
+#                     Mensaje=mensaje,
+#                     Receptor=asistente.Usuario,
+#                     EventoScrum=eventoScrum,
+#                     Emisor=empleado,
+#                     FHCreacion=fecha,
+#                     Status="1",
+#                     Sprint=sprint
+#                 )
+#                 if Accion == 1:
+#                     mensajeReceptor.save()
+
+#             destinatarios = ", ".join([f"{a.Usuario.Usuario.email}" for a in asistentes])
+#             Archivos = m_Archivos.objects.filter(Mensaje=mensaje)
+#             asunto = f"{DescripcionEventoScrum} {FechaHoraReunion.strftime('%d/%m/%Y %H:%M')}"
+#             cuerpo = (
+#                 f"Ceremonia: {DescripcionEventoScrum}\\nProyecto: {NombreProyecto}\\n"
+#                 f"Reunión: {FechaHoraReunion.strftime('%d/%m/%Y %H:%M')}\\nDescripción: {mensaje.Descripcion}"
+#             )
+#             email = EmailMessage(subject=asunto, body=cuerpo, from_email=request.user.email, to=destinatarios.split(","))
+
+#             for arch in Archivos:
+#                 archivo_binario = BytesIO(arch.ArchivoObj)
+#                 email.attach(arch.Archivo.name, archivo_binario.read(), 'application/pdf')
+
+#             if Accion == 2:
+#                 email.send()
+
+#             time.sleep(2)
+#             return redirect(redirect_url)
+
+#     else:
+#         if mensaje.Status in ['2', '3', '4']: # 2 = enviado, 3 = comprendido, 4 = Cancelado
+#             messages.success(request, 'El mensaje ya fue enviado o cancelado.')
+#             return render(request, 'Scrum/MensajePantalla.html', {'mensaje': mensaje, 'Ruta': redirect_url})
+
+#         if mensaje.ArchivosGenerados is not True and evento_id == 2: #evento_id=Refinamiento
+#             historiasBL = HistoriaUsuario.objects.filter(MensajeRPBL=id)
+#             generar_pdf_y_guardar_refinamiento(mensaje, historiasBL, asistentes)
+#         if mensaje.ArchivosGenerados is not True and evento_id == 3: #evento_id=Planeación
+#             generar_pdf_y_guardar_archivo_planeacion(request, mensaje, asistentes)
+#         if mensaje.ArchivosGenerados is not True and evento_id == 4: #evento_id=Reunión Diaria
+#             generar_pdf_y_guardar_archivo_reunion_diaria(request, mensaje, asistentes)            
+#         if mensaje.ArchivosGenerados is not True and evento_id == 5: #evento_id=Revisión
+#             generar_pdf_y_guardar_archivo_revision(request, mensaje, asistentes)
+#         if mensaje.ArchivosGenerados is not True and evento_id == 6: #evento_id=Retrospectiva
+#             generar_pdf_y_guardar_archivo_retrospectiva(request, mensaje, asistentes)
+            
+#         mensaje.ArchivosGenerados = True
+#         mensaje.save()
+
+#         form = envAsistentesForms
+#         form2 = Mensaje.objects.filter(pk=id)
+#         form3 = asistentes
+#         archivos = m_Archivos.objects.filter(Mensaje=mensaje)
+
+#         return render(request, template_name, {
+#             'form': form, 'form2': form2, 'form3': form3, 'archivos': archivos
+#         })
+
+
+# # Vistas específicas
+
+# def enviar_mensaje2(request, id, Accion):
+#     from .models import m_RefinamientoProductBL
+#     return enviar_mensaje_evento_scrum(
+#         request, id, Accion,
+#         template_name='Mensajes/ProductOwner/enviarMensaje.html',
+#         redirect_url='/listaRefinamiento',
+#         evento_id = 2 # Reunión de Refinamiento del Product BL
+#     )
 
 def enviar_mensaje_Planeacion(request, id, Accion):
     from .models import m_PlanificacionSprint
