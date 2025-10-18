@@ -194,17 +194,14 @@ LOGO_SISTEMA = "logo-comunica-scrum.JPG"
 #Configuración para el envío de correos
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
-# EMAIL_PORT = 587
-# EMAIL_USE_TLS = True
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'jmhernan@gmail.com'
 EMAIL_HOST_PASSWORD = 'qcph ffqb nywk flun'
 #EMAIL_HOST_PASSWORD = 'qcphffqbnywkflun'
-# EMAIL_USE_SSL = False
+EMAIL_USE_SSL = False
 
-EMAIL_PORT = 465
-EMAIL_USE_TLS = False
-EMAIL_USE_SSL = True
-EMAIL_TIMEOUT = 10
+
 
 
 # EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'jmhernan@gmail.com')

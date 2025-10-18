@@ -34,6 +34,7 @@ import io
 from django.http import FileResponse
 from django.db.models.functions import Coalesce
 from .utils.burndown import construir_pdf_burndown
+from .utils.burndown import generar_burndown_chart
 
 logger = logging.getLogger(__name__)
 

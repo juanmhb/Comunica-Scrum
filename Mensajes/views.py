@@ -32,6 +32,7 @@ import calendar
 import matplotlib.pyplot as plt
 import io
 from Scrum.utils.burndown import construir_pdf_burndown
+#from Scrum.utils.burndown import generar_burndown_chart
 
 #--
 # from io import BytesIO
