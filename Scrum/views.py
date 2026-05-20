@@ -626,6 +626,7 @@ def burndown_desarrollador(request, sprint_id):
     with PdfPages(buffer) as pdf:
         plt1 = generar_burndown_chart(fechas, reales, horas_estimadas,
                     f'{request.user.get_full_name()}  Horas Estimadas - {sprint.nombresprint} ({inicio} al {fin}), día: {datetime.now().strftime("%Y-%m-%d")}')
+                    #f'{request.user.get_full_name()}  Horas Estimadas - {sprint.nombresprint} ({inicio} al {fin})')
         pdf.savefig()
         plt1.close()
 
